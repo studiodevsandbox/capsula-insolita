@@ -1,4 +1,6 @@
 /* La Cápsula Insólita — núcleo: utilidades, estado, efectos, sonido, reloj y huecos de cámara */
+/* Tamaño del lienzo: index-vertical.html lo define antes (1080×1920); por defecto horizontal. */
+window.LCI_STAGE = window.LCI_STAGE || { w: 1920, h: 1080 };
 (function () {
   'use strict';
   const LCI = (window.LCI = window.LCI || {});
@@ -579,7 +581,7 @@
       this.rects = rects || [];
       const a = document.getElementById('atmosphere');
       if (!this.rects.length) { a.style.clipPath = 'none'; return; }
-      let d = 'M0 0H1920V1080H0Z';
+      let d = `M0 0H${window.LCI_STAGE.w}V${window.LCI_STAGE.h}H0Z`;
       this.rects.forEach(r => { d += ` M${r.x} ${r.y}h${r.w}v${r.h}h${-r.w}Z`; });
       a.style.clipPath = `path(evenodd, "${d}")`;
     }

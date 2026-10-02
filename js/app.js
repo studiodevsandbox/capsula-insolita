@@ -244,8 +244,9 @@
   }
 
   function fit() {
-    const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080) || 1;
-    const x = (window.innerWidth - 1920 * s) / 2, y = (window.innerHeight - 1080 * s) / 2;
+    const W = window.LCI_STAGE.w, H = window.LCI_STAGE.h;
+    const s = Math.min(window.innerWidth / W, window.innerHeight / H) || 1;
+    const x = (window.innerWidth - W * s) / 2, y = (window.innerHeight - H * s) / 2;
     document.getElementById('stage').style.transform = `translate(${x}px, ${y}px) scale(${s})`;
   }
 
@@ -262,7 +263,18 @@
   }
 
   /* ===================== arranque ===================== */
+  function applyStageSize() {
+    const W = window.LCI_STAGE.w, H = window.LCI_STAGE.h, root = document.documentElement.style;
+    root.setProperty('--stage-w', W + 'px');
+    root.setProperty('--stage-h', H + 'px');
+    const wall = document.getElementById('wall');
+    if (wall) { wall.width = W; wall.height = H; }
+    const svg = document.getElementById('decor-svg');
+    if (svg) svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  }
+
   function boot() {
+    applyStageSize();
     if (P.get('reset') === '1') LCI.state.clear();
     const saved = P.get('demo') === '1' ? {} : LCI.state.load();
     ['camera1', 'camera2', 'evidence', 'lowerThird', 'sound'].forEach(k => { if (saved[k]) Object.assign(C[k], saved[k]); });
@@ -286,7 +298,9 @@
       Object.assign(C.lowerThird, { name: 'DANIELA ROJAS', role: 'Periodista de investigación', number: 4 });
     }
 
-    const start = resolveScene(P.get('scene')) || resolveScene(saved.scene) || resolveScene(C.scene) || 'SCENE_01_CAMERA';
+    // En vertical la escena guardada (localStorage compartido con el horizontal) no debe pisar la del config.
+    const portrait = window.LCI_STAGE.h > window.LCI_STAGE.w;
+    const start = resolveScene(P.get('scene')) || (portrait ? resolveScene(C.scene) || resolveScene(saved.scene) : resolveScene(saved.scene) || resolveScene(C.scene)) || 'SCENE_01_CAMERA';
     SC.apply(start);
 
     // Si OBS informa la escena activa, manda ella.

@@ -237,3 +237,16 @@ Puerto configurable en `config.js → obs.bridgePort` (por defecto 8787).
 - Las animaciones de Web Animations se liberan al terminar (sin capas colgando).
 - Sin `requestAnimationFrame` continuo; el reloj actualiza 1 vez por segundo.
 - Si OBS va justo de CPU: Clean mode, o apaga `particles`, `filmDust` y `grain`.
+
+## 16. Escena vertical (TikTok / Reels / Shorts)
+
+La escena `SCENE_V01_VERTICAL` es un lienzo de **1080×1920** para clips verticales:
+cámara centrada arriba y la evidencia debajo.
+
+1. En OBS, agrega `index-vertical.html` como una fuente de **Navegador nueva y separada**
+   (no reemplaza a la de `index.html`; la horizontal sigue igual). Tamaño de la fuente: **1080×1920**.
+2. Crea en OBS una escena con el nombre que tenga `config.js → obs.sceneMap`
+   (por ejemplo `LCI V1 · Vertical`) y mete dentro esa fuente. Así el panel reconoce
+   la escena activa cuando se la pregunta a OBS.
+3. Actívala desde el panel con el botón **SCN V1 · Vertical (TikTok)** de la sección de
+   escenas (o la tecla `5`), igual que las otras.

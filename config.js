@@ -125,7 +125,8 @@ window.LCI_CONFIG = {
       "LCI 01 · Cámara": "SCENE_01_CAMERA",
       "LCI 02 · Dos Cámaras": "SCENE_02_DUAL_CAMERA",
       "LCI 03 · Cámara + Evidencia": "SCENE_03_CAMERA_EVIDENCE",
-      "LCI 04 · Dos Cámaras + Evidencia": "SCENE_04_DUAL_CAMERA_EVIDENCE"
+      "LCI 04 · Dos Cámaras + Evidencia": "SCENE_04_DUAL_CAMERA_EVIDENCE",
+      "LCI V1 · Vertical": "SCENE_V01_VERTICAL"
     }
   },
 
@@ -182,6 +183,19 @@ window.LCI_CONFIG = {
         { text: "PRECAUCIÓN · NO CRUZAR", x: -60, y: 984, w: 1150, rot: -1.6 }
       ],
       decor: "dualEvidence"
+    },
+    // Escena vertical (TikTok/Reels): coordenadas de un lienzo 1080×1920 (window.LCI_STAGE).
+    // Una cámara centrada arriba + evidencia debajo. Se activa desde index-vertical.html.
+    SCENE_V01_VERTICAL: {
+      label: "V1 · Vertical",
+      cams: [{ id: 1, x: 60, y: 180, w: 960, h: 540 }],
+      evidence: { x: 140, y: 790, w: 800, h: 800, tilt: 1.6, compact: true },
+      lowerThird: { x: 60, y: 1700 },
+      alert: { x: 760, y: 80 },
+      tapes: [
+        { text: "PRECAUCIÓN · NO CRUZAR", x: -60, y: 1850, w: 1200, rot: -1.6 }
+      ],
+      decor: "vertical"
     }
   }
 };

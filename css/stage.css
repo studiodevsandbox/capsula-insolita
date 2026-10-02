@@ -7,7 +7,7 @@ body.is-preview { background: #1e1e1e; }
 #viewport { position: fixed; inset: 0; overflow: hidden; }
 #stage {
   position: absolute; left: 0; top: 0;
-  width: 1920px; height: 1080px;
+  width: var(--stage-w, 1920px); height: var(--stage-h, 1080px);
   transform-origin: 0 0; overflow: hidden;
   font-family: var(--f-mono); color: var(--c-paper);
   -webkit-font-smoothing: antialiased;
@@ -37,7 +37,7 @@ body.fx-shadows [data-fx~="shadows"] { display: block; }
 .atm-base { background: var(--c-black); }
 
 /* L03 textura de pared (canvas pintado una sola vez) */
-#wall { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+#wall { position: absolute; left: 0; top: 0; width: var(--stage-w, 1920px); height: var(--stage-h, 1080px); }
 
 /* L02 gradiente rojo extremadamente sutil */
 .atm-red {

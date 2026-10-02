@@ -8,7 +8,7 @@
     paint() {
       const c = document.getElementById('wall');
       const x = c.getContext('2d');
-      const W = 1920, H = 1080, R = u.seeded(17);
+      const W = window.LCI_STAGE.w, H = window.LCI_STAGE.h, R = u.seeded(17);
       x.fillStyle = '#080707';
       x.fillRect(0, 0, W, H);
       for (let i = 0; i < 90; i++) {
@@ -276,6 +276,22 @@
       marks: [
         { k: 'circle', x: 770, y: 884, w: 170, h: 52, r: 2 },
         { k: 'arrow', x1: 1690, y1: 700, x2: 1640, y2: 742 }
+      ]
+    },
+    // Lienzo vertical 1080×1920: cámara (y 180-720) + evidencia (y 790-1590) ocupan el centro,
+    // así que el decorado va en los márgenes libres (bordes y franja superior) para no taparlas.
+    vertical: {
+      papers: [
+        { k: 'photo', x: 18, y: 130, w: 126, h: 148, r: -6, pin: [63, 8], dim: 0.5 },
+        { k: 'note', x: 924, y: 140, w: 140, h: 108, r: 5, text: '¿hora exacta?', dim: 0.38 },
+        { k: 'doc', x: -46, y: 840, w: 206, h: 262, r: 4, pin: [100, 10], dim: 0.55, title: 'ANEXO 4' },
+        { k: 'map', x: 912, y: 900, w: 200, h: 188, r: -4, pin: [90, 10], dim: 0.5 }
+      ],
+      strings: [[90, 270, 960, 190], [60, 900, 1000, 960]],
+      marks: [
+        { k: 'num', x: 24, y: 132, t: '1' },
+        { k: 'num', x: 930, y: 142, t: '2' },
+        { k: 'underline', x: 150, y: 780, w: 140 }
       ]
     }
   };

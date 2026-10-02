@@ -225,7 +225,7 @@ body.is-outro .cam__tag .led { opacity: .2; animation: none; }
 .pp-note { padding: 18px 14px; font-family: var(--f-hand); font-size: 21px; line-height: 1.2; color: #2a2418; transform: rotate(-2deg); }
 
 /* marcadores e hilo rojo (SVG) */
-.decor-svg { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+.decor-svg { position: absolute; left: 0; top: 0; width: var(--stage-w, 1920px); height: var(--stage-h, 1080px); overflow: visible; }
 .decor-svg .string { fill: none; stroke: #8f1118; stroke-width: 2.2; stroke-linecap: round; }
 .decor-svg .string-shadow { fill: none; stroke: rgba(0, 0, 0, .55); stroke-width: 3; }
 .decor-svg .mark { fill: none; stroke: var(--c-red-ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; opacity: .82; }

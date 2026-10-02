@@ -137,8 +137,9 @@
       const t = T('glitch');
       const slices = [];
       let y = 0;
-      while (y < 1080) {
-        const h = Math.min(Math.round(u.rand(40, 140)), 1080 - y);
+      const SH = window.LCI_STAGE.h;
+      while (y < SH) {
+        const h = Math.min(Math.round(u.rand(40, 140)), SH - y);
         const s = el('div', 'tr__slice');
         s.style.top = y + 'px';
         s.style.height = (h + 1) + 'px';
