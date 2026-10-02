@@ -262,3 +262,8 @@ cambiar las dos juntas (ej. SCN 02 + SCN V2).
    fuente (Agregar → Fuente existente). Así el panel reconoce la escena activa.
 3. Actívalas desde el panel con los botones **SCN V1–V4** de la sección de escenas
    (o las teclas `5`–`8`), igual que las otras.
+
+> **Ya configurado en este equipo:** la fuente `LCI Vertical` y las 4 escenas de OBS
+> (`LCI V1 · Vertical` … `LCI V4 · Vertical (Dos cám. + evidencia)`) ya existen y están
+> probadas — no hace falta repetir los pasos 1 y 2 en esta PC. Si reinstalás OBS o cambiás
+> de colección de escenas, seguí los 3 pasos de arriba para recrearlo.
