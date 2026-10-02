@@ -238,15 +238,27 @@ Puerto configurable en `config.js → obs.bridgePort` (por defecto 8787).
 - Sin `requestAnimationFrame` continuo; el reloj actualiza 1 vez por segundo.
 - Si OBS va justo de CPU: Clean mode, o apaga `particles`, `filmDust` y `grain`.
 
-## 16. Escena vertical (TikTok / Reels / Shorts)
+## 16. Escenas verticales (TikTok / Reels / Shorts)
 
-La escena `SCENE_V01_VERTICAL` es un lienzo de **1080×1920** para clips verticales:
-cámara centrada arriba y la evidencia debajo.
+Hay **4 escenas verticales** de **1080×1920**, una equivalente a cada escena horizontal:
+
+| Escena | Botón / tecla | Contenido |
+|---|---|---|
+| `SCENE_V01_VERTICAL` | SCN V1 · `5` | cámara arriba + evidencia debajo |
+| `SCENE_V02_SINGLE_VERTICAL` | SCN V2 · `6` | 1 cámara sola, sin evidencia |
+| `SCENE_V03_DUAL_VERTICAL` | SCN V3 · `7` | 2 cámaras apiladas, sin evidencia |
+| `SCENE_V04_DUAL_EVIDENCE_VERTICAL` | SCN V4 · `8` | 2 cámaras apiladas + evidencia |
+
+**Para qué:** transmitir a 2 plataformas a la vez. La escena horizontal de OBS va a una
+plataforma y la vertical a otra (por ejemplo TikTok). Cuando cambias de layout, conviene
+cambiar las dos juntas (ej. SCN 02 + SCN V2).
 
 1. En OBS, agrega `index-vertical.html` como una fuente de **Navegador nueva y separada**
-   (no reemplaza a la de `index.html`; la horizontal sigue igual). Tamaño de la fuente: **1080×1920**.
-2. Crea en OBS una escena con el nombre que tenga `config.js → obs.sceneMap`
-   (por ejemplo `LCI V1 · Vertical`) y mete dentro esa fuente. Así el panel reconoce
-   la escena activa cuando se la pregunta a OBS.
-3. Actívala desde el panel con el botón **SCN V1 · Vertical (TikTok)** de la sección de
-   escenas (o la tecla `5`), igual que las otras.
+   (no reemplaza a la de `index.html`; la horizontal sigue igual). Tamaño: **1080×1920**.
+   Es **una sola fuente para las 4 escenas verticales**: no hace falta una fuente distinta
+   por escena. Lo que cambia es el comando de escena que le manda el panel.
+2. Crea en OBS **4 escenas** con los nombres de `config.js → obs.sceneMap`
+   (por ejemplo `LCI V1 · Vertical` … `LCI V4 · Vertical`) y mete en cada una esa misma
+   fuente (Agregar → Fuente existente). Así el panel reconoce la escena activa.
+3. Actívalas desde el panel con los botones **SCN V1–V4** de la sección de escenas
+   (o las teclas `5`–`8`), igual que las otras.

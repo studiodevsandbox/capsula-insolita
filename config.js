@@ -126,7 +126,10 @@ window.LCI_CONFIG = {
       "LCI 02 · Dos Cámaras": "SCENE_02_DUAL_CAMERA",
       "LCI 03 · Cámara + Evidencia": "SCENE_03_CAMERA_EVIDENCE",
       "LCI 04 · Dos Cámaras + Evidencia": "SCENE_04_DUAL_CAMERA_EVIDENCE",
-      "LCI V1 · Vertical": "SCENE_V01_VERTICAL"
+      "LCI V1 · Vertical": "SCENE_V01_VERTICAL",
+      "LCI V2 · Vertical (Una cámara)": "SCENE_V02_SINGLE_VERTICAL",
+      "LCI V3 · Vertical (Dos cámaras)": "SCENE_V03_DUAL_VERTICAL",
+      "LCI V4 · Vertical (Dos cám. + evidencia)": "SCENE_V04_DUAL_EVIDENCE_VERTICAL"
     }
   },
 
@@ -196,6 +199,48 @@ window.LCI_CONFIG = {
         { text: "PRECAUCIÓN · NO CRUZAR", x: -60, y: 1850, w: 1200, rot: -1.6 }
       ],
       decor: "vertical"
+    },
+    // Vertical de SCENE_01_CAMERA: una cámara grande centrada, sin evidencia.
+    SCENE_V02_SINGLE_VERTICAL: {
+      label: "V2 · Vertical (Una cámara)",
+      cams: [{ id: 1, x: 40, y: 560, w: 1000, h: 562 }],
+      evidence: null,
+      lowerThird: { x: 40, y: 1180 },
+      alert: { x: 760, y: 80 },
+      tapes: [
+        { text: "PRECAUCIÓN · NO CRUZAR", x: -60, y: 1850, w: 1200, rot: -1.6 }
+      ],
+      decor: "verticalSingle"
+    },
+    // Vertical de SCENE_02_DUAL_CAMERA: dos cámaras apiladas, sin evidencia.
+    SCENE_V03_DUAL_VERTICAL: {
+      label: "V3 · Vertical (Dos cámaras)",
+      cams: [
+        { id: 1, x: 80, y: 200, w: 920, h: 518 },
+        { id: 2, x: 80, y: 790, w: 920, h: 518 }
+      ],
+      evidence: null,
+      lowerThird: { x: 80, y: 1380 },
+      alert: { x: 760, y: 80 },
+      tapes: [
+        { text: "PRECAUCIÓN · NO CRUZAR · LA CÁPSULA INSÓLITA", x: -60, y: 1850, w: 1200, rot: -1.6 }
+      ],
+      decor: "verticalDual"
+    },
+    // Vertical de SCENE_04_DUAL_CAMERA_EVIDENCE: cam1 protagonista, cam2 más chica a la derecha, evidencia compacta abajo.
+    SCENE_V04_DUAL_EVIDENCE_VERTICAL: {
+      label: "V4 · Vertical (Dos cám. + evidencia)",
+      cams: [
+        { id: 1, x: 60, y: 180, w: 960, h: 540 },
+        { id: 2, x: 300, y: 760, w: 720, h: 405 }
+      ],
+      evidence: { x: 140, y: 1210, w: 800, h: 440, tilt: -1.6, compact: true },
+      lowerThird: { x: 60, y: 1700 },
+      alert: { x: 760, y: 80 },
+      tapes: [
+        { text: "PRECAUCIÓN · NO CRUZAR", x: -60, y: 1850, w: 1200, rot: -1.6 }
+      ],
+      decor: "verticalDualEvidence"
     }
   }
 };

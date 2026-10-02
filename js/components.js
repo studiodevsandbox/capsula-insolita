@@ -293,6 +293,53 @@
         { k: 'num', x: 930, y: 142, t: '2' },
         { k: 'underline', x: 150, y: 780, w: 140 }
       ]
+    },
+    // V2 (1080×1920): cámara y 560-1122, lower third ~1180-1300; decorado en la franja superior
+    // (y 150-500) y la inferior (y 1340-1800).
+    verticalSingle: {
+      papers: [
+        { k: 'photo', x: 60, y: 200, w: 200, h: 236, r: -5, pin: [100, 8], dim: 0.5 },
+        { k: 'news', x: 400, y: 190, w: 260, h: 260, r: 3, pin: [130, 10], dim: 0.55 },
+        { k: 'note', x: 800, y: 230, w: 160, h: 120, r: 6, text: '¿23:41?', dim: 0.38 },
+        { k: 'doc', x: 80, y: 1360, w: 240, h: 300, r: 4, pin: [120, 10], dim: 0.55, title: 'INFORME 17-B' },
+        { k: 'map', x: 720, y: 1380, w: 260, h: 240, r: -3, pin: [130, 12], dim: 0.5 },
+        { k: 'note', x: 420, y: 1500, w: 160, h: 120, r: -4, text: 'no encaja', dim: 0.38 }
+      ],
+      strings: [[160, 210, 530, 200], [200, 1370, 850, 1392]],
+      marks: [
+        { k: 'num', x: 40, y: 202, t: '1' },
+        { k: 'num', x: 700, y: 1380, t: '2' },
+        { k: 'circle', x: 410, y: 1640, w: 180, h: 50, r: -3 }
+      ]
+    },
+    // V3 (1080×1920): cámaras y 200-718 y 790-1308, lower third ~1380-1480; decorado en la franja
+    // inferior (y 1500-1800) y esquinas superiores pequeñas.
+    verticalDual: {
+      papers: [
+        { k: 'photo', x: 20, y: 40, w: 120, h: 140, r: -6, pin: [60, 8], dim: 0.45 },
+        { k: 'doc', x: 60, y: 1520, w: 230, h: 280, r: -4, pin: [115, 10], dim: 0.55, title: 'DECLARACIÓN' },
+        { k: 'note', x: 430, y: 1560, w: 170, h: 124, r: 4, pin: [85, 10], text: '¿coinciden?', dim: 0.38 },
+        { k: 'news', x: 740, y: 1520, w: 260, h: 250, r: 3, pin: [130, 10], dim: 0.55 }
+      ],
+      strings: [[175, 1530, 870, 1530], [515, 1570, 870, 1530]],
+      marks: [
+        { k: 'num', x: 26, y: 42, t: '3' },
+        { k: 'circle', x: 760, y: 1700, w: 170, h: 50, r: 3 }
+      ]
+    },
+    // V4 (1080×1920): cam1 y 180-720, cam2 x 300-1020 y 760-1165, evidencia y 1210-1650,
+    // lower third ~1700. El decorado va en la columna libre a la izquierda de cam2 (x 0-280).
+    verticalDualEvidence: {
+      papers: [
+        { k: 'note', x: 40, y: 790, w: 200, h: 130, r: -5, pin: [100, 10], text: '¿mismo lugar?', dim: 0.38 },
+        { k: 'doc', x: 30, y: 950, w: 220, h: 230, r: 4, pin: [110, 10], dim: 0.55, title: 'REGISTRO' },
+        { k: 'photo', x: 20, y: 40, w: 120, h: 130, r: -6, pin: [60, 8], dim: 0.45 }
+      ],
+      strings: [[140, 800, 300, 760], [140, 960, 300, 1100]],
+      marks: [
+        { k: 'arrow', x1: 220, y1: 860, x2: 280, y2: 840 },
+        { k: 'num', x: 26, y: 42, t: '1' }
+      ]
     }
   };
 
