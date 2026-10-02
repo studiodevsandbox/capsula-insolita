@@ -213,15 +213,8 @@ kbd {
 .seg > button .n { color: var(--grey); margin-left: 4px; font-weight: 400; }
 .seg > button.on .n { color: rgba(0, 0, 0, .55); }
 
-/* ---------------- vista previa ---------------- */
-#preview-box { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border: 1px solid var(--line2); overflow: hidden; }
-#preview-box img { width: 100%; height: 100%; object-fit: contain; display: block; }
-#preview-box .ph { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; color: #8a8a8a; font-size: 10.5px; letter-spacing: .18em; text-align: center; padding: 0 10px;
-  background: repeating-linear-gradient(0deg, rgba(255,255,255,.015) 0 1px, transparent 1px 3px); }
-#preview-box .ph b { color: var(--grey); font: 400 22px var(--disp); letter-spacing: .2em; }
-.pv-tag { position: absolute; top: 8px; left: 8px; z-index: 2; padding: 2px 6px; background: var(--r); color: #fff; font: 600 10px var(--mono); letter-spacing: .2em; }
-.pv-tag[data-off] { background: #333; color: #bbb; }
-.pv-scene { position: absolute; left: 8px; bottom: 8px; z-index: 2; padding: 2px 6px; background: rgba(0,0,0,.75); color: var(--cream); font: 500 10px var(--mono); letter-spacing: .12em; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ---------------- notas / historias ---------------- */
+#notes { width: 100%; min-height: 180px; resize: vertical; background: #0c0c0c; border: 1px solid var(--line2); color: var(--cream); font: 400 13px/1.5 var(--mono); padding: 10px; }
 .pv-foot { display: flex; align-items: center; gap: 10px; margin-top: 9px; }
 .pv-foot .hint { margin-left: auto; }
 

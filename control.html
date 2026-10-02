@@ -51,17 +51,12 @@
   <!-- ============ COLUMNA A: programa ============ -->
   <div class="col col-a">
 
-    <section class="card" id="card-preview">
-      <header class="card-h"><span class="card-id">§01</span><h2>LIVE PREVIEW</h2><span class="card-meta" id="pv-meta">PGM · ~1 FPS</span></header>
-      <div id="preview-box">
-        <span class="pv-tag" id="pv-tag" data-off>PGM</span>
-        <img id="preview" hidden alt="">
-        <span class="ph" id="preview-ph"><b>SIN SEÑAL</b><span id="preview-ph-msg">CONECTA A OBS</span></span>
-        <span class="pv-scene" id="pv-scene" hidden></span>
-      </div>
+    <section class="card" id="card-notes">
+      <header class="card-h"><span class="card-id">§01</span><h2>NOTAS / HISTORIAS</h2><span class="card-meta" id="notes-meta">GUARDADO</span></header>
+      <textarea id="notes" placeholder="Escribe aquí lo que vas a contar, guiones, historias…" rows="10"></textarea>
       <div class="pv-foot">
-        <label class="check"><input type="checkbox" id="preview-pause"> PAUSAR VISTA PREVIA</label>
-        <span class="hint">ahorra CPU si OBS va justo</span>
+        <span class="hint">se guarda solo en este navegador, al escribir</span>
+        <button class="btn--sm btn--ghost" id="notes-clear" title="Borrar todas las notas">VACIAR</button>
       </div>
     </section>
 
@@ -94,6 +89,13 @@
             <select id="cam1-status" data-keep="cam1-status"><option>REC</option><option>LIVE</option><option>WAITING</option><option>OFFLINE</option></select>
           </div>
         </details>
+        <details class="cam-more"><summary>ENCUADRE POR ESCENA (OBS)</summary>
+          <div class="grid2">
+            <select id="cam1-source" data-keep="cam1-source"><option value="">— elegir fuente de OBS —</option></select>
+            <button id="cam1-save-framing" class="btn--sm" title="Guarda el tamaño/posición actual de esta fuente para la escena activa">📐 GUARDAR ENCUADRE</button>
+          </div>
+          <div class="hint" id="cam1-framing-hint">se restaura solo al cambiar a esta escena</div>
+        </details>
       </div>
       <div class="cam" id="cam2-box">
         <div class="cam-h"><span class="dot" id="cam2-dot"></span><span class="cam-id" id="cam2-id">CAM 02</span><span class="cam-now" id="cam2-now">—</span><button class="btn--sm btn--ghost cam-focus" id="cam2-focus" title="Enfoca esta cámara durante 6 s">◎ ENFOCAR</button></div>
@@ -110,6 +112,13 @@
             <input id="cam2-label" value="CAM 02" data-keep="cam2-label" title="Etiqueta de la cámara">
             <select id="cam2-status" data-keep="cam2-status"><option>LIVE</option><option>REC</option><option>WAITING</option><option>OFFLINE</option></select>
           </div>
+        </details>
+        <details class="cam-more"><summary>ENCUADRE POR ESCENA (OBS)</summary>
+          <div class="grid2">
+            <select id="cam2-source" data-keep="cam2-source"><option value="">— elegir fuente de OBS —</option></select>
+            <button id="cam2-save-framing" class="btn--sm" title="Guarda el tamaño/posición actual de esta fuente para la escena activa">📐 GUARDAR ENCUADRE</button>
+          </div>
+          <div class="hint" id="cam2-framing-hint">se restaura solo al cambiar a esta escena</div>
         </details>
       </div>
     </section>

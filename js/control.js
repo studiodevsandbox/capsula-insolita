@@ -263,14 +263,12 @@
       everConnected = true; retryN = 0;
       s.textContent = 'OBS CONNECTED';
       lost.hidden = true;
-      startPreview(); loadAudioInputs(); refreshScene();
+      loadAudioInputs(); loadFramingSources(); refreshScene();
       if (origVolumeDb.size) restoreAudio(++duckGen); // un duck quedó sin restaurar al cortarse: se devuelve el volumen
       if (!announcedOk) { announcedOk = true; toast('● OBS CONNECTED', 'ok'); activity('● OBS conectado', 'info'); }
     } else if (cls === 'wait') {
       s.textContent = 'CONNECTING';
     } else {
-      stopPreview();
-      setPreviewOffline(code === 4009 ? 'CONTRASEÑA DE OBS INCORRECTA' : 'OBS NO RESPONDE');
       live.scene = null; live.obsScene = null; overlayActive = null;
       if (code === 4009) {
         authFailed = true;
@@ -306,11 +304,11 @@
     return hit ? map[hit] : null;
   }
   function setObsScene(name) {
-    setPreviewScene(name);
     if (live.obsScene === name) return;
     live.obsScene = name;
     live.scene = mapObsScene(name);
     refreshOverlayActive();
+    applyFramingForScene(name);
     renderAll();
   }
   // ¿la fuente del overlay está realmente en el programa? Se pregunta solo al conectar y al
@@ -355,51 +353,82 @@
     } catch (e) { box.innerHTML = '<div class="bank-empty">No pude leer las fuentes de OBS.</div>'; }
   }
 
-  // ---------- vista previa: pide una captura de la escena activa, en bucle propio.
-  // Nunca pide la siguiente hasta que la anterior responde (o falla) — así nunca se amontonan
-  // peticiones si OBS se demora un poco, que era lo que causaba el retraso acumulado.
-  let previewTimer = null, previewRunId = 0;
-  let previewSceneName = null, previewSceneAt = 0;
-  function stopPreview() { previewRunId++; if (previewTimer) clearTimeout(previewTimer); previewTimer = null; }
-  function setPreviewScene(name) { previewSceneName = name; previewSceneAt = Date.now(); }
-  function setPreviewOffline(msg) {
-    $('#preview').hidden = true;
-    $('#preview-ph').hidden = false;
-    $('#preview-ph-msg').textContent = msg;
-    $('#pv-tag').setAttribute('data-off', '');
+  // ---------- notas: texto libre, autoguardado en este navegador (reemplaza la vieja vista previa) ----------
+  const NOTES_KEY = 'lci-notes-v1';
+  const notesBox = $('#notes');
+  try { notesBox.value = localStorage.getItem(NOTES_KEY) || ''; } catch (e) { /* sin almacenamiento */ }
+  let notesTimer = null;
+  notesBox.addEventListener('input', () => {
+    $('#notes-meta').textContent = 'ESCRIBIENDO…';
+    clearTimeout(notesTimer);
+    notesTimer = setTimeout(() => {
+      try { localStorage.setItem(NOTES_KEY, notesBox.value); } catch (e) { /* sin almacenamiento */ }
+      $('#notes-meta').textContent = 'GUARDADO';
+    }, 400);
+  });
+  $('#notes-clear').addEventListener('click', () => {
+    if (notesBox.value && !confirm('¿Vaciar las notas? No se puede deshacer.')) return;
+    notesBox.value = '';
+    try { localStorage.setItem(NOTES_KEY, ''); } catch (e) { /* sin almacenamiento */ }
+    $('#notes-meta').textContent = 'GUARDADO';
+    notesBox.focus();
+  });
+
+  // ---------- memoria de encuadre: OBS no recuerda el tamaño/posición de una cámara por
+  // separado para cada escena si usas la misma fuente en varias (es un único "scene item"
+  // por escena, pero si lo moviste mal en una se queda así). Esto guarda el transform
+  // (posición, tamaño, recorte) de la fuente elegida por cada escena y lo vuelve a aplicar
+  // solo, en el instante en que esa escena pasa a ser la activa.
+  const FRAMING_KEY = 'lci-framing-v1';
+  const framing = (() => { const v = readJSON(FRAMING_KEY); return isObj(v) ? v : {}; })();
+  const saveFraming = () => { try { localStorage.setItem(FRAMING_KEY, JSON.stringify(framing)); } catch (e) { /* sin almacenamiento */ } };
+  const TRANSFORM_KEYS = ['positionX', 'positionY', 'rotation', 'scaleX', 'scaleY', 'alignment',
+    'boundsType', 'boundsAlignment', 'boundsWidth', 'boundsHeight', 'cropLeft', 'cropRight', 'cropTop', 'cropBottom'];
+  async function loadFramingSources() {
+    try {
+      const { inputs } = await obs.request('GetInputList');
+      const videoInputs = inputs.filter(i => !AUDIO_KINDS.test(i.inputKind));
+      [1, 2].forEach(id => {
+        const sel = $(`#cam${id}-source`);
+        const current = sel.value;
+        sel.innerHTML = '<option value="">— elegir fuente de OBS —</option>';
+        videoInputs.forEach(i => sel.appendChild(new Option(i.inputName, i.inputName)));
+        if (current && videoInputs.some(i => i.inputName === current)) sel.value = current;
+      });
+    } catch (e) { /* sin lista, los selects quedan solo con lo que ya estaba guardado */ }
   }
-  async function previewTick(runId) {
-    if (runId !== previewRunId) return;
-    const img = $('#preview'), ph = $('#preview-ph');
-    if (!$('#preview-pause').checked) {
-      try {
-        // la escena activa se refresca sola cada 4s; entre medio usa la última conocida (1 sola petición por tick)
-        if (!previewSceneName || Date.now() - previewSceneAt > 4000) {
-          const cur = await obs.request('GetCurrentProgramScene');
-          setObsScene(cur.currentProgramSceneName);
-        }
-        const t0 = performance.now();
-        const shot = await obs.request('GetSourceScreenshot', { sourceName: previewSceneName, imageFormat: 'jpg', imageWidth: 420, imageHeight: 236, imageCompressionQuality: 50 });
-        if (runId !== previewRunId) return;
-        img.src = shot.imageData;
-        img.hidden = false;
-        ph.hidden = true;
-        $('#pv-tag').removeAttribute('data-off');
-        const ms = Math.round(performance.now() - t0);
-        if (ms > 600) log(`Vista previa lenta (${ms} ms) — súbele el intervalo si se repite`, true);
-      } catch (e) { previewSceneName = null; /* fuerza re-consultar la escena en el siguiente intento */ }
-    } else {
-      $('#pv-tag').setAttribute('data-off', '');
+  async function saveFramingFor(id) {
+    const sourceName = $(`#cam${id}-source`).value;
+    const sceneName = live.obsScene;
+    if (!sourceName) { toast('✕ ELIGE PRIMERO LA FUENTE DE OBS', 'err'); return; }
+    if (!sceneName) { toast('✕ OBS NO TIENE ESCENA ACTIVA', 'err'); return; }
+    try {
+      const { sceneItemId } = await obs.request('GetSceneItemId', { sceneName, sourceName });
+      const { sceneItemTransform } = await obs.request('GetSceneItemTransform', { sceneName, sceneItemId });
+      const clean = {};
+      TRANSFORM_KEYS.forEach(k => { if (sceneItemTransform[k] !== undefined) clean[k] = sceneItemTransform[k]; });
+      framing[sceneName] = framing[sceneName] || {};
+      framing[sceneName][sourceName] = clean;
+      saveFraming();
+      toast(`📐 ENCUADRE GUARDADO · ${sceneName}`, 'ok');
+      activity(`📐 Encuadre de "${sourceName}" guardado para ${sceneName}`);
+      $(`#cam${id}-framing-hint`).textContent = `guardado para "${sceneName}"`;
+    } catch (e) {
+      toast('✕ ' + (/sourceName|item/i.test(e.message) ? 'ESA FUENTE NO ESTÁ EN LA ESCENA ACTUAL' : e.message), 'err');
     }
-    if (runId !== previewRunId) return;
-    previewTimer = setTimeout(() => previewTick(runId), 1000);
   }
-  function startPreview() {
-    stopPreview();
-    const runId = previewRunId;
-    previewTick(runId);
+  async function applyFramingForScene(sceneName) {
+    if (!sceneName || !obs.connected) return;
+    const bySource = framing[sceneName];
+    if (!bySource) return;
+    for (const sourceName of Object.keys(bySource)) {
+      try {
+        const { sceneItemId } = await obs.request('GetSceneItemId', { sceneName, sourceName });
+        await obs.request('SetSceneItemTransform', { sceneName, sceneItemId, sceneItemTransform: bySource[sourceName] });
+      } catch (e) { /* esa fuente ya no está en esta escena: se ignora */ }
+    }
   }
-  $('#preview-pause').addEventListener('change', () => renderPreviewMeta());
+  [1, 2].forEach(id => $(`#cam${id}-save-framing`).addEventListener('click', () => saveFramingFor(id)));
 
   // ---------- ducking: baja el volumen de las fuentes de OBS que elijas mientras suena un
   // efecto, y lo sube de vuelta gradualmente. Trabaja sobre fuentes reales de OBS (no
@@ -1023,7 +1052,6 @@
   act('duck-test', 'AUDIO', 'Probar ducking', () => $('#duck-test').click());
   act('reconnect', 'OBS', 'Reconectar a OBS', () => connect(true));
   act('reload', 'OBS', 'Recargar overlay', () => $('#reload').click());
-  act('preview-pause', 'OBS', 'Pausar / reanudar vista previa', () => { const c = $('#preview-pause'); c.checked = !c.checked; renderPreviewMeta(); });
   $$('[data-act]').forEach(b => b.addEventListener('click', () => runAction(b.dataset.act)));
 
   /* ---------- atajos de teclado (solo en el panel; no se disparan escribiendo en un campo) ---------- */
@@ -1141,14 +1169,6 @@
     setNp('#np-mode-box', '#np-mode', live.mode ? esc(live.mode.toUpperCase()) : NODATA, live.mode === 'investigation' ? 'INV' : null);
     $('#top-mode').innerHTML = `MODE <b>${live.mode ? esc(live.mode.toUpperCase()) : 'SIN DATO'}</b>`;
     $('#top-mode').classList.toggle('chip--inv', live.mode === 'investigation');
-    renderPreviewMeta();
-  }
-  function renderPreviewMeta() {
-    const name = live.obsScene;
-    const ps = $('#pv-scene');
-    ps.hidden = !name || !obs.connected;
-    ps.textContent = name ? 'OBS · ' + name : '';
-    $('#pv-meta').textContent = !obs.connected ? 'SIN SEÑAL' : $('#preview-pause').checked ? 'PAUSADA' : 'PGM · ~1 FPS';
   }
   function renderCams() {
     [1, 2].forEach(id => {
