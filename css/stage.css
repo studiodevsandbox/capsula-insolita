@@ -1,0 +1,141 @@
+/* Escenario, atmósfera de fondo (10 capas) y conmutadores de efectos */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
+body.is-preview { background: #1e1e1e; }
+
+#viewport { position: fixed; inset: 0; overflow: hidden; }
+#stage {
+  position: absolute; left: 0; top: 0;
+  width: 1920px; height: 1080px;
+  transform-origin: 0 0; overflow: hidden;
+  font-family: var(--f-mono); color: var(--c-paper);
+  -webkit-font-smoothing: antialiased;
+}
+.layer { position: absolute; inset: 0; pointer-events: none; }
+#atmosphere { z-index: 1; overflow: hidden; }
+#cams { z-index: 2; }
+#ui { z-index: 3; }
+#flash { z-index: 4; opacity: 0; background: #fff; }
+#fx-transition { z-index: 5; }
+
+/* ---------- conmutadores de efectos ---------- */
+[data-fx] { display: none; }
+body.fx-grain [data-fx~="grain"],
+body.fx-particles [data-fx~="particles"],
+body.fx-scanlines [data-fx~="scanlines"],
+body.fx-vignette [data-fx~="vignette"],
+body.fx-redGlow [data-fx~="redGlow"],
+body.fx-filmDust [data-fx~="filmDust"],
+body.fx-vhs [data-fx~="vhs"],
+body.fx-cameraNoise [data-fx~="cameraNoise"],
+body.fx-papers [data-fx~="papers"],
+body.fx-markers [data-fx~="markers"],
+body.fx-shadows [data-fx~="shadows"] { display: block; }
+
+/* L01 negro base */
+.atm-base { background: var(--c-black); }
+
+/* L03 textura de pared (canvas pintado una sola vez) */
+#wall { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+
+/* L02 gradiente rojo extremadamente sutil */
+.atm-red {
+  background:
+    radial-gradient(ellipse 46% 60% at 50% -6%, rgba(101, 13, 18, .5) 0%, rgba(74, 8, 12, .24) 38%, rgba(48, 7, 10, 0) 72%),
+    radial-gradient(ellipse 70% 40% at 50% 112%, rgba(48, 7, 10, .42) 0%, rgba(48, 7, 10, 0) 70%);
+}
+
+/* L08 luz ambiental que respira */
+.atm-redglow {
+  background: radial-gradient(ellipse 34% 42% at 50% 3%, rgba(163, 19, 27, .30), rgba(163, 19, 27, 0) 70%);
+  animation: breathe 7s ease-in-out infinite;
+  will-change: opacity;
+}
+@keyframes breathe { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+
+.atm-cone {
+  left: 50%; top: 34px; right: auto; bottom: auto;
+  width: 1200px; height: 820px; margin-left: -600px;
+  background: conic-gradient(from 154deg at 50% 0%,
+    rgba(255, 110, 100, 0) 0deg, rgba(255, 110, 100, .07) 14deg, rgba(255, 150, 130, .11) 26deg,
+    rgba(255, 110, 100, .07) 38deg, rgba(255, 110, 100, 0) 52deg);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, .55) 45%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, .55) 45%, transparent 100%);
+  animation: breathe 7s ease-in-out infinite;
+}
+
+/* L05 sombras: luz entrando por una persiana */
+.atm-blinds {
+  inset: -240px;
+  background: repeating-linear-gradient(180deg, rgba(200, 50, 45, 0) 0 30px, rgba(210, 70, 60, .075) 30px 54px);
+  -webkit-mask-image: radial-gradient(ellipse 22% 34% at 22% 56%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse 22% 34% at 22% 56%, #000 0%, transparent 72%);
+  transform: rotate(-13deg);
+  animation: blinds 40s ease-in-out infinite alternate;
+}
+@keyframes blinds { from { transform: rotate(-13deg) translateY(0); } to { transform: rotate(-13deg) translateY(34px); } }
+
+/* L09 partículas de polvo en el cono de luz */
+.dust {
+  position: absolute; width: var(--s); height: var(--s); border-radius: 50%;
+  background: rgba(255, 220, 205, .9); opacity: 0;
+  animation: dust var(--d) linear var(--delay) infinite;
+  will-change: transform, opacity;
+}
+@keyframes dust {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  15% { opacity: var(--o); }
+  85% { opacity: var(--o); }
+  100% { transform: translate3d(var(--dx), var(--dy), 0); opacity: 0; }
+}
+
+/* polvo de película: motas de 1-2 fotogramas */
+.speck { position: absolute; background: rgba(240, 230, 215, .75); opacity: 0; animation: speck var(--d) steps(1) var(--delay) infinite; }
+.speck--hair { background: transparent; border: 1.5px solid rgba(240, 230, 215, .6); border-color: rgba(240, 230, 215, .6) transparent transparent transparent; border-radius: 50%; }
+@keyframes speck { 0%, 100% { opacity: 0; } 50% { opacity: .55; } 52% { opacity: 0; } }
+
+/* L04 film grain */
+.atm-grain-wrap { overflow: hidden; }
+.atm-grain {
+  position: absolute; inset: -128px;
+  background-image: var(--noise); background-size: 256px 256px;
+  opacity: .55;
+  animation: grain 1s steps(1) infinite;
+  will-change: transform;
+}
+@keyframes grain {
+  0% { transform: translate(0, 0); } 10% { transform: translate(-37px, 21px); } 20% { transform: translate(52px, -44px); }
+  30% { transform: translate(-18px, 63px); } 40% { transform: translate(71px, 9px); } 50% { transform: translate(-66px, -30px); }
+  60% { transform: translate(24px, 48px); } 70% { transform: translate(-49px, -61px); } 80% { transform: translate(60px, 33px); }
+  90% { transform: translate(-8px, -12px); }
+}
+
+/* L10 vignette */
+.atm-vignette { background: radial-gradient(ellipse 75% 72% at 50% 46%, rgba(0, 0, 0, 0) 48%, rgba(0, 0, 0, .82) 100%); }
+
+/* microglitch ocasional sobre etiquetas y marca */
+.is-glitch { animation: microglitch .26s steps(2, end) 1; }
+@keyframes microglitch {
+  0% { transform: translate(0, 0); clip-path: inset(0 0 0 0); }
+  25% { transform: translate(-4px, 0); clip-path: inset(12% 0 58% 0); }
+  50% { transform: translate(3px, 0); clip-path: inset(54% 0 18% 0); }
+  75% { transform: translate(-2px, 0); clip-path: inset(0 0 0 0); }
+  100% { transform: none; clip-path: none; }
+}
+
+/* overlay de depuración (?debug=1) */
+.dbg-hole { position: absolute; outline: 2px dashed #0f0; color: #0f0; font: 600 14px var(--f-mono); padding: 6px; background: rgba(0, 255, 0, .05); }
+
+/* ---------- Dev Mode: HUD de depuración, solo con ?debug=1 ---------- */
+#devmode {
+  position: absolute; right: 24px; bottom: 24px; z-index: 9;
+  width: 340px; padding: 10px 12px; pointer-events: none;
+  background: rgba(0, 10, 4, .82); border: 1px solid rgba(90, 255, 150, .4);
+  color: #8cffb0; font: 12px/1.55 var(--f-mono);
+}
+#devmode b { color: #d4ffe4; }
+#devmode .dev-events {
+  margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(90, 255, 150, .3);
+  max-height: 150px; overflow: hidden; color: rgba(140, 255, 176, .75); font-size: 11px;
+}

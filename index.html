@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>La Cápsula Insólita · Broadcast</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=Permanent+Marker&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/stage.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/motion.css">
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+    <!-- BackgroundAtmosphere: se recorta donde están las cámaras (huecos reales para OBS) -->
+    <div id="atmosphere" class="layer">
+      <div class="layer atm-base"></div>
+      <canvas id="wall" width="1920" height="1080"></canvas>
+      <div class="layer atm-red"></div>
+      <div class="layer atm-redglow" data-fx="redGlow"></div>
+      <div class="layer atm-blinds" data-fx="shadows"></div>
+      <div class="layer atm-cone" data-fx="redGlow"></div>
+      <div id="decor-papers" class="layer" data-fx="papers"></div>
+      <svg id="decor-svg" class="decor-svg" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div id="particles" class="layer" data-fx="particles"></div>
+      <div id="filmdust" class="layer" data-fx="filmDust"></div>
+      <div class="layer atm-grain-wrap" data-fx="grain"><div class="atm-grain"></div></div>
+      <div class="layer atm-vignette" data-fx="vignette"></div>
+    </div>
+
+    <div id="cams" class="layer"></div>
+
+    <div id="ui" class="layer">
+      <div id="hud"></div>
+      <header id="brand"></header>
+      <div id="tapes"></div>
+      <div id="evidence" hidden></div>
+      <div id="lowerthird"></div>
+      <div id="alerts"></div>
+    </div>
+
+    <div id="flash" class="layer"></div>
+    <div id="fx-transition" class="layer"></div>
+    <div id="devmode" hidden></div>
+  </div>
+</div>
+<script src="config.js"></script>
+<script src="js/core.js"></script>
+<script src="js/components.js"></script>
+<script src="js/transitions.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

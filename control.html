@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>LCI · Control Room</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/control.css">
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<header class="topbar">
+  <div class="brand">
+    <span class="cap"></span>
+    <div>
+      <div class="brand-title" id="brand-title">LA CÁPSULA INSÓLITA</div>
+      <div class="brand-meta"><span>CASE #<b id="case-no">0017</b></span><span class="sep">/</span><span>CONTROL ROOM</span><span class="sep">/</span><span id="clock" class="tabnum">--:--:--</span></div>
+    </div>
+  </div>
+  <div class="top-status">
+    <span id="conn" class="conn conn--wait">CONNECTING</span>
+    <span class="chip" id="top-overlay">OVERLAY <b>—</b></span>
+    <span class="chip" id="top-mode">MODE <b>—</b></span>
+    <div class="top-tools">
+      <button class="top-panic" id="top-panic" data-act="hideall" title="Ocultar todo: evidencia, lower third y alertas (pánico)">■ OCULTAR TODO</button>
+      <button id="open-palette" title="Buscar y ejecutar cualquier acción (Ctrl+K)"><span class="open-palette-label">BUSCAR</span> <kbd>CTRL K</kbd></button>
+      <button id="open-keys" title="Atajos de teclado (?)">?</button>
+    </div>
+  </div>
+  <div id="lost" class="lost" hidden>
+    <b id="lost-title">CONNECTION LOST</b>
+    <span class="lost-msg" id="lost-msg">reintentando…</span>
+    <button class="btn--danger btn--sm" id="reconnect">RECONNECT</button>
+  </div>
+</header>
+
+<!-- ============ NOW PLAYING ============ -->
+<section class="nowbar" aria-label="Now playing">
+  <div class="np np--scene"><span class="np-k">ON AIR · ESCENA</span><span class="np-v" id="np-scene">—</span></div>
+  <div class="np" id="np-cam1-box"><span class="np-k" id="np-cam1-k">CAM 01</span><span class="np-v" id="np-cam1">—</span></div>
+  <div class="np" id="np-cam2-box"><span class="np-k" id="np-cam2-k">CAM 02</span><span class="np-v" id="np-cam2">—</span></div>
+  <div class="np" id="np-ev-box"><span class="np-k">EVIDENCIA</span><span class="np-v" id="np-ev">—</span></div>
+  <div class="np" id="np-lt-box"><span class="np-k">LOWER THIRD</span><span class="np-v" id="np-lt">—</span></div>
+  <div class="np" id="np-mode-box"><span class="np-k">MODO</span><span class="np-v" id="np-mode">—</span></div>
+</section>
+<div class="nowbar-note">ESCENA = LO QUE DICE OBS · EL RESTO = ÚLTIMO ENVIADO DESDE ESTE PANEL · "SIN DATO" = AÚN NO ENVIADO DESDE ESTE PANEL</div>
+
+<main class="deck">
+
+  <!-- ============ COLUMNA A: programa ============ -->
+  <div class="col col-a">
+
+    <section class="card" id="card-preview">
+      <header class="card-h"><span class="card-id">§01</span><h2>LIVE PREVIEW</h2><span class="card-meta" id="pv-meta">PGM · ~1 FPS</span></header>
+      <div id="preview-box">
+        <span class="pv-tag" id="pv-tag" data-off>PGM</span>
+        <img id="preview" hidden alt="">
+        <span class="ph" id="preview-ph"><b>SIN SEÑAL</b><span id="preview-ph-msg">CONECTA A OBS</span></span>
+        <span class="pv-scene" id="pv-scene" hidden></span>
+      </div>
+      <div class="pv-foot">
+        <label class="check"><input type="checkbox" id="preview-pause"> PAUSAR VISTA PREVIA</label>
+        <span class="hint">ahorra CPU si OBS va justo</span>
+      </div>
+    </section>
+
+    <section class="card" id="card-scenes">
+      <header class="card-h"><span class="card-id">§02</span><h2>SCENE SWITCHER</h2><span class="card-meta">TECLAS 1–4</span></header>
+      <div class="scenes">
+        <button class="scene-btn" data-scene="SCENE_01_CAMERA"><span class="sc-n">SCN 01<kbd>1</kbd></span><span class="sc-t">Una cámara</span></button>
+        <button class="scene-btn" data-scene="SCENE_02_DUAL_CAMERA"><span class="sc-n">SCN 02<kbd>2</kbd></span><span class="sc-t">Dos cámaras</span></button>
+        <button class="scene-btn" data-scene="SCENE_03_CAMERA_EVIDENCE"><span class="sc-n">SCN 03<kbd>3</kbd></span><span class="sc-t">Cámara + evidencia</span></button>
+        <button class="scene-btn" data-scene="SCENE_04_DUAL_CAMERA_EVIDENCE"><span class="sc-n">SCN 04<kbd>4</kbd></span><span class="sc-t">Dos cám. + evidencia</span></button>
+      </div>
+      <div class="scene-tr"><span class="mlabel">TRANSICIÓN</span><select id="tr" data-keep="tr"></select></div>
+    </section>
+
+    <section class="card" id="card-cams">
+      <header class="card-h"><span class="card-id">§03</span><h2>CÁMARAS</h2><span class="card-meta">1 CLIC = CAMBIO CON INTERFERENCIA</span></header>
+      <div class="cam" id="cam1-box">
+        <div class="cam-h"><span class="dot" id="cam1-dot"></span><span class="cam-id" id="cam1-id">CAM 01</span><span class="cam-now" id="cam1-now">—</span><button class="btn--sm btn--ghost cam-focus" id="cam1-focus" title="Enfoca esta cámara durante 6 s">◎ ENFOCAR</button></div>
+        <div class="seg camq">
+          <button data-camq="1:REC" data-st="REC">REC</button><button data-camq="1:LIVE" data-st="LIVE">LIVE</button><button data-camq="1:WAITING" data-st="WAITING">WAITING</button><button data-camq="1:OFFLINE" data-st="OFFLINE">OFFLINE</button>
+        </div>
+        <div class="cam-edit">
+          <input id="cam1-subject" value="TESTIGO A" data-keep="cam1-subject" placeholder="Testigo / sujeto" title="Texto bajo la cámara">
+          <button id="cam1-apply" title="Aplicar etiqueta, estado y testigo sin efecto">APLICAR</button>
+          <button id="cam1-switch" title="Aplicar con interferencia CCTV">⚡ INTERF.</button>
+        </div>
+        <details class="cam-more"><summary>ETIQUETA · ESTADO MANUAL</summary>
+          <div class="grid2">
+            <input id="cam1-label" value="CAM 01" data-keep="cam1-label" title="Etiqueta de la cámara">
+            <select id="cam1-status" data-keep="cam1-status"><option>REC</option><option>LIVE</option><option>WAITING</option><option>OFFLINE</option></select>
+          </div>
+        </details>
+      </div>
+      <div class="cam" id="cam2-box">
+        <div class="cam-h"><span class="dot" id="cam2-dot"></span><span class="cam-id" id="cam2-id">CAM 02</span><span class="cam-now" id="cam2-now">—</span><button class="btn--sm btn--ghost cam-focus" id="cam2-focus" title="Enfoca esta cámara durante 6 s">◎ ENFOCAR</button></div>
+        <div class="seg camq">
+          <button data-camq="2:REC" data-st="REC">REC</button><button data-camq="2:LIVE" data-st="LIVE">LIVE</button><button data-camq="2:WAITING" data-st="WAITING">WAITING</button><button data-camq="2:OFFLINE" data-st="OFFLINE">OFFLINE</button>
+        </div>
+        <div class="cam-edit">
+          <input id="cam2-subject" value="TESTIGO B" data-keep="cam2-subject" placeholder="Testigo / sujeto" title="Texto bajo la cámara">
+          <button id="cam2-apply" title="Aplicar etiqueta, estado y testigo sin efecto">APLICAR</button>
+          <button id="cam2-switch" title="Aplicar con interferencia CCTV">⚡ INTERF.</button>
+        </div>
+        <details class="cam-more"><summary>ETIQUETA · ESTADO MANUAL</summary>
+          <div class="grid2">
+            <input id="cam2-label" value="CAM 02" data-keep="cam2-label" title="Etiqueta de la cámara">
+            <select id="cam2-status" data-keep="cam2-status"><option>LIVE</option><option>REC</option><option>WAITING</option><option>OFFLINE</option></select>
+          </div>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ COLUMNA B: operación ============ -->
+  <div class="col col-b">
+
+    <section class="card" id="card-qa">
+      <header class="card-h"><span class="card-id">§04</span><h2>QUICK ACTIONS</h2><span class="card-meta">UN CLIC O UNA TECLA</span></header>
+      <div class="qa-grid">
+        <button class="qa qa--ev" data-act="ev-next"><kbd>E</kbd><span class="qa-t">Evidencia</span><span class="qa-s" id="qa-ev-s">siguiente del banco</span></button>
+        <button class="qa qa--inv" data-act="mode-investigation" id="qa-inv"><kbd>I</kbd><span class="qa-t">Investigation</span><span class="qa-s">modo completo</span></button>
+        <button class="qa qa--clean" data-act="mode-clean" id="qa-clean"><kbd>C</kbd><span class="qa-t">Clean</span><span class="qa-s">modo limpio</span></button>
+        <button class="qa" data-act="lt-toggle" id="qa-lt"><kbd>L</kbd><span class="qa-t">Lower third</span><span class="qa-s" id="qa-lt-s">mostrar</span></button>
+        <button class="qa qa--alert" data-act="alert-last"><kbd>A</kbd><span class="qa-t">Alerta</span><span class="qa-s" id="qa-alert-s">NUEVA EVIDENCIA</span></button>
+        <button class="qa" data-act="tr-run"><kbd>T</kbd><span class="qa-t">Transición</span><span class="qa-s" id="qa-tr-s">tape</span></button>
+        <button class="qa" data-act="intro" id="intro"><span class="qa-t">Intro</span><span class="qa-s">abrir el caso · ~6 s</span></button>
+        <button class="qa" data-act="outro-arm" id="qa-outro"><kbd>O</kbd><span class="qa-t">Outro</span><span class="qa-s" id="qa-outro-s">2 toques · caso cerrado</span></button>
+      </div>
+      <div class="keys-legend">
+        <span><kbd>1</kbd>–<kbd>4</kbd> escena</span><span><kbd>E</kbd> evidencia</span><span><kbd>I</kbd>/<kbd>C</kbd> modo</span><span><kbd>L</kbd> lower third</span><span><kbd>A</kbd> alerta</span><span><kbd>T</kbd> transición</span><span><kbd>O</kbd><kbd>O</kbd> outro</span><span><kbd>ESC</kbd> cancelar</span><span><kbd>CTRL K</kbd> buscar</span>
+      </div>
+    </section>
+
+    <section class="card" id="card-ev">
+      <header class="card-h"><span class="card-id">§05</span><h2>EVIDENCE CONTROL</h2><span class="card-meta" id="ev-meta">—</span></header>
+      <div class="ev-station">
+        <div class="slot slot--air" id="ev-air">
+          <span class="slot-k">AL AIRE</span>
+          <div class="ev-thumb" id="ev-air-thumb">SIN EVIDENCIA</div>
+          <div class="ev-air-info">
+            <span class="ev-air-num" id="ev-air-num">—</span>
+            <span class="ev-air-type" id="ev-air-type"></span>
+            <span class="ev-state" id="ev-air-state">ESTADO DESCONOCIDO</span>
+          </div>
+          <div class="ev-air-btns">
+            <button id="ev-clear" title="Quita la evidencia del aire">OCULTAR</button>
+            <button id="ev-focus" title="Enfoca la evidencia en pantalla durante 6 s">◎ ENFOCAR</button>
+          </div>
+        </div>
+        <div class="slot slot--next" id="ev-next-slot">
+          <span class="slot-k">SIGUIENTE · <b id="ev-next-src">BANCO</b></span>
+          <div class="ev-thumb" id="ev-next-thumb">BANCO VACÍO</div>
+          <div class="ev-fields">
+            <div class="ev-tn">
+              <label class="field"><span>TIPO</span><select id="ev-type" data-keep="ev-type"></select></label>
+              <label class="field"><span>Nº</span><input id="ev-num" type="number" min="1" value="4" data-keep="ev-num" title="Número de la próxima evidencia (sube solo)"></label>
+            </div>
+            <label class="field"><span>LEYENDA</span><input id="ev-caption" placeholder="ARCHIVO RECUPERADO" value="ARCHIVO RECUPERADO" data-keep="ev-caption"></label>
+            <label class="field"><span>DESCRIPCIÓN</span><input id="ev-desc" placeholder="opcional" data-keep="ev-desc"></label>
+          </div>
+          <div class="ev-go">
+            <button class="btn--primary" id="ev-next" data-act="ev-next">MOSTRAR <kbd>E</kbd></button>
+            <button id="ev-uncue" hidden title="Quitar la selección (Esc)">✕</button>
+          </div>
+        </div>
+      </div>
+      <details class="adv manual"><summary>FUENTE MANUAL · ARCHIVO SUELTO O RUTA (VIDEOS)</summary>
+        <div class="row"><input id="ev-file" type="file" accept="image/*"></div>
+        <div class="row"><input id="ev-url" placeholder="o ruta: assets/evidence/foto.jpg" data-keep="ev-url"></div>
+        <div class="row"><button id="ev-show">MOSTRAR DESDE ARCHIVO / RUTA</button></div>
+      </details>
+    </section>
+
+    <section class="card" id="card-bank">
+      <header class="card-h"><span class="card-id">§06</span><h2>ARCHIVO DE EVIDENCIAS</h2><span class="card-meta" id="ev-bank-count"></span></header>
+      <div class="bank-tools">
+        <div class="seg" id="ev-filter">
+          <button data-filter="all">TODAS<span class="n" id="ev-f-all">0</span></button>
+          <button data-filter="available">DISPONIBLES<span class="n" id="ev-f-available">0</span></button>
+          <button data-filter="used">USADAS<span class="n" id="ev-f-used">0</span></button>
+        </div>
+        <input id="ev-bank-search" type="search" placeholder="buscar por nombre…">
+      </div>
+      <div class="bank-tools2">
+        <span class="mlabel">CLIC EN MINIATURA</span>
+        <div class="seg" id="ev-clickmode">
+          <button data-clickmode="direct" title="Un clic la manda al aire (como siempre)">AL AIRE</button>
+          <button data-clickmode="cue" title="Un clic la prepara en SIGUIENTE; E o MOSTRAR la manda (doble clic = al aire)">PREPARAR</button>
+        </div>
+        <label class="btn upload btn--sm" style="margin-left:auto">+ SUBIR IMÁGENES<input id="ev-bank-add" type="file" accept="image/*" multiple></label>
+      </div>
+      <div class="bank-wrap" id="ev-bank-wrap">
+        <div id="ev-bank" class="bank"></div>
+        <div class="bank-drop">SUELTA PARA AÑADIR EVIDENCIA<small>se guardan en este panel (no en OBS)</small></div>
+      </div>
+      <div class="bank-foot">
+        <span class="hint">Arrastra una miniatura sobre otra para reordenar · suelta archivos para añadir</span>
+        <button class="btn--sm" id="ev-bank-reset" title="Vuelve a marcar todas como disponibles">REHABILITAR USADAS</button>
+        <button class="btn--sm btn--danger" id="ev-bank-clear">VACIAR BANCO</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ COLUMNA C: gráficos, emergencia, bitácora, ajustes ============ -->
+  <div class="col col-c">
+
+    <section class="card" id="card-modes">
+      <header class="card-h"><span class="card-id">§07</span><h2>MODO</h2><span class="card-meta" id="mode-meta">—</span></header>
+      <div class="modes">
+        <button class="mode-btn" data-mode="clean"><kbd>C</kbd><span class="m-t">CLEAN</span><span class="m-s">SOLO INFORMACIÓN</span></button>
+        <button class="mode-btn" data-mode="investigation"><kbd>I</kbd><span class="m-t">INVESTIGATION</span><span class="m-s">TODOS LOS EFECTOS</span></button>
+      </div>
+    </section>
+
+    <section class="card" id="card-lt">
+      <header class="card-h"><span class="card-id">§08</span><h2>LOWER THIRD</h2><span class="card-meta" id="lt-meta">—</span></header>
+      <div class="lt-fields">
+        <label class="field"><span>ETIQUETA</span><input id="lt-label" value="EXPEDIENTE" data-keep="lt-label"></label>
+        <label class="field"><span>ID</span><input id="lt-num" type="number" min="1" value="4" data-keep="lt-num"></label>
+        <label class="field wide"><span>NOMBRE</span><input id="lt-name" placeholder="NOMBRE DEL INVITADO" data-keep="lt-name"></label>
+        <label class="field wide"><span>DESCRIPCIÓN</span><input id="lt-role" placeholder="Rol o descripción" data-keep="lt-role"></label>
+      </div>
+      <div class="lt-preview" id="lt-preview">
+        <span class="ltp-tag" id="ltp-tag">EXPEDIENTE #004</span>
+        <div class="ltp-name" id="ltp-name">NOMBRE DEL INVITADO</div>
+        <div class="ltp-role" id="ltp-role">Rol o descripción</div>
+      </div>
+      <div class="lt-btns"><button class="btn--primary" id="lt-show">MOSTRAR <kbd>L</kbd></button><button id="lt-hide">OCULTAR</button></div>
+    </section>
+
+    <section class="card" id="card-alerts">
+      <header class="card-h"><span class="card-id">§09</span><h2>ALERTAS</h2><span class="card-meta">▲ = CRÍTICA</span></header>
+      <div class="alerts" id="alerts"></div>
+      <div class="sub-k">SELLOS · caen sobre la evidencia si está visible</div>
+      <div class="stamps" id="stamps"></div>
+    </section>
+
+    <section class="card card--danger" id="card-emergency">
+      <header class="card-h"><span class="card-id">§10</span><h2>EMERGENCY</h2><span class="card-meta">PÁNICO 1 TOQUE · OUTRO 2 TOQUES</span></header>
+      <button class="panic" id="hideall"><span class="p-t">■ OCULTAR TODO</span><span class="p-s">EVIDENCIA · LOWER THIRD · ALERTAS</span></button>
+      <div class="emerg-row">
+        <button class="btn--danger" id="outro1" title="2 toques en 3 s">OUTRO · CASO CERRADO</button>
+        <button class="btn--danger" id="outro2" title="2 toques en 3 s">OUTRO · CONTINUARÁ</button>
+        <button id="reset" title="Quita intro/outro de la pantalla">QUITAR INTRO/OUTRO</button>
+      </div>
+    </section>
+
+    <section class="card" id="card-activity">
+      <header class="card-h"><span class="card-id">§11</span><h2>ACTIVITY LOG</h2><span class="card-meta">ÚLTIMAS 20</span></header>
+      <ol class="activity" id="activity"><li class="empty">Sin actividad todavía.</li></ol>
+    </section>
+
+    <div class="drawers">
+      <details class="drawer" id="dr-fx">
+        <summary><span class="dr-t">EFECTOS</span><span class="dr-s" id="fx-summary">—</span></summary>
+        <div class="drawer-body"><div id="fx"></div></div>
+      </details>
+
+      <details class="drawer" id="dr-tr">
+        <summary><span class="dr-t">TRANSICIONES</span><span class="dr-s" id="tr-summary">—</span></summary>
+        <div class="drawer-body">
+          <div class="hint">Probar una transición sola (sin cambiar de escena). La que se usa al cambiar de escena se elige en SCENE SWITCHER.</div>
+          <div id="trs"></div>
+        </div>
+      </details>
+
+      <details class="drawer" id="dr-audio">
+        <summary><span class="dr-t">AUDIO</span><span class="dr-s" id="audio-summary">—</span></summary>
+        <div class="drawer-body">
+          <label class="check"><input type="checkbox" id="snd-enabled" data-keep="snd-enabled"> Sonidos de la transmisión activados</label>
+          <div class="vol" style="margin-top:10px">
+            <span class="mlabel">VOLUMEN</span>
+            <input type="range" id="snd-volume" min="0" max="1" step="0.05" value="0.6" data-keep="snd-volume">
+            <span id="snd-volume-val" class="mlabel tabnum">60%</span>
+          </div>
+          <div class="sub-k">AMBIENTE · room tone de fondo</div>
+          <label class="check"><input type="checkbox" id="amb-enabled"> Ambiente activado</label>
+          <div class="vol" style="margin-top:8px">
+            <span class="mlabel">NIVEL</span>
+            <input type="range" id="amb-volume" min="0" max="1" step="0.02" value="0.18">
+            <span id="amb-volume-val" class="mlabel tabnum">18%</span>
+          </div>
+          <div class="sub-k">PROBAR SONIDOS</div>
+          <div class="row" id="snd-tests"></div>
+          <div class="sub-k">DUCKING · baja una fuente de OBS mientras suena un efecto y la sube sola</div>
+          <label class="check"><input type="checkbox" id="duck-enabled" data-keep="duck-enabled"> Ducking activado</label>
+          <div id="duck-inputs"><div class="bank-empty">Conectando a OBS para listar las fuentes de audio…</div></div>
+          <div class="grid2" style="margin-top:8px">
+            <label class="field"><span>BAJA (dB)</span><input id="duck-amount" type="number" value="-14" data-keep="duck-amount"></label>
+            <label class="field"><span>DURA (ms)</span><input id="duck-hold" type="number" value="700" data-keep="duck-hold"></label>
+          </div>
+          <div class="row" style="margin-top:8px"><button id="duck-test">PROBAR DUCKING AHORA</button></div>
+        </div>
+      </details>
+
+      <details class="drawer" id="dr-obs">
+        <summary><span class="dr-t">OBS</span><span class="dr-s" id="obs-summary">—</span></summary>
+        <div class="drawer-body">
+          <div class="obs-line"><span id="obs-detail" class="dim">—</span><button id="connect" style="margin-left:auto">CONECTAR / RECONECTAR</button></div>
+          <details class="adv"><summary>AVANZADO · HOST, PUERTO, CONTRASEÑA</summary>
+            <div class="grid2">
+              <label class="field"><span>HOST</span><input id="host" data-keep="host" placeholder="localhost"></label>
+              <label class="field"><span>PUERTO</span><input id="port" data-keep="port" placeholder="4455"></label>
+            </div>
+            <label class="field" style="margin-top:8px"><span>CONTRASEÑA</span><input id="pass" type="password" data-keep="pass" placeholder="contraseña"></label>
+          </details>
+        </div>
+      </details>
+
+      <details class="drawer" id="dr-debug">
+        <summary><span class="dr-t">DEBUG</span><span class="dr-s">BITÁCORA TÉCNICA · OVERLAY</span></summary>
+        <div class="drawer-body">
+          <div id="log"></div>
+          <div class="row" style="margin-top:10px"><button class="btn--danger" id="reload">RECARGAR OVERLAY</button><span class="hint">tras editar config.js</span></div>
+        </div>
+      </details>
+    </div>
+  </div>
+</main>
+
+<!-- ============ capas flotantes ============ -->
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<div class="modal" id="palette" hidden>
+  <div class="modal-box" role="dialog" aria-label="Paleta de comandos">
+    <div class="modal-h"><span class="card-id">CMD</span><input id="pal-input" placeholder="Escribe una acción: evidencia, cam 02 rec, última hora, tape…" autocomplete="off" spellcheck="false"></div>
+    <ul class="pal-list" id="pal-list"></ul>
+    <div class="modal-f"><span>↑↓ elegir</span><span>ENTER ejecutar</span><span>ESC cerrar</span></div>
+  </div>
+</div>
+
+<div class="modal" id="keys" hidden>
+  <div class="modal-box" role="dialog" aria-label="Atajos de teclado">
+    <div class="modal-h"><span class="card-id">KEYS</span><span class="dr-t">ATAJOS DEL PANEL</span><button class="btn--sm" id="keys-close" style="margin-left:auto">ESC</button></div>
+    <div class="keys-table" id="keys-table"></div>
+    <div class="modal-f"><span>No se disparan mientras escribes en un campo.</span></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="js/control.js"></script>
+</body>
+</html>

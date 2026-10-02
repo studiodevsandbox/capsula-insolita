@@ -1,0 +1,17 @@
+Los sonidos YA FUNCIONAN sin archivos: el overlay los sintetiza en vivo (Web Audio).
+Esta carpeta es opcional: si pones aquí un .mp3 con uno de estos nombres exactos, se usa
+el archivo en lugar del sonido sintetizado.
+
+  tape.mp3      cinta adhesiva (cambio de escena, intro, outro)
+  whoosh.mp3    barrido (cualquier transición)
+  shutter.mp3   obturador de cámara (nueva evidencia, flash)
+  stamp.mp3     golpe de sello
+  alert.mp3     alerta (stinger de dos notas)
+  impact.mp3    impacto (CASO ABIERTO, flash rojo, intro)
+  paper.mp3     papel (lower third, expediente)
+  beep.mp3      pitido electrónico (LIVE)
+  static.mp3    estática CCTV (cambio de cámara, interferencia)
+
+- Los archivos se comprueban una sola vez al cargar: después de copiar uno, recarga el overlay.
+- Para usar SOLO archivos (sin sintetizados): en config.js pon  sound: { synth: false, ... }
+- Para que suene algo, el sonido debe estar activado (panel o config.js: sound.enabled: true).

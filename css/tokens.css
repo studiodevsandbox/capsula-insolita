@@ -1,0 +1,40 @@
+/* Design tokens — cambiar aquí cambia la identidad completa */
+:root {
+  --c-black: #050505;
+  --c-black-2: #090909;
+  --c-gray-900: #111111;
+  --c-gray-800: #171717;
+  --c-red-900: #30070A;
+  --c-red-800: #4A080C;
+  --c-red-700: #650D12;
+  --c-red-alert: #A3131B;
+  --c-red-ink: #B0161F;
+  --c-yellow: #F3C900;
+  --c-yellow-hi: #FFD600;
+  --c-paper: #E9E1D0;
+  --c-paper-hi: #F2EBDD;
+  --c-metal: #8D8D8D;
+  --c-metal-hi: #B5B5B5;
+  --c-white: #F4F4F4;
+  --c-ink: #0B0B0B;
+
+  --f-brand: 'Bebas Neue', 'Oswald', Impact, sans-serif;
+  --f-type: 'Special Elite', 'Courier New', monospace;
+  --f-mono: 'IBM Plex Mono', Consolas, ui-monospace, monospace;
+  --f-hand: 'Permanent Marker', 'Segoe Print', cursive;
+
+  --radius: 2px;
+  --mount: 10px;
+  --shadow-object: 0 22px 46px rgba(0, 0, 0, .75), 0 6px 12px rgba(0, 0, 0, .6);
+  --shadow-soft: 0 8px 22px rgba(0, 0, 0, .55);
+  --border-frame: 1px solid rgba(233, 225, 208, .2);
+
+  --animation-fast: 180ms;
+  --animation-medium: 420ms;
+  --animation-slow: 900ms;
+  --ease-broadcast: cubic-bezier(.2, .8, .2, 1);
+  --ease-in: cubic-bezier(.6, 0, .9, .4);
+
+  /* --noise, --noise-strong e --ink se generan en tiempo de ejecución (core.js) */
+  --paper-bg: var(--noise), linear-gradient(160deg, #F2EBDD 0%, #E9E1D0 55%, #D8CCB2 100%);
+}
