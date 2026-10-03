@@ -8,10 +8,12 @@
 (function () {
   'use strict';
   const KEY = 'lci.order.v1';
+  const PRESETS_KEY = 'lci.order.presets.v1';
   let editing = false;
   let dragId = null;
 
   function boxId(el) { return el.id || null; }
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
   function ensureDrawersHandle() {
     const drawers = document.querySelector('.drawers');
@@ -32,36 +34,91 @@
     return m ? m[0] : null;
   }
 
-  function saveOrder() {
+  function snapshotOrder() {
     const cols = {};
     document.querySelectorAll('.col').forEach(col => {
       const key = colClassOf(col);
       if (!key) return;
       cols[key] = Array.from(col.children).filter(c => c.id).map(c => c.id);
     });
-    try { localStorage.setItem(KEY, JSON.stringify(cols)); } catch (e) { /* sin almacenamiento */ }
+    return cols;
   }
 
-  function loadOrder() {
-    try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; }
-  }
-
-  function applySavedOrder() {
-    const saved = loadOrder();
-    if (!saved) return;
-    Object.keys(saved).forEach(colClass => {
+  function applyOrder(cols) {
+    if (!cols) return;
+    Object.keys(cols).forEach(colClass => {
       const col = document.querySelector('.' + colClass);
       if (!col) return;
-      saved[colClass].forEach(id => {
+      cols[colClass].forEach(id => {
         const el = document.getElementById(id);
         if (el) col.appendChild(el);
       });
     });
   }
 
+  function saveOrder() {
+    try { localStorage.setItem(KEY, JSON.stringify(snapshotOrder())); } catch (e) { /* sin almacenamiento */ }
+  }
+
+  function loadOrder() {
+    try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; }
+  }
+
+  function applySavedOrder() { applyOrder(loadOrder()); }
+
   function resetOrder() {
     try { localStorage.removeItem(KEY); } catch (e) { /* sin almacenamiento */ }
     location.reload();
+  }
+
+  // ---- presets: varios órdenes guardados con nombre, para cambiar rápido entre acomodos ----
+  function loadPresets() {
+    try { return JSON.parse(localStorage.getItem(PRESETS_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function savePresets(p) {
+    try { localStorage.setItem(PRESETS_KEY, JSON.stringify(p)); } catch (e) { /* sin almacenamiento */ }
+  }
+
+  function refreshPresetSelect(selectName) {
+    const sel = document.getElementById('layout-preset-select');
+    if (!sel) return;
+    const presets = loadPresets();
+    const names = Object.keys(presets).sort((a, b) => a.localeCompare(b));
+    sel.innerHTML = '<option value="">— preset —</option>' + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    if (selectName && names.includes(selectName)) sel.value = selectName;
+  }
+
+  function wirePresetUI() {
+    refreshPresetSelect();
+    const sel = document.getElementById('layout-preset-select');
+    const saveBtn = document.getElementById('layout-preset-save');
+    const delBtn = document.getElementById('layout-preset-delete');
+
+    if (sel) sel.addEventListener('change', () => {
+      const name = sel.value;
+      if (!name) return;
+      const presets = loadPresets();
+      if (!presets[name]) return;
+      applyOrder(presets[name]);
+      saveOrder();
+    });
+    if (saveBtn) saveBtn.addEventListener('click', () => {
+      const name = (prompt('Nombre para este preset de orden:', '') || '').trim();
+      if (!name) return;
+      const presets = loadPresets();
+      presets[name] = snapshotOrder();
+      savePresets(presets);
+      refreshPresetSelect(name);
+    });
+    if (delBtn) delBtn.addEventListener('click', () => {
+      const name = sel && sel.value;
+      if (!name) return;
+      if (!confirm('¿Borrar el preset "' + name + '"?')) return;
+      const presets = loadPresets();
+      delete presets[name];
+      savePresets(presets);
+      refreshPresetSelect();
+    });
   }
 
   function setEditing(on) {
@@ -156,6 +213,8 @@
     if (toggle) toggle.addEventListener('click', () => setEditing(!editing));
     const reset = document.getElementById('layout-reset');
     if (reset) reset.addEventListener('click', resetOrder);
+
+    wirePresetUI();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

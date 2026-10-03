@@ -190,6 +190,8 @@ body.lci-edit .lci-drag-handle { outline: 1px dashed rgba(255, 212, 0, .35); out
 .lci-drop-target { outline: 2px solid var(--y); outline-offset: -2px; }
 body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar aunque la columna esté vacía/corta */
 .lci-drop-col { outline: 2px dashed rgba(255, 212, 0, .4); outline-offset: -4px; }
+#layout-preset-select { width: auto; min-width: 110px; padding: 5px 8px; font-size: 10px; }
+#layout-preset-delete { padding: 5px 8px; }
 #layout-toggle.layout-toggle--on { color: var(--y); border-color: rgba(255, 212, 0, .5); background: var(--y-dim); }
 
 /* ---------------- tarjeta "expediente" ---------------- */
