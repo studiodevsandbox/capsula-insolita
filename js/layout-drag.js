@@ -4,14 +4,26 @@
    navegador (localStorage), no viajan a OBS ni a otra PC. */
 (function () {
   'use strict';
-  const KEY = 'lci.layout.v1';
+  // v2: la v1 tenía un bug (display:none ocultaba las cajas al medirlas) que podía guardar
+  // posiciones en 0x0 — se cambia de clave para arrancar siempre desde cero, sin arrastrar
+  // ese dato corrupto de quien ya haya probado "MOVER CAJAS" antes del arreglo.
+  const KEY = 'lci.layout.v2';
   const BOX_SELECTOR = '.card, .drawers';
   let state = load();
   let editing = false;
   let zCounter = 10;
 
   function load() {
-    try { return JSON.parse(localStorage.getItem(KEY)) || { boxes: {} }; } catch (e) { return { boxes: {} }; }
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY)) || { boxes: {} };
+      // Por las dudas, descarta cualquier caja guardada con tamaño degenerado (0 o casi 0):
+      // sería de un guardado corrupto, mejor que esa caja vuelva a su posición de grilla.
+      Object.keys(s.boxes || {}).forEach(id => {
+        const b = s.boxes[id];
+        if (!b || !(b.w > 20) || !(b.h > 20)) delete s.boxes[id];
+      });
+      return s;
+    } catch (e) { return { boxes: {} }; }
   }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* sin almacenamiento */ }
