@@ -548,13 +548,15 @@
     $('#cf-next').disabled = !(idx > 0);
   }
   function cfNavigate(dir) {
+    // La lista está ordenada del más nuevo al más viejo (cfFilteredList ordena por num descendente),
+    // así que ir al índice +1 es "anterior" (más viejo) e ir al índice -1 es "siguiente" (más nuevo).
     if (!cfOpenId) return;
     const current = cf.items.find(x => x.id === cfOpenId);
     if (!current) return;
     const list = cfFilteredList();
     const idx = list.findIndex(x => x.id === current.id);
     if (idx < 0) return;
-    const target = list[idx + dir]; // -1 = anterior (más viejo), +1 = siguiente (más nuevo)
+    const target = list[idx + dir];
     if (!target) return;
     clearTimeout(cfTimer); saveCurrentCaseFile();
     openCaseFile(target.id);
@@ -590,8 +592,8 @@
     $('#cf-archive').textContent = item.status === 'archivado' ? '↺ REACTIVAR' : '🗄 ARCHIVAR';
     renderCaseFiles();
   });
-  $('#cf-prev').addEventListener('click', () => cfNavigate(-1));
-  $('#cf-next').addEventListener('click', () => cfNavigate(1));
+  $('#cf-prev').addEventListener('click', () => cfNavigate(1));
+  $('#cf-next').addEventListener('click', () => cfNavigate(-1));
   // MOSTRAR: solo lectura para el operador; no manda nada al overlay. Si hay evidencia
   // relacionada, PREPARA (cue) automáticamente la primera (si todavía existe en el banco).
   $('#cf-show').addEventListener('click', () => {
