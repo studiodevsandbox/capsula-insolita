@@ -191,9 +191,9 @@ window.LCI_CONFIG = {
     // Una cámara centrada arriba + evidencia debajo. Se activa desde index-vertical.html.
     SCENE_V01_VERTICAL: {
       label: "V1 · Vertical",
-      cams: [{ id: 1, x: 60, y: 180, w: 960, h: 540 }],
-      evidence: { x: 140, y: 790, w: 800, h: 800, tilt: 1.6, compact: true },
-      lowerThird: { x: 60, y: 1700 },
+      cams: [{ id: 1, x: 60, y: 210, w: 960, h: 540 }],
+      evidence: { x: 140, y: 820, w: 800, h: 800, tilt: 1.6, compact: true },
+      lowerThird: { x: 60, y: 1730 },
       alert: { x: 760, y: 80 },
       tapes: [
         { text: "PRECAUCIÓN · NO CRUZAR", x: -60, y: 1850, w: 1200, rot: -1.6 }
