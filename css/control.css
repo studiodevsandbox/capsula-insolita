@@ -253,6 +253,10 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 .cf-dot--live { background: var(--y); border-color: var(--y); box-shadow: 0 0 6px rgba(255, 212, 0, .6); }
 .cf-dot--new { background: var(--y-dim); border-color: var(--y); }
 .cf-dot--off { background: transparent; border-color: var(--line3); }
+.cf-dot--archived { background: transparent; border-color: #5a5a5a; }
+.cf-item--archived { opacity: .55; }
+.cf-item--archived .cf-t { font-style: italic; }
+#cf-show-archived.on { color: var(--y); border-color: rgba(255, 212, 0, .5); background: var(--y-dim); }
 .cf-num { flex: none; color: var(--grey); font-size: 11px; }
 .cf-item .cf-t { font-weight: 600; color: var(--white); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cf-item .cf-del {

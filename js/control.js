@@ -400,19 +400,21 @@
   let cfOpenId = null;
   let cfTimer = null;
   let cfFilter = ['all'].concat(Object.keys(CF_TYPE_LABEL)).includes(saved['cf-filter']) ? saved['cf-filter'] : 'all';
+  let cfShowArchived = !!saved['cf-show-archived'];
 
   function cfTypesPresent() {
     const set = new Set(Object.keys(CF_TYPE_LABEL));
     cf.items.forEach(i => set.add(i.type));
     return [...set];
   }
-  function cfVisibleItems() { return cf.items.filter(i => i.status !== 'archivado'); }
+  function cfVisibleItems() { return cfShowArchived ? cf.items.slice() : cf.items.filter(i => i.status !== 'archivado'); }
   function cfFilteredList() {
     const items = cfVisibleItems();
     const list = cfFilter === 'all' ? items : items.filter(i => i.type === cfFilter);
     return list.slice().sort((a, b) => b.num - a.num);
   }
   function cfDotClass(item) {
+    if (item.status === 'archivado') return 'archived';
     if (item.id === cfOpenId) return 'live';
     if (Date.now() - (item.ts || 0) < 24 * 3600 * 1000) return 'new';
     return 'off';
@@ -450,9 +452,9 @@
     list.forEach(item => {
       const row = document.createElement('button');
       row.type = 'button';
-      row.className = 'cf-item';
+      row.className = 'cf-item' + (item.status === 'archivado' ? ' cf-item--archived' : '');
       row.innerHTML = `<span class="cf-dot cf-dot--${cfDotClass(item)}"></span><span class="cf-num">#${pad3(item.num)}</span><span class="cf-t"></span><span class="cf-del" title="Borrar este expediente">✕</span>`;
-      row.querySelector('.cf-t').textContent = item.title || '(sin título)';
+      row.querySelector('.cf-t').textContent = (item.title || '(sin título)') + (item.status === 'archivado' ? ' · ARCHIVADO' : '');
       row.addEventListener('click', e => { if (e.target.closest('.cf-del')) return; openCaseFile(item.id); });
       row.querySelector('.cf-del').addEventListener('click', e => {
         e.stopPropagation();
@@ -625,6 +627,16 @@
     cf.items = [];
     saveCaseFiles();
     closeCaseFile();
+  });
+
+  const cfArchivedBtn = $('#cf-show-archived');
+  function cfSyncArchivedBtn() { cfArchivedBtn.classList.toggle('on', cfShowArchived); cfArchivedBtn.textContent = cfShowArchived ? '🗄 OCULTAR ARCHIVADOS' : '🗄 VER ARCHIVADOS'; }
+  cfSyncArchivedBtn();
+  cfArchivedBtn.addEventListener('click', () => {
+    cfShowArchived = !cfShowArchived;
+    keep('cf-show-archived', cfShowArchived);
+    cfSyncArchivedBtn();
+    renderCaseFiles();
   });
 
   renderCaseFiles();
