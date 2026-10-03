@@ -179,7 +179,11 @@ kbd {
 
 /* ---------------- modo "mover cajas" (posición libre) ---------------- */
 body.lci-free .deck { display: block; position: relative; }
-body.lci-free .col { display: none; }
+/* OJO: no ocultar .col con display:none — sus hijos (.card/.drawers) siguen siendo
+   descendientes suyos en el DOM, y display:none en el padre los oculta y desactiva
+   a ellos también aunque tengan position:absolute. Al pasar a absolute, .col ya
+   colapsa solo (sus hijos dejan de contar para su layout), así que no hace falta. */
+body.lci-free .col { gap: 0; }
 body.lci-free .card, body.lci-free .drawers { position: absolute; margin: 0; }
 body.lci-free .drawers { background: var(--bg1); border: 1px solid var(--line); padding: 12px; overflow: auto; }
 .lci-drag-handle { cursor: grab; user-select: none; touch-action: none; }
