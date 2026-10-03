@@ -57,12 +57,13 @@
   <div class="col col-a">
 
     <section class="card" id="card-notes">
-      <header class="card-h"><span class="card-id">§01</span><h2>NOTAS / HISTORIAS</h2><span class="card-meta" id="notes-meta">GUARDADO</span></header>
-      <div class="notes-list" id="notes-list"></div>
+      <header class="card-h"><span class="card-id">§01</span><h2>CASE FILES</h2><span class="card-meta" id="cf-counters">00 EXPEDIENTES · 00 ACTIVOS · 00 EN EMISIÓN</span></header>
+      <div class="cf-tabs" id="cf-tabs"></div>
+      <div class="cf-list" id="cf-list"></div>
       <div class="pv-foot">
-        <span class="hint">clic en una nota para leerla completa</span>
-        <button class="btn--sm btn--ghost" id="notes-clear-all" title="Borrar todas las notas">VACIAR TODAS</button>
-        <button class="btn--sm btn--primary" id="notes-add" title="Crear una nota nueva">+ NUEVA NOTA</button>
+        <span class="hint">clic en un expediente para abrirlo</span>
+        <button class="btn--sm btn--ghost" id="notes-clear-all" title="Borrar todos los expedientes">VACIAR TODOS</button>
+        <button class="btn--sm btn--primary" id="notes-add" title="Crear un expediente nuevo">+ NUEVO</button>
       </div>
     </section>
 
@@ -348,16 +349,37 @@
   </div>
 </div>
 
-<div class="modal" id="note-modal" hidden>
-  <div class="modal-box" role="dialog" aria-label="Nota / historia">
+<div class="modal" id="cf-modal" hidden>
+  <div class="modal-box cf-modal-box" role="dialog" aria-label="Expediente">
     <div class="modal-h">
-      <span class="card-id">NOTA</span>
-      <input id="note-title" placeholder="Título de la nota" autocomplete="off" spellcheck="false">
-      <button class="btn--sm btn--ghost" id="note-delete" title="Borrar esta nota" style="margin-left:8px">✕ BORRAR</button>
-      <button class="btn--sm" id="note-close" title="Cerrar" style="margin-left:8px">CERRAR</button>
+      <span class="card-id" id="cf-num">#000</span>
+      <select id="cf-type" title="Tipo principal del expediente">
+        <option value="historia">HISTORIA</option>
+        <option value="evidencia">EVIDENCIA</option>
+        <option value="pista">PISTA</option>
+        <option value="testimonio">TESTIMONIO</option>
+      </select>
+      <input id="cf-title" placeholder="Título del expediente" autocomplete="off" spellcheck="false">
+      <button class="btn--sm btn--ghost" id="cf-archive" title="Archivar / reactivar este expediente">🗄 ARCHIVAR</button>
+      <button class="btn--sm btn--ghost" id="cf-delete" title="Borrar este expediente" style="margin-left:8px">✕ BORRAR</button>
+      <button class="btn--sm" id="cf-close" title="Cerrar" style="margin-left:8px">CERRAR</button>
     </div>
-    <textarea id="note-body" placeholder="Escribe aquí la historia completa…" rows="16"></textarea>
-    <div class="modal-f"><span id="note-meta">GUARDADO</span><span>ESC cierra</span></div>
+    <textarea id="cf-body" placeholder="Escribe aquí la historia completa…" rows="12"></textarea>
+    <div class="cf-evidence">
+      <div class="cf-evidence-head">
+        <span class="field-label">EVIDENCIA RELACIONADA</span>
+        <select id="cf-evidence-add" title="Relacionar con una imagen del banco (§05/§06)"><option value="">+ relacionar con el banco…</option></select>
+      </div>
+      <div id="cf-evidence-list" class="cf-evidence-list"></div>
+    </div>
+    <div class="modal-f cf-modal-f">
+      <span id="cf-meta">GUARDADO</span>
+      <button class="btn--sm" id="cf-show" title="Solo para leer en el panel: no manda nada al overlay de OBS">👁 MOSTRAR</button>
+      <span class="cf-nav">
+        <button class="btn--sm btn--ghost" id="cf-prev" title="Expediente anterior en esta pestaña">← ANTERIOR</button>
+        <button class="btn--sm btn--ghost" id="cf-next" title="Expediente siguiente en esta pestaña">SIGUIENTE →</button>
+      </span>
+    </div>
   </div>
 </div>
 

@@ -353,124 +353,281 @@
     } catch (e) { box.innerHTML = '<div class="bank-empty">No pude leer las fuentes de OBS.</div>'; }
   }
 
-  // ---------- notas: lista de notas/historias, autoguardado en este navegador ----------
-  const NOTES_KEY_OLD = 'lci-notes-v1';
-  const NOTES_KEY = 'lci-notes-v2';
-  let notes = [];
+  // ---------- CASE FILES: expedientes únicos (historia/evidencia/pista/testimonio), con
+  // relación opcional a evidencia del banco (§05/§06). Autoguardado en este navegador.
+  // Migra las notas del sistema anterior (lci-notes-v2) la primera vez, sin borrar esa clave.
+  const CF_KEY = 'lci-casefiles-v1';
+  const NOTES_KEY_OLD2 = 'lci-notes-v1';
+  const NOTES_KEY2 = 'lci-notes-v2';
+  const CF_TYPE_LABEL = { historia: 'HISTORIA', evidencia: 'EVIDENCIA', pista: 'PISTA', testimonio: 'TESTIMONIO' };
+  const cfTypeLabel = t => CF_TYPE_LABEL[t] || String(t || '').toUpperCase();
+  const cfTypePlural = t => cfTypeLabel(t) + 'S';
+  const pad2 = n => String(n).padStart(2, '0');
+
+  let cf = { items: [], nextNum: 1 };
   try {
-    const raw = localStorage.getItem(NOTES_KEY);
+    const raw = localStorage.getItem(CF_KEY);
     if (raw) {
-      notes = JSON.parse(raw) || [];
+      const v = JSON.parse(raw);
+      if (isObj(v) && Array.isArray(v.items)) cf = { items: v.items, nextNum: Number.isFinite(v.nextNum) ? v.nextNum : (v.items.length + 1) };
     } else {
-      // migración: si había una sola nota vieja con contenido, se convierte en la primera de la lista
-      const old = localStorage.getItem(NOTES_KEY_OLD);
-      if (old && old.trim()) {
-        const firstLine = old.trim().split('\n')[0].slice(0, 40);
-        notes = [{ id: 'n' + Date.now(), title: firstLine || 'Nota 1', body: old, ts: Date.now() }];
-        saveNotes();
+      // migración desde lci-notes-v2 (una sola vez; no se borra la clave vieja)
+      let oldNotes = [];
+      try { oldNotes = JSON.parse(localStorage.getItem(NOTES_KEY2) || '[]') || []; } catch (e) { oldNotes = []; }
+      if (Array.isArray(oldNotes) && oldNotes.length) {
+        let n = 1;
+        cf.items = oldNotes.map(note => ({
+          id: 'cf' + Date.now() + Math.random().toString(36).slice(2, 7),
+          num: n++,
+          type: 'historia',
+          title: note.title || '',
+          body: note.body || '',
+          status: 'activo',
+          relatedEvidenceIds: [],
+          ts: Number.isFinite(note.ts) ? note.ts : Date.now()
+        }));
+        cf.nextNum = n;
+        saveCaseFiles();
       }
     }
-  } catch (e) { notes = []; }
+  } catch (e) { cf = { items: [], nextNum: 1 }; }
+  void NOTES_KEY_OLD2; // conservada sin borrar, igual que antes; solo documentando que no se toca
 
-  let noteEditId = null;
-  let noteTimer = null;
-
-  function saveNotes() {
-    try { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); } catch (e) { /* sin almacenamiento */ }
+  function saveCaseFiles() {
+    try { localStorage.setItem(CF_KEY, JSON.stringify(cf)); } catch (e) { /* sin almacenamiento */ }
   }
 
-  function renderNotes() {
-    const box = $('#notes-list');
-    if (!notes.length) { box.innerHTML = '<div class="empty">Sin notas todavía.</div>'; return; }
+  let cfOpenId = null;
+  let cfTimer = null;
+  let cfFilter = ['all'].concat(Object.keys(CF_TYPE_LABEL)).includes(saved['cf-filter']) ? saved['cf-filter'] : 'all';
+
+  function cfTypesPresent() {
+    const set = new Set(Object.keys(CF_TYPE_LABEL));
+    cf.items.forEach(i => set.add(i.type));
+    return [...set];
+  }
+  function cfVisibleItems() { return cf.items.filter(i => i.status !== 'archivado'); }
+  function cfFilteredList() {
+    const items = cfVisibleItems();
+    const list = cfFilter === 'all' ? items : items.filter(i => i.type === cfFilter);
+    return list.slice().sort((a, b) => b.num - a.num);
+  }
+  function cfDotClass(item) {
+    if (item.id === cfOpenId) return 'live';
+    if (Date.now() - (item.ts || 0) < 24 * 3600 * 1000) return 'new';
+    return 'off';
+  }
+
+  function renderCfTabs() {
+    const box = $('#cf-tabs');
+    if (!box) return;
     box.innerHTML = '';
-    notes.forEach(n => {
-      const row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'note-item';
-      row.innerHTML = `<span class="note-t"></span><span class="note-p"></span><span class="note-del" title="Borrar esta nota">✕</span>`;
-      row.querySelector('.note-t').textContent = n.title || '(sin título)';
-      row.querySelector('.note-p').textContent = (n.body || '').replace(/\s+/g, ' ').trim();
-      row.addEventListener('click', e => {
-        if (e.target.closest('.note-del')) return;
-        openNote(n.id);
-      });
-      row.querySelector('.note-del').addEventListener('click', e => {
-        e.stopPropagation();
-        if (!confirm(`¿Borrar la nota "${n.title || '(sin título)'}"? No se puede deshacer.`)) return;
-        notes = notes.filter(x => x.id !== n.id);
-        saveNotes();
-        renderNotes();
-      });
-      box.appendChild(row);
+    ['all'].concat(cfTypesPresent()).forEach(t => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cf-tab' + (cfFilter === t ? ' on' : '');
+      b.textContent = t === 'all' ? 'TODOS' : cfTypePlural(t);
+      b.addEventListener('click', () => { cfFilter = t; keep('cf-filter', t); renderCaseFiles(); });
+      box.appendChild(b);
     });
   }
 
-  function openNote(id) {
-    const n = notes.find(x => x.id === id);
-    if (!n) return;
-    noteEditId = id;
-    $('#note-title').value = n.title || '';
-    $('#note-body').value = n.body || '';
-    $('#note-meta').textContent = 'GUARDADO';
-    $('#note-modal').hidden = false;
-    $('#note-title').focus();
+  function renderCfCounters() {
+    const el = $('#cf-counters');
+    if (!el) return;
+    const total = cf.items.length;
+    const active = cf.items.filter(i => i.status === 'activo').length;
+    const live = (cfOpenId && !$('#cf-modal').hidden) ? 1 : 0;
+    el.textContent = `${pad2(total)} EXPEDIENTE${total === 1 ? '' : 'S'} · ${pad2(active)} ACTIVO${active === 1 ? '' : 'S'} · ${pad2(live)} EN EMISIÓN`;
   }
 
-  function closeNote() {
-    $('#note-modal').hidden = true;
-    noteEditId = null;
-    renderNotes();
+  function renderCaseFiles() {
+    renderCfTabs();
+    const box = $('#cf-list');
+    const list = cfFilteredList();
+    if (!list.length) { box.innerHTML = '<div class="empty">Sin expedientes en esta vista.</div>'; renderCfCounters(); return; }
+    box.innerHTML = '';
+    list.forEach(item => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'cf-item';
+      row.innerHTML = `<span class="cf-dot cf-dot--${cfDotClass(item)}"></span><span class="cf-num">#${pad3(item.num)}</span><span class="cf-t"></span><span class="cf-del" title="Borrar este expediente">✕</span>`;
+      row.querySelector('.cf-t').textContent = item.title || '(sin título)';
+      row.addEventListener('click', e => { if (e.target.closest('.cf-del')) return; openCaseFile(item.id); });
+      row.querySelector('.cf-del').addEventListener('click', e => {
+        e.stopPropagation();
+        if (!confirm(`¿Borrar el expediente "${item.title || '(sin título)'}"? No se puede deshacer.`)) return;
+        cf.items = cf.items.filter(x => x.id !== item.id);
+        saveCaseFiles();
+        if (cfOpenId === item.id) closeCaseFile(); else renderCaseFiles();
+      });
+      box.appendChild(row);
+    });
+    renderCfCounters();
   }
 
-  function saveCurrentNote() {
-    if (!noteEditId) return;
-    const n = notes.find(x => x.id === noteEditId);
-    if (!n) return;
-    n.title = $('#note-title').value;
-    n.body = $('#note-body').value;
-    n.ts = Date.now();
-    saveNotes();
-    $('#note-meta').textContent = 'GUARDADO';
+  // ---------- relación con el banco de evidencias (§05/§06): reusa bank/cuedId/cue() ----------
+  function cfEvidenceStateLabel(bankItem) {
+    if (!bankItem) return { text: '○ YA NO ESTÁ EN EL BANCO', cls: 'gone' };
+    if (bankItem.id === cuedId) return { text: '● PREPARADA', cls: 'live' };
+    if (bankItem.used) return { text: `● YA ENVIADA · #${pad3(bankItem.num || 0)}`, cls: 'used' };
+    return { text: '○ EN BANCO, SIN PREPARAR', cls: 'off' };
   }
-
-  $('#note-title').addEventListener('input', () => {
-    $('#note-meta').textContent = 'ESCRIBIENDO…';
-    clearTimeout(noteTimer);
-    noteTimer = setTimeout(saveCurrentNote, 400);
+  function renderCfEvidenceSection(item) {
+    const addSel = $('#cf-evidence-add'), list = $('#cf-evidence-list');
+    if (!addSel || !list) return;
+    const related = item.relatedEvidenceIds || [];
+    addSel.innerHTML = '<option value="">+ relacionar con el banco…</option>';
+    bank.filter(b => !related.includes(b.id)).forEach(b => addSel.appendChild(new Option(b.name || 'imagen', b.id)));
+    list.innerHTML = '';
+    if (!related.length) { list.innerHTML = '<div class="cf-evidence-empty">Sin evidencia relacionada.</div>'; return; }
+    related.forEach((id, idx) => {
+      const bankItem = bank.find(b => b.id === id);
+      const st = cfEvidenceStateLabel(bankItem);
+      const row = document.createElement('div');
+      row.className = 'cf-evidence-row';
+      row.innerHTML = `<span class="cf-ev-name">${esc((bankItem && bankItem.name) || 'EVIDENCIA')}</span><span class="cf-ev-st cf-ev-st--${st.cls}">${st.text}</span>` +
+        (idx > 0 ? '<span class="cf-ev-note">no se prepara automáticamente, solo el primero</span>' : '') +
+        `<button type="button" class="btn--sm btn--ghost cf-ev-unlink" title="Quitar relación">✕</button>`;
+      row.querySelector('.cf-ev-unlink').addEventListener('click', () => {
+        item.relatedEvidenceIds = related.filter(x => x !== id);
+        saveCaseFiles();
+        renderCfEvidenceSection(item);
+      });
+      list.appendChild(row);
+    });
+  }
+  $('#cf-evidence-add').addEventListener('change', () => {
+    if (!cfOpenId) return;
+    const id = $('#cf-evidence-add').value;
+    if (!id) return;
+    const item = cf.items.find(x => x.id === cfOpenId);
+    if (!item) return;
+    item.relatedEvidenceIds = (item.relatedEvidenceIds || []).concat(id);
+    saveCaseFiles();
+    renderCfEvidenceSection(item);
   });
-  $('#note-body').addEventListener('input', () => {
-    $('#note-meta').textContent = 'ESCRIBIENDO…';
-    clearTimeout(noteTimer);
-    noteTimer = setTimeout(saveCurrentNote, 400);
+
+  function openCaseFile(id) {
+    const item = cf.items.find(x => x.id === id);
+    if (!item) return;
+    cfOpenId = id;
+    $('#cf-num').textContent = '#' + pad3(item.num);
+    $('#cf-type').value = item.type;
+    $('#cf-title').value = item.title || '';
+    $('#cf-body').value = item.body || '';
+    $('#cf-meta').textContent = 'GUARDADO';
+    $('#cf-archive').textContent = item.status === 'archivado' ? '↺ REACTIVAR' : '🗄 ARCHIVAR';
+    renderCfEvidenceSection(item);
+    renderCfNav(item);
+    $('#cf-modal').hidden = false;
+    $('#cf-title').focus();
+    renderCaseFiles();
+  }
+  function closeCaseFile() {
+    $('#cf-modal').hidden = true;
+    cfOpenId = null;
+    renderCaseFiles();
+  }
+  function saveCurrentCaseFile() {
+    if (!cfOpenId) return;
+    const item = cf.items.find(x => x.id === cfOpenId);
+    if (!item) return;
+    item.type = $('#cf-type').value;
+    item.title = $('#cf-title').value;
+    item.body = $('#cf-body').value;
+    saveCaseFiles();
+    $('#cf-meta').textContent = 'GUARDADO';
+  }
+  function renderCfNav(item) {
+    const list = cfFilteredList(); // navega dentro de la pestaña filtrada actual
+    const idx = list.findIndex(x => x.id === item.id);
+    $('#cf-prev').disabled = !(idx >= 0 && idx < list.length - 1);
+    $('#cf-next').disabled = !(idx > 0);
+  }
+  function cfNavigate(dir) {
+    if (!cfOpenId) return;
+    const current = cf.items.find(x => x.id === cfOpenId);
+    if (!current) return;
+    const list = cfFilteredList();
+    const idx = list.findIndex(x => x.id === current.id);
+    if (idx < 0) return;
+    const target = list[idx + dir]; // -1 = anterior (más viejo), +1 = siguiente (más nuevo)
+    if (!target) return;
+    clearTimeout(cfTimer); saveCurrentCaseFile();
+    openCaseFile(target.id);
+  }
+
+  $('#cf-title').addEventListener('input', () => {
+    $('#cf-meta').textContent = 'ESCRIBIENDO…';
+    clearTimeout(cfTimer);
+    cfTimer = setTimeout(saveCurrentCaseFile, 400);
   });
-  $('#note-close').addEventListener('click', () => { clearTimeout(noteTimer); saveCurrentNote(); closeNote(); });
-  $('#note-modal').addEventListener('click', e => { if (e.target.id === 'note-modal') { clearTimeout(noteTimer); saveCurrentNote(); closeNote(); } });
-  $('#note-delete').addEventListener('click', () => {
-    if (!noteEditId) return;
-    const n = notes.find(x => x.id === noteEditId);
-    if (!confirm(`¿Borrar la nota "${(n && n.title) || '(sin título)'}"? No se puede deshacer.`)) return;
-    notes = notes.filter(x => x.id !== noteEditId);
-    saveNotes();
-    closeNote();
+  $('#cf-body').addEventListener('input', () => {
+    $('#cf-meta').textContent = 'ESCRIBIENDO…';
+    clearTimeout(cfTimer);
+    cfTimer = setTimeout(saveCurrentCaseFile, 400);
+  });
+  $('#cf-type').addEventListener('change', () => { saveCurrentCaseFile(); renderCaseFiles(); });
+  $('#cf-close').addEventListener('click', () => { clearTimeout(cfTimer); saveCurrentCaseFile(); closeCaseFile(); });
+  $('#cf-modal').addEventListener('click', e => { if (e.target.id === 'cf-modal') { clearTimeout(cfTimer); saveCurrentCaseFile(); closeCaseFile(); } });
+  $('#cf-delete').addEventListener('click', () => {
+    if (!cfOpenId) return;
+    const item = cf.items.find(x => x.id === cfOpenId);
+    if (!confirm(`¿Borrar el expediente "${(item && item.title) || '(sin título)'}"? No se puede deshacer.`)) return;
+    cf.items = cf.items.filter(x => x.id !== cfOpenId);
+    saveCaseFiles();
+    closeCaseFile();
+  });
+  $('#cf-archive').addEventListener('click', () => {
+    if (!cfOpenId) return;
+    const item = cf.items.find(x => x.id === cfOpenId);
+    if (!item) return;
+    item.status = item.status === 'archivado' ? 'activo' : 'archivado';
+    saveCaseFiles();
+    $('#cf-archive').textContent = item.status === 'archivado' ? '↺ REACTIVAR' : '🗄 ARCHIVAR';
+    renderCaseFiles();
+  });
+  $('#cf-prev').addEventListener('click', () => cfNavigate(-1));
+  $('#cf-next').addEventListener('click', () => cfNavigate(1));
+  // MOSTRAR: solo lectura para el operador; no manda nada al overlay. Si hay evidencia
+  // relacionada, PREPARA (cue) automáticamente la primera (si todavía existe en el banco).
+  $('#cf-show').addEventListener('click', () => {
+    if (!cfOpenId) return;
+    const item = cf.items.find(x => x.id === cfOpenId);
+    if (!item) return;
+    const firstId = (item.relatedEvidenceIds || [])[0];
+    const bankItem = firstId && bank.find(b => b.id === firstId);
+    if (bankItem) { cue(bankItem); renderCfEvidenceSection(item); }
+    else toast('👁 LEÍDO · SIN EVIDENCIA PARA PREPARAR', 'info');
   });
 
   $('#notes-add').addEventListener('click', () => {
-    const n = { id: 'n' + Date.now() + Math.random().toString(36).slice(2, 6), title: 'Nota ' + (notes.length + 1), body: '', ts: Date.now() };
-    notes.push(n);
-    saveNotes();
-    renderNotes();
-    openNote(n.id);
+    const item = {
+      id: 'cf' + Date.now() + Math.random().toString(36).slice(2, 7),
+      num: cf.nextNum++,
+      type: 'historia',
+      title: 'Expediente ' + (cf.nextNum - 1),
+      body: '',
+      status: 'activo',
+      relatedEvidenceIds: [],
+      ts: Date.now()
+    };
+    cf.items.push(item);
+    saveCaseFiles();
+    renderCaseFiles();
+    openCaseFile(item.id);
   });
 
   $('#notes-clear-all').addEventListener('click', () => {
-    if (!notes.length) return;
-    if (!confirm('¿Vaciar todas las notas? No se puede deshacer.')) return;
-    notes = [];
-    saveNotes();
-    renderNotes();
+    if (!cf.items.length) return;
+    if (!confirm('¿Vaciar todos los expedientes? No se puede deshacer.')) return;
+    cf.items = [];
+    saveCaseFiles();
+    closeCaseFile();
   });
 
-  renderNotes();
+  renderCaseFiles();
 
   // ---------- memoria de encuadre: OBS no recuerda el tamaño/posición de una cámara por
   // separado para cada escena si usas la misma fuente en varias (es un único "scene item"
@@ -1164,7 +1321,7 @@
     if (k === 'Escape') {
       if (palOpen()) { palClose(); return; }
       if (!$('#keys').hidden) { $('#keys').hidden = true; return; }
-      if (!$('#note-modal').hidden) { clearTimeout(noteTimer); saveCurrentNote(); closeNote(); return; }
+      if (!$('#cf-modal').hidden) { clearTimeout(cfTimer); saveCurrentCaseFile(); closeCaseFile(); return; }
       if (armed) { disarm(); toast('CANCELADO', 'info'); return; }
       if (isTyping(document.activeElement)) { document.activeElement.blur(); return; }
       if (cuedId) { cue(null); return; }

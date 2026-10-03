@@ -230,29 +230,64 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 .seg > button .n { color: var(--grey); margin-left: 4px; font-weight: 400; }
 .seg > button.on .n { color: rgba(0, 0, 0, .55); }
 
-/* ---------------- notas / historias ---------------- */
+/* ---------------- case files (§01) ---------------- */
 .pv-foot { display: flex; align-items: center; gap: 10px; margin-top: 9px; flex-wrap: wrap; }
 .pv-foot .hint { margin-left: auto; }
 
-.notes-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
-.notes-list .empty { color: var(--grey); font-size: 12px; padding: 10px 2px; }
-.note-item {
+.cf-tabs { display: flex; flex-wrap: wrap; gap: 0; margin-bottom: 8px; }
+.cf-tab {
+  flex: 1 1 0; min-width: 0; padding: 6px 7px; margin-left: -1px; font-size: 9.5px; letter-spacing: .09em;
+}
+.cf-tab:first-child { margin-left: 0; }
+.cf-tab.on { background: var(--y); color: #000; border-color: var(--y); position: relative; z-index: 1; font-weight: 600; }
+
+.cf-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
+.cf-list .empty { color: var(--grey); font-size: 12px; padding: 10px 2px; }
+.cf-item {
   display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
   background: var(--bg2); border: 1px solid var(--line2); border-left: 2px solid var(--line3);
   color: var(--white); padding: 8px 10px; cursor: pointer; font: 400 12.5px var(--mono);
 }
-.note-item:hover { border-color: var(--line3); border-left-color: var(--y); background: #1c1c1c; }
-.note-item .note-t { font-weight: 600; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38%; }
-.note-item .note-p { color: var(--grey); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.note-item .note-del {
+.cf-item:hover { border-color: var(--line3); border-left-color: var(--y); background: #1c1c1c; }
+.cf-dot { flex: none; width: 7px; height: 7px; border-radius: 99px; background: transparent; border: 1px solid var(--line3); }
+.cf-dot--live { background: var(--y); border-color: var(--y); box-shadow: 0 0 6px rgba(255, 212, 0, .6); }
+.cf-dot--new { background: var(--y-dim); border-color: var(--y); }
+.cf-dot--off { background: transparent; border-color: var(--line3); }
+.cf-num { flex: none; color: var(--grey); font-size: 11px; }
+.cf-item .cf-t { font-weight: 600; color: var(--white); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cf-item .cf-del {
   flex: none; background: transparent; border: 1px solid var(--line2); color: var(--grey);
   font-size: 10px; padding: 3px 6px; min-height: auto;
 }
-.note-item .note-del:hover { color: #ff8a96; border-color: var(--r2); background: #1d0307; }
+.cf-item .cf-del:hover { color: #ff8a96; border-color: var(--r2); background: #1d0307; }
 
-#note-modal .modal-box { max-width: 680px; display: flex; flex-direction: column; }
-#note-title { flex: 1; font: 600 14px var(--mono) !important; letter-spacing: .04em; }
-#note-body { width: 100%; min-height: 50vh; resize: vertical; background: #0c0c0c; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--cream); font: 400 14px/1.6 var(--mono); padding: 14px; }
+#cf-modal .modal-box { max-width: 680px; display: flex; flex-direction: column; }
+#cf-modal .modal-h { flex-wrap: wrap; }
+#cf-type { flex: none; width: auto; font-size: 10px; letter-spacing: .08em; }
+#cf-title { flex: 1; min-width: 160px; font: 600 14px var(--mono) !important; letter-spacing: .04em; }
+#cf-body { width: 100%; min-height: 38vh; resize: vertical; background: #0c0c0c; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--cream); font: 400 14px/1.6 var(--mono); padding: 14px; }
+
+.cf-evidence { padding: 10px 14px 12px; border-bottom: 1px solid var(--line); }
+.cf-evidence-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.cf-evidence-head .field-label { color: var(--grey); font-size: 10px; letter-spacing: .14em; }
+#cf-evidence-add { flex: 1; min-width: 0; font-size: 11px; }
+.cf-evidence-list { display: flex; flex-direction: column; gap: 6px; }
+.cf-evidence-empty { color: var(--grey); font-size: 11.5px; }
+.cf-evidence-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--bg2); border: 1px solid var(--line2); border-left: 2px solid var(--y); padding: 6px 9px; font-size: 11.5px;
+}
+.cf-ev-name { color: var(--white); font-weight: 600; }
+.cf-ev-st { font-size: 10.5px; letter-spacing: .06em; }
+.cf-ev-st--live { color: var(--y); }
+.cf-ev-st--used { color: var(--cream); }
+.cf-ev-st--off { color: var(--grey); }
+.cf-ev-st--gone { color: var(--r2); }
+.cf-ev-note { color: var(--grey); font-size: 10px; letter-spacing: .03em; }
+.cf-ev-unlink { margin-left: auto; font-size: 10px; padding: 2px 6px; min-height: auto; }
+
+.cf-modal-f { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.cf-nav { margin-left: auto; display: flex; gap: 8px; }
 
 /* ---------------- escenas ---------------- */
 .scenes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
