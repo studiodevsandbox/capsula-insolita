@@ -90,14 +90,34 @@
     box.addEventListener('dragover', e => {
       if (!editing || !dragId || dragId === boxId(box)) return;
       e.preventDefault();
+      e.stopPropagation(); // que no dispare también el drop-zone de la columna (soltaría dos veces)
       box.classList.add('lci-drop-target');
     });
     box.addEventListener('dragleave', () => box.classList.remove('lci-drop-target'));
     box.addEventListener('drop', e => {
       if (!editing || !dragId) return;
       e.preventDefault();
+      e.stopPropagation();
       box.classList.remove('lci-drop-target');
       placeDrop(box, e);
+    });
+  }
+
+  // Soltar en el espacio vacío de abajo de una columna (no sobre ninguna caja puntual):
+  // la manda al final de esa columna.
+  function wireColumn(col) {
+    col.addEventListener('dragover', e => {
+      if (!editing || !dragId) return;
+      e.preventDefault();
+      col.classList.add('lci-drop-col');
+    });
+    col.addEventListener('dragleave', e => { if (e.target === col) col.classList.remove('lci-drop-col'); });
+    col.addEventListener('drop', e => {
+      if (!editing || !dragId) return;
+      e.preventDefault();
+      col.classList.remove('lci-drop-col');
+      const dragEl = document.getElementById(dragId);
+      if (dragEl) { col.appendChild(dragEl); saveOrder(); }
     });
   }
 
@@ -127,6 +147,8 @@
     const drawersHandle = ensureDrawersHandle();
     const drawers = document.querySelector('.drawers');
     if (drawersHandle && drawers) { wireHandle(drawersHandle, drawers); wireBox(drawers); }
+
+    document.querySelectorAll('.col').forEach(wireColumn);
 
     applySavedOrder();
 
