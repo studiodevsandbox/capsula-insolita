@@ -286,11 +286,11 @@
         { k: 'note', x: 924, y: 140, w: 140, h: 108, r: 5, text: '¿hora exacta?', dim: 0.38 },
         { k: 'doc', x: -46, y: 870, w: 206, h: 262, r: 4, pin: [100, 10], dim: 0.55, title: 'ANEXO 4' },
         { k: 'map', x: 912, y: 930, w: 200, h: 188, r: -4, pin: [90, 10], dim: 0.5 },
-        // Franja entre la evidencia (termina y~1620) y la cinta (y 1850): quedaba vacía.
-        { k: 'note', x: 60, y: 1660, w: 190, h: 128, r: -5, pin: [95, 10], text: 'archivo cerrado', dim: 0.38 },
-        { k: 'news', x: 700, y: 1630, w: 260, h: 220, r: 4, pin: [130, 10], dim: 0.55 }
+        // Más pegado a la evidencia (la tarjeta visible termina antes de los 1620 de la caja).
+        { k: 'note', x: 60, y: 1470, w: 190, h: 128, r: -5, pin: [95, 10], text: 'archivo cerrado', dim: 0.38 },
+        { k: 'news', x: 700, y: 1440, w: 260, h: 220, r: 4, pin: [130, 10], dim: 0.55 }
       ],
-      strings: [[90, 270, 960, 190], [60, 930, 1000, 990], [250, 1724, 700, 1690]],
+      strings: [[90, 270, 960, 190], [60, 930, 1000, 990], [250, 1534, 700, 1500]],
       marks: [
         { k: 'num', x: 24, y: 132, t: '1' },
         { k: 'num', x: 930, y: 142, t: '2' },
