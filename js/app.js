@@ -10,6 +10,10 @@
     '4': 'SCENE_04_DUAL_CAMERA_EVIDENCE', 'dual-camera-evidence': 'SCENE_04_DUAL_CAMERA_EVIDENCE'
   };
   const resolveScene = n => (C.scenes[n] ? n : ALIASES[String(n || '').toLowerCase()] || null);
+  // Una instancia con ?scene= fijo en la URL (fuentes dedicadas del canvas vertical, una por escena)
+  // no debe cambiar de layout cuando el panel de control manda un comando "scene": ese evento
+  // de obs-browser es global y llega a TODAS las fuentes de Navegador abiertas en OBS a la vez.
+  const LOCKED_SCENE = resolveScene(P.get('scene'));
 
   /* ===================== SceneController ===================== */
   const SC = (LCI.SceneController = {
@@ -109,6 +113,7 @@
     delete data.data;
     switch (cmd.cmd) {
       case 'scene':
+        if (LOCKED_SCENE) break; // esta instancia tiene su propia escena fija, ignora el comando global
         SC.set(cmd.scene, { transition: cmd.transition === undefined ? C.transitions.sceneChange : cmd.transition });
         break;
       case 'mode':
@@ -160,7 +165,7 @@
         LCI.Focus.set(data.target, data.ms);
         break;
       case 'transition':
-        LCI.Transitions.run(cmd.name || 'tape', cmd.scene ? () => SC.apply(resolveScene(cmd.scene) || SC.current, { enter: true }) : null);
+        LCI.Transitions.run(cmd.name || 'tape', (cmd.scene && !LOCKED_SCENE) ? () => SC.apply(resolveScene(cmd.scene) || SC.current, { enter: true }) : null);
         break;
       case 'intro':
         LCI.Show.intro();
@@ -215,6 +220,7 @@
     window.addEventListener('lci', e => LCI.command(e.detail));
     // La fuente es compartida por las 4 escenas: al cambiar de escena en OBS, la página cambia de layout sin recargar.
     window.addEventListener('obsSceneChanged', e => {
+      if (LOCKED_SCENE) return; // instancia con ?scene= fijo: ignora cambios de escena de OBS
       if (!C.obs || !C.obs.followScenes) return;
       const s = mapObsScene(e.detail && e.detail.name);
       if (!s || s === SC.current || s === SC.pending) return;
