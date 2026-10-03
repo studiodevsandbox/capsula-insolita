@@ -133,11 +133,36 @@ Preparadas en la arquitectura (no implementadas): FULL_EVIDENCE, ONLY_EVIDENCE, 
 
 Después de cambiar `control.html`, `css/control.css` o `js/control.js`: en OBS, clic derecho en el acople → **Recargar** (o ciérralo y ábrelo).
 
+### Mover cajas y presets de orden (topbar)
+
+El panel entero se puede reordenar a gusto:
+
+- **⠿ MOVER CAJAS**: activa el modo edición (arranca bloqueado para no mover nada sin querer en vivo). Con el modo activo, arrastrá una caja tomándola por su título y soltala sobre otra — se intercambian de lugar, las demás se acomodan solas (nunca se superponen). También se puede soltar en el espacio vacío de abajo de una columna. Clic de nuevo en el botón para bloquear.
+- **Desplegable de presets**: guardá el orden actual con un nombre (**💾 GUARDAR PRESET**, te pide el nombre) y volvé a cargarlo cuando quieras eligiéndolo de la lista. **✕** borra el preset elegido. La opción **BASE · ORDEN ORIGINAL** vuelve al orden de fábrica (recarga la página).
+- **RESTABLECER ORDEN**: igual que elegir BASE, por si el desplegable da problemas.
+- Todo se guarda en este navegador (localStorage), no viaja a OBS ni a otra PC — cada PC/perfil de navegador tiene su propio acomodo.
+- Código: `js/layout-drag.js` (independiente de `js/control.js`).
+
+### CASE FILES (§01)
+
+Reemplaza a las notas sueltas de antes: es una base de **expedientes**, cada uno con:
+
+- **Tipo principal**: Historia · Evidencia · Pista · Testimonio.
+- **Título y cuerpo** (la historia completa, para leer en vivo).
+- **Evidencia relacionada** (opcional): uno o más ítems del banco de evidencias (§06). Al presionar **👁 MOSTRAR** en un expediente, el primero de sus relacionados se **prepara solo** en §05 (pasa a "SIGUIENTE", listo para mandar al aire con `E`) — el resto queda solo como referencia, no se preparan todos.
+- **Archivar / reactivar**: un expediente archivado desaparece de la lista; el botón **🗄 VER ARCHIVADOS** (abajo de la lista) los vuelve a mostrar (atenuados, en itálica) para poder reactivarlos.
+
+Encabezado con contadores en vivo (expedientes totales · activos · "en emisión" = si hay un expediente abierto ahora mismo) y pestañas para filtrar por tipo (se generan solas según los tipos que existan, no hay que tocar código para agregar uno nuevo). Dentro del detalle, **← ANTERIOR / SIGUIENTE →** navegan dentro de la pestaña filtrada actual (del más viejo al más nuevo).
+
+> **Importante:** "MOSTRAR" un expediente es solo para vos — **no manda nada al overlay de OBS** (a diferencia de evidencia o lower third, que sí viajan al overlay). Es una chuleta de lectura con preparación automática de evidencia, nada más.
+
+Se guarda en este navegador bajo `lci-casefiles-v1`. Si existían notas del sistema viejo (`lci-notes-v2` / `lci-notes-v1`), se migran solas como expedientes tipo "historia" la primera vez que cargás el panel nuevo — no se pierde nada. Código en `js/control.js`, buscá `CF_KEY` / `cf.items`.
+
 ### Organización ("control room")
 
 - **Barra superior**: estado real de OBS (`OBS CONNECTED` / `CONNECTING` / `OBS OFFLINE` / `CONNECTION LOST` / `AUTH FAILED`), si la fuente `LCI · Broadcast` está en el programa (`OVERLAY`), modo, buscador (Ctrl+K) y `?` (atajos). Si se pierde OBS aparece una franja roja con **RECONNECT**; además reintenta solo (2 s, 4 s, 8 s… hasta 15 s) sin abrir conexiones duplicadas. Con contraseña incorrecta no reintenta.
 - **Now playing**: escena al aire (lo que dice OBS, en tiempo real), CAM 01, CAM 02, evidencia, lower third y modo. Todo salvo la escena es **lo último que el panel envió con éxito** (el overlay no responde estado); lo desconocido se muestra como "—".
-- **§01 Live preview** (captura de la escena activa ~1 vez por segundo; "Pausar" ahorra CPU) · **§02 Scene switcher** (la escena al aire marcada ON AIR; transición elegida abajo) · **§03 Cámaras**.
+- **§01 CASE FILES** (ver sección propia más abajo) · **§02 Scene switcher** (la escena al aire marcada ON AIR; transición elegida abajo) · **§03 Cámaras**.
 - **§04 Quick actions**: evidencia siguiente, investigation, clean, lower third, alerta (repite la última usada), transición (la elegida en §02), intro, outro (dos toques).
 - **§05 Evidence control** + **§06 Archivo de evidencias** (ver sección 4).
 - **§07 Modo** (investigation = amarillo, clean = blanco) · **§08 Lower third** (vista previa del texto en vivo) · **§09 Alertas** (▲ rojas = críticas: ATENCIÓN, CASO ABIERTO, ÚLTIMA HORA) y sellos.
