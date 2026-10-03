@@ -1021,7 +1021,8 @@
   const ACT = {};
   const act = (id, group, label, run, key) => { const a = { id, group, label, run, key }; ACTIONS.push(a); ACT[id] = a; };
   const runAction = id => { const a = ACT[id]; if (a) a.run(); };
-  Object.keys(C.scenes).forEach((k, i) => act('scene-' + (i + 1), 'ESCENA', sceneLabel(k), () => goScene(k), i < 9 ? String(i + 1) : null));
+  // solo las escenas con botón en el panel (las verticales V01-V04 las maneja Aitum Vertical)
+  Object.keys(C.scenes).filter(k => document.querySelector(`[data-scene="${k}"]`)).forEach((k, i) => act('scene-' + (i + 1), 'ESCENA', sceneLabel(k), () => goScene(k), i < 9 ? String(i + 1) : null));
   act('ev-next', 'EVIDENCIA', 'Mostrar siguiente evidencia', evNext, 'E');
   act('ev-hide', 'EVIDENCIA', 'Ocultar evidencia', () => $('#ev-clear').click());
   act('ev-manual', 'EVIDENCIA', 'Mostrar desde archivo / ruta', showManual);
