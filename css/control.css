@@ -177,6 +177,31 @@ kbd {
 }
 .col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 
+/* ---------------- modo "mover cajas" (posición libre) ---------------- */
+body.lci-free .deck { display: block; position: relative; }
+body.lci-free .col { display: none; }
+body.lci-free .card, body.lci-free .drawers { position: absolute; margin: 0; }
+body.lci-free .drawers { background: var(--bg1); border: 1px solid var(--line); padding: 12px; overflow: auto; }
+.lci-drag-handle { cursor: grab; user-select: none; touch-action: none; }
+.lci-drag-handle:active { cursor: grabbing; }
+.lci-drawers-handle {
+  margin: -12px -12px 10px; padding: 8px 12px;
+  background: var(--bg0); border-bottom: 1px solid var(--line);
+  color: var(--grey); font: 600 10px var(--mono); letter-spacing: .14em;
+}
+body.lci-edit .lci-drag-handle { outline: 1px dashed rgba(255, 212, 0, .35); outline-offset: 3px; }
+.lci-resize-handle {
+  position: absolute; right: 0; bottom: 0; width: 16px; height: 16px;
+  cursor: nwse-resize; touch-action: none; opacity: .45; display: none;
+}
+.lci-resize-handle::before {
+  content: ''; position: absolute; right: 3px; bottom: 3px; width: 8px; height: 8px;
+  border-right: 2px solid var(--y); border-bottom: 2px solid var(--y);
+}
+body.lci-edit .lci-resize-handle { display: block; }
+.lci-box--dragging { z-index: 999 !important; opacity: .92; box-shadow: 0 12px 34px rgba(0, 0, 0, .55); }
+#layout-toggle.layout-toggle--on { color: var(--y); border-color: rgba(255, 212, 0, .5); background: var(--y-dim); }
+
 /* ---------------- tarjeta "expediente" ---------------- */
 .card {
   position: relative; min-width: 0;
