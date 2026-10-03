@@ -58,6 +58,10 @@
 
   function saveOrder() {
     try { localStorage.setItem(KEY, JSON.stringify(snapshotOrder())); } catch (e) { /* sin almacenamiento */ }
+    // Vuelve el desplegable a "— preset —": si no, al elegir el mismo preset dos veces seguidas
+    // el <select> no dispara "change" la segunda vez (su valor ya era ese), y parece que no hace nada.
+    const sel = document.getElementById('layout-preset-select');
+    if (sel) sel.value = '';
   }
 
   function loadOrder() {
@@ -84,7 +88,8 @@
     if (!sel) return;
     const presets = loadPresets();
     const names = Object.keys(presets).sort((a, b) => a.localeCompare(b));
-    sel.innerHTML = '<option value="">— preset —</option>' + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    sel.innerHTML = '<option value="">— preset —</option><option value="__base__">BASE · ORDEN ORIGINAL</option>'
+      + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
     if (selectName && names.includes(selectName)) sel.value = selectName;
   }
 
@@ -97,6 +102,7 @@
     if (sel) sel.addEventListener('change', () => {
       const name = sel.value;
       if (!name) return;
+      if (name === '__base__') { resetOrder(); return; } // recarga la página con el orden tal cual viene en el HTML
       const presets = loadPresets();
       if (!presets[name]) return;
       applyOrder(presets[name]);
