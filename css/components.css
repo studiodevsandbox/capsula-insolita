@@ -61,6 +61,21 @@ body.fx-chromaticAberration .brand__title h1 {
 }
 .hud--tl { left: 96px; }
 .hud--tr { right: 96px; }
+
+/* En vertical (1080 de ancho) el bloque de marca (900px) no deja hueco a los lados
+   para el HUD junto al título: se achica la marca y el HUD baja debajo, en vez de
+   quedar a los costados, para que no se solapen (bug reportado por el usuario). */
+body.is-vertical #brand { width: 760px; margin-left: -380px; }
+body.is-vertical .brand__lamp { transform: scale(.78); margin-bottom: 0; }
+body.is-vertical .brand__title h1 { font-size: 44px; }
+body.is-vertical .brand__title { padding-right: 40px; gap: 12px; }
+body.is-vertical .brand__sub { margin-top: 6px; font-size: 9px; letter-spacing: .32em; }
+body.is-vertical .brand__sub::before, body.is-vertical .brand__sub::after { width: 36px; }
+/* La ficha "CASE / FILE OPEN" y el reloj REC no entran al lado del título en 1080 de ancho,
+   y la cámara ocupa casi todo el ancho, así que su propia etiqueta (CAM 01 / LIVE FEED) choca
+   con cualquier posición del HUD. Esa info ya está en la tarjeta de evidencia y en la cámara,
+   así que en vertical el HUD global se oculta en vez de reubicarse. */
+body.is-vertical #hud { display: none; }
 .hud b { color: var(--c-paper-hi); font-weight: 500; }
 .hud .k { color: var(--c-yellow); }
 .hud .sep { color: rgba(233, 225, 208, .28); }

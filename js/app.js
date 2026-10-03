@@ -267,6 +267,7 @@
     const W = window.LCI_STAGE.w, H = window.LCI_STAGE.h, root = document.documentElement.style;
     root.setProperty('--stage-w', W + 'px');
     root.setProperty('--stage-h', H + 'px');
+    document.body.classList.toggle('is-vertical', H > W);
     const wall = document.getElementById('wall');
     if (wall) { wall.width = W; wall.height = H; }
     const svg = document.getElementById('decor-svg');
