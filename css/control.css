@@ -239,9 +239,28 @@ body.lci-edit .lci-resize-handle { display: block; }
 .seg > button.on .n { color: rgba(0, 0, 0, .55); }
 
 /* ---------------- notas / historias ---------------- */
-#notes { width: 100%; min-height: 180px; resize: vertical; background: #0c0c0c; border: 1px solid var(--line2); color: var(--cream); font: 400 13px/1.5 var(--mono); padding: 10px; }
-.pv-foot { display: flex; align-items: center; gap: 10px; margin-top: 9px; }
+.pv-foot { display: flex; align-items: center; gap: 10px; margin-top: 9px; flex-wrap: wrap; }
 .pv-foot .hint { margin-left: auto; }
+
+.notes-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
+.notes-list .empty { color: var(--grey); font-size: 12px; padding: 10px 2px; }
+.note-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  background: var(--bg2); border: 1px solid var(--line2); border-left: 2px solid var(--line3);
+  color: var(--white); padding: 8px 10px; cursor: pointer; font: 400 12.5px var(--mono);
+}
+.note-item:hover { border-color: var(--line3); border-left-color: var(--y); background: #1c1c1c; }
+.note-item .note-t { font-weight: 600; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38%; }
+.note-item .note-p { color: var(--grey); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note-item .note-del {
+  flex: none; background: transparent; border: 1px solid var(--line2); color: var(--grey);
+  font-size: 10px; padding: 3px 6px; min-height: auto;
+}
+.note-item .note-del:hover { color: #ff8a96; border-color: var(--r2); background: #1d0307; }
+
+#note-modal .modal-box { max-width: 680px; display: flex; flex-direction: column; }
+#note-title { flex: 1; font: 600 14px var(--mono) !important; letter-spacing: .04em; }
+#note-body { width: 100%; min-height: 50vh; resize: vertical; background: #0c0c0c; border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--cream); font: 400 14px/1.6 var(--mono); padding: 14px; }
 
 /* ---------------- escenas ---------------- */
 .scenes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }

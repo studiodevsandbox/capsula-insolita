@@ -55,10 +55,11 @@
 
     <section class="card" id="card-notes">
       <header class="card-h"><span class="card-id">§01</span><h2>NOTAS / HISTORIAS</h2><span class="card-meta" id="notes-meta">GUARDADO</span></header>
-      <textarea id="notes" placeholder="Escribe aquí lo que vas a contar, guiones, historias…" rows="10"></textarea>
+      <div class="notes-list" id="notes-list"></div>
       <div class="pv-foot">
-        <span class="hint">se guarda solo en este navegador, al escribir</span>
-        <button class="btn--sm btn--ghost" id="notes-clear" title="Borrar todas las notas">VACIAR</button>
+        <span class="hint">clic en una nota para leerla completa</span>
+        <button class="btn--sm btn--ghost" id="notes-clear-all" title="Borrar todas las notas">VACIAR TODAS</button>
+        <button class="btn--sm btn--primary" id="notes-add" title="Crear una nota nueva">+ NUEVA NOTA</button>
       </div>
     </section>
 
@@ -341,6 +342,19 @@
     <div class="modal-h"><span class="card-id">CMD</span><input id="pal-input" placeholder="Escribe una acción: evidencia, cam 02 rec, última hora, tape…" autocomplete="off" spellcheck="false"></div>
     <ul class="pal-list" id="pal-list"></ul>
     <div class="modal-f"><span>↑↓ elegir</span><span>ENTER ejecutar</span><span>ESC cerrar</span></div>
+  </div>
+</div>
+
+<div class="modal" id="note-modal" hidden>
+  <div class="modal-box" role="dialog" aria-label="Nota / historia">
+    <div class="modal-h">
+      <span class="card-id">NOTA</span>
+      <input id="note-title" placeholder="Título de la nota" autocomplete="off" spellcheck="false">
+      <button class="btn--sm btn--ghost" id="note-delete" title="Borrar esta nota" style="margin-left:8px">✕ BORRAR</button>
+      <button class="btn--sm" id="note-close" title="Cerrar" style="margin-left:8px">CERRAR</button>
+    </div>
+    <textarea id="note-body" placeholder="Escribe aquí la historia completa…" rows="16"></textarea>
+    <div class="modal-f"><span id="note-meta">GUARDADO</span><span>ESC cierra</span></div>
   </div>
 </div>
 

@@ -353,26 +353,124 @@
     } catch (e) { box.innerHTML = '<div class="bank-empty">No pude leer las fuentes de OBS.</div>'; }
   }
 
-  // ---------- notas: texto libre, autoguardado en este navegador (reemplaza la vieja vista previa) ----------
-  const NOTES_KEY = 'lci-notes-v1';
-  const notesBox = $('#notes');
-  try { notesBox.value = localStorage.getItem(NOTES_KEY) || ''; } catch (e) { /* sin almacenamiento */ }
-  let notesTimer = null;
-  notesBox.addEventListener('input', () => {
-    $('#notes-meta').textContent = 'ESCRIBIENDO…';
-    clearTimeout(notesTimer);
-    notesTimer = setTimeout(() => {
-      try { localStorage.setItem(NOTES_KEY, notesBox.value); } catch (e) { /* sin almacenamiento */ }
-      $('#notes-meta').textContent = 'GUARDADO';
-    }, 400);
+  // ---------- notas: lista de notas/historias, autoguardado en este navegador ----------
+  const NOTES_KEY_OLD = 'lci-notes-v1';
+  const NOTES_KEY = 'lci-notes-v2';
+  let notes = [];
+  try {
+    const raw = localStorage.getItem(NOTES_KEY);
+    if (raw) {
+      notes = JSON.parse(raw) || [];
+    } else {
+      // migración: si había una sola nota vieja con contenido, se convierte en la primera de la lista
+      const old = localStorage.getItem(NOTES_KEY_OLD);
+      if (old && old.trim()) {
+        const firstLine = old.trim().split('\n')[0].slice(0, 40);
+        notes = [{ id: 'n' + Date.now(), title: firstLine || 'Nota 1', body: old, ts: Date.now() }];
+        saveNotes();
+      }
+    }
+  } catch (e) { notes = []; }
+
+  let noteEditId = null;
+  let noteTimer = null;
+
+  function saveNotes() {
+    try { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); } catch (e) { /* sin almacenamiento */ }
+  }
+
+  function renderNotes() {
+    const box = $('#notes-list');
+    if (!notes.length) { box.innerHTML = '<div class="empty">Sin notas todavía.</div>'; return; }
+    box.innerHTML = '';
+    notes.forEach(n => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'note-item';
+      row.innerHTML = `<span class="note-t"></span><span class="note-p"></span><span class="note-del" title="Borrar esta nota">✕</span>`;
+      row.querySelector('.note-t').textContent = n.title || '(sin título)';
+      row.querySelector('.note-p').textContent = (n.body || '').replace(/\s+/g, ' ').trim();
+      row.addEventListener('click', e => {
+        if (e.target.closest('.note-del')) return;
+        openNote(n.id);
+      });
+      row.querySelector('.note-del').addEventListener('click', e => {
+        e.stopPropagation();
+        if (!confirm(`¿Borrar la nota "${n.title || '(sin título)'}"? No se puede deshacer.`)) return;
+        notes = notes.filter(x => x.id !== n.id);
+        saveNotes();
+        renderNotes();
+      });
+      box.appendChild(row);
+    });
+  }
+
+  function openNote(id) {
+    const n = notes.find(x => x.id === id);
+    if (!n) return;
+    noteEditId = id;
+    $('#note-title').value = n.title || '';
+    $('#note-body').value = n.body || '';
+    $('#note-meta').textContent = 'GUARDADO';
+    $('#note-modal').hidden = false;
+    $('#note-title').focus();
+  }
+
+  function closeNote() {
+    $('#note-modal').hidden = true;
+    noteEditId = null;
+    renderNotes();
+  }
+
+  function saveCurrentNote() {
+    if (!noteEditId) return;
+    const n = notes.find(x => x.id === noteEditId);
+    if (!n) return;
+    n.title = $('#note-title').value;
+    n.body = $('#note-body').value;
+    n.ts = Date.now();
+    saveNotes();
+    $('#note-meta').textContent = 'GUARDADO';
+  }
+
+  $('#note-title').addEventListener('input', () => {
+    $('#note-meta').textContent = 'ESCRIBIENDO…';
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(saveCurrentNote, 400);
   });
-  $('#notes-clear').addEventListener('click', () => {
-    if (notesBox.value && !confirm('¿Vaciar las notas? No se puede deshacer.')) return;
-    notesBox.value = '';
-    try { localStorage.setItem(NOTES_KEY, ''); } catch (e) { /* sin almacenamiento */ }
-    $('#notes-meta').textContent = 'GUARDADO';
-    notesBox.focus();
+  $('#note-body').addEventListener('input', () => {
+    $('#note-meta').textContent = 'ESCRIBIENDO…';
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(saveCurrentNote, 400);
   });
+  $('#note-close').addEventListener('click', () => { clearTimeout(noteTimer); saveCurrentNote(); closeNote(); });
+  $('#note-modal').addEventListener('click', e => { if (e.target.id === 'note-modal') { clearTimeout(noteTimer); saveCurrentNote(); closeNote(); } });
+  $('#note-delete').addEventListener('click', () => {
+    if (!noteEditId) return;
+    const n = notes.find(x => x.id === noteEditId);
+    if (!confirm(`¿Borrar la nota "${(n && n.title) || '(sin título)'}"? No se puede deshacer.`)) return;
+    notes = notes.filter(x => x.id !== noteEditId);
+    saveNotes();
+    closeNote();
+  });
+
+  $('#notes-add').addEventListener('click', () => {
+    const n = { id: 'n' + Date.now() + Math.random().toString(36).slice(2, 6), title: 'Nota ' + (notes.length + 1), body: '', ts: Date.now() };
+    notes.push(n);
+    saveNotes();
+    renderNotes();
+    openNote(n.id);
+  });
+
+  $('#notes-clear-all').addEventListener('click', () => {
+    if (!notes.length) return;
+    if (!confirm('¿Vaciar todas las notas? No se puede deshacer.')) return;
+    notes = [];
+    saveNotes();
+    renderNotes();
+  });
+
+  renderNotes();
 
   // ---------- memoria de encuadre: OBS no recuerda el tamaño/posición de una cámara por
   // separado para cada escena si usas la misma fuente en varias (es un único "scene item"
@@ -1066,6 +1164,7 @@
     if (k === 'Escape') {
       if (palOpen()) { palClose(); return; }
       if (!$('#keys').hidden) { $('#keys').hidden = true; return; }
+      if (!$('#note-modal').hidden) { clearTimeout(noteTimer); saveCurrentNote(); closeNote(); return; }
       if (armed) { disarm(); toast('CANCELADO', 'info'); return; }
       if (isTyping(document.activeElement)) { document.activeElement.blur(); return; }
       if (cuedId) { cue(null); return; }
