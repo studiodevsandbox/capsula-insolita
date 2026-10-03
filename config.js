@@ -191,8 +191,10 @@ window.LCI_CONFIG = {
     // Una cámara centrada arriba + evidencia debajo. Se activa desde index-vertical.html.
     SCENE_V01_VERTICAL: {
       label: "V1 · Vertical",
-      cams: [{ id: 1, x: 60, y: 180, w: 960, h: 540 }],
-      evidence: { x: 140, y: 790, w: 800, h: 800, tilt: 1.6, compact: true },
+      // Cámara y evidencia recortadas para respetar la zona segura de TikTok (margen derecho
+      // ~220px reservado para los íconos de like/comentar/compartir, borde derecho ≤860).
+      cams: [{ id: 1, x: 40, y: 180, w: 800, h: 450 }],
+      evidence: { x: 100, y: 790, w: 700, h: 700, tilt: 1.6, compact: true },
       lowerThird: { x: 60, y: 1700 },
       alert: { x: 760, y: 80 },
       tapes: [
@@ -203,7 +205,8 @@ window.LCI_CONFIG = {
     // Vertical de SCENE_01_CAMERA: una cámara grande centrada, sin evidencia.
     SCENE_V02_SINGLE_VERTICAL: {
       label: "V2 · Vertical (Una cámara)",
-      cams: [{ id: 1, x: 40, y: 560, w: 1000, h: 562 }],
+      // Recortada para respetar la zona segura de TikTok (borde derecho ≤860).
+      cams: [{ id: 1, x: 40, y: 560, w: 800, h: 450 }],
       evidence: null,
       lowerThird: { x: 40, y: 1180 },
       alert: { x: 760, y: 80 },
@@ -218,9 +221,10 @@ window.LCI_CONFIG = {
       // Gap de 110px entre cámaras: la etiqueta de cada cámara sobresale ~48px arriba y
       // ~40px abajo de su marco (.cam__tag / .cam__foot en components.css); con menos
       // espacio las etiquetas de ambas cámaras se pisaban.
+      // Recortadas para respetar la zona segura de TikTok (borde derecho ≤860).
       cams: [
-        { id: 1, x: 80, y: 180, w: 920, h: 518 },
-        { id: 2, x: 80, y: 808, w: 920, h: 518 }
+        { id: 1, x: 40, y: 180, w: 800, h: 450 },
+        { id: 2, x: 40, y: 808, w: 800, h: 450 }
       ],
       evidence: null,
       lowerThird: { x: 80, y: 1400 },
@@ -235,11 +239,13 @@ window.LCI_CONFIG = {
       label: "V4 · Vertical (Dos cám. + evidencia)",
       // Mismo ajuste de espaciado que V03 (ver nota ahí): cam2 baja a y:820 para que su
       // etiqueta no pise la de cam1, y la evidencia baja/achica para no pisar a cam2.
+      // Recortadas/movidas para respetar la zona segura de TikTok (borde derecho ≤860,
+      // margen inferior ≤1553 donde va el caption/hashtags).
       cams: [
-        { id: 1, x: 60, y: 180, w: 960, h: 540 },
-        { id: 2, x: 300, y: 820, w: 720, h: 405 }
+        { id: 1, x: 40, y: 180, w: 800, h: 450 },
+        { id: 2, x: 140, y: 820, w: 720, h: 405 }
       ],
-      evidence: { x: 140, y: 1270, w: 800, h: 400, tilt: -1.6, compact: true },
+      evidence: { x: 160, y: 1240, w: 560, h: 280, tilt: -1.6, compact: true },
       lowerThird: { x: 60, y: 1700 },
       alert: { x: 760, y: 80 },
       tapes: [
