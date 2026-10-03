@@ -285,13 +285,17 @@
         { k: 'photo', x: 18, y: 130, w: 126, h: 148, r: -6, pin: [63, 8], dim: 0.5 },
         { k: 'note', x: 924, y: 140, w: 140, h: 108, r: 5, text: '¿hora exacta?', dim: 0.38 },
         { k: 'doc', x: -46, y: 840, w: 206, h: 262, r: 4, pin: [100, 10], dim: 0.55, title: 'ANEXO 4' },
-        { k: 'map', x: 912, y: 900, w: 200, h: 188, r: -4, pin: [90, 10], dim: 0.5 }
+        { k: 'map', x: 912, y: 900, w: 200, h: 188, r: -4, pin: [90, 10], dim: 0.5 },
+        // Franja entre la evidencia (termina y~1590) y la cinta (y 1850): quedaba vacía.
+        { k: 'note', x: 60, y: 1630, w: 190, h: 128, r: -5, pin: [95, 10], text: 'archivo cerrado', dim: 0.38 },
+        { k: 'news', x: 700, y: 1600, w: 260, h: 230, r: 4, pin: [130, 10], dim: 0.55 }
       ],
-      strings: [[90, 270, 960, 190], [60, 900, 1000, 960]],
+      strings: [[90, 270, 960, 190], [60, 900, 1000, 960], [250, 1694, 700, 1660]],
       marks: [
         { k: 'num', x: 24, y: 132, t: '1' },
         { k: 'num', x: 930, y: 142, t: '2' },
-        { k: 'underline', x: 150, y: 780, w: 140 }
+        { k: 'underline', x: 150, y: 780, w: 140 },
+        { k: 'circle', x: 330, y: 1770, w: 170, h: 50, r: -2 }
       ]
     },
     // V2 (1080×1920): cámara y 560-1122, lower third ~1180-1300; decorado en la franja superior
