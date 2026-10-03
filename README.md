@@ -265,64 +265,26 @@ Puerto configurable en `config.js → obs.bridgePort` (por defecto 8787).
 
 ## 16. Escenas verticales (TikTok / Reels / Shorts)
 
-Hay **4 escenas verticales** de **1080×1920**, una equivalente a cada escena horizontal:
+4 escenas de **1080×1920** para transmitir en vertical a la vez que la horizontal (ej. TikTok mientras la principal va a otra plataforma). Viven en un **canvas aparte de OBS 32**, el "Aitum Vertical" que crea el plugin **Aitum** — no es el canvas "Main" de siempre, así que estas 4 escenas se ven en el panel **"Vertical Escenas"** de Aitum, no en la lista normal de Escenas.
 
-| Escena | Contenido |
-|---|---|
-| `SCENE_V01_VERTICAL` | cámara arriba + evidencia debajo |
-| `SCENE_V02_SINGLE_VERTICAL` | 1 cámara sola, sin evidencia |
-| `SCENE_V03_DUAL_VERTICAL` | 2 cámaras apiladas, sin evidencia |
-| `SCENE_V04_DUAL_EVIDENCE_VERTICAL` | 2 cámaras apiladas + evidencia |
+| Escena | Contenido | URL de la fuente de Navegador |
+|---|---|---|
+| V1 | cámara + evidencia | `...capsula/index-vertical.html?scene=SCENE_V01_VERTICAL` |
+| V2 | 1 cámara sola | `...capsula/index-vertical.html?scene=SCENE_V02_SINGLE_VERTICAL` |
+| V3 | 2 cámaras apiladas | `...capsula/index-vertical.html?scene=SCENE_V03_DUAL_VERTICAL` |
+| V4 | 2 cámaras + evidencia | `...capsula/index-vertical.html?scene=SCENE_V04_DUAL_EVIDENCE_VERTICAL` |
 
-**Para qué:** transmitir a 2 plataformas a la vez. La escena horizontal de OBS va a una
-plataforma y la vertical a otra (por ejemplo TikTok).
+(URL completa: `file:///R:/Leonardo%20obs%20IA/capsula/index-vertical.html?scene=...`)
 
-### Cómo está armado (plugin Aitum, canvas vertical nativo de OBS 32)
+**Regla de oro: una fuente de Navegador por escena, nunca compartida.** Si la misma fuente se usa en las 4, un cambio de escena en OBS termina cambiándoles el layout a las 4 a la vez — ya nos pasó. Por eso cada `?scene=` es fijo y cada escena tiene su propia fuente dedicada.
 
-Usamos el plugin **Aitum**, que crea un **canvas secundario** llamado "Aitum Vertical"
-(1080×1920) dentro de OBS 32 — es un canvas de video aparte, no el mismo canvas
-horizontal de siempre ("Main"). Ese canvas tiene sus propias 4 escenas, visibles en el
-panel **"Vertical Escenas"** de Aitum (no en la lista normal de Escenas de OBS).
+Debajo de esa fuente (en capas: cámara atrás, overlay adelante) van las cámaras reales (`Webcam`/`Webcam 2`, agregadas como fuente existente), posicionadas para calzar con el hueco que deja el overlay:
 
-> **Importante — no reusar la misma fuente en las 4 escenas.** La primera versión de esto
-> usaba una sola fuente de Navegador compartida entre las 4 escenas, cambiando el layout
-> por comando desde el panel de control. Eso rompía: el comando de cambio de escena (del
-> panel, o simplemente el que manda OBS solo al cambiar de escena) es **global** — llega a
-> **todas** las fuentes de Navegador abiertas en OBS a la vez, no solo a la fuente activa.
-> Resultado: las 4 escenas mostraban siempre el mismo layout. Por eso cada escena vertical
-> tiene que tener **su propia fuente de Navegador independiente**, con el layout fijado en
-> la URL (ver tabla de abajo) — así, aunque el comando global le llegue, la ignora (ver
-> `js/app.js`, variable `LOCKED_SCENE`).
+| Escena | Cámara 1 (x, y, ancho×alto) | Cámara 2 |
+|---|---|---|
+| V1 | 60, 180, 960×540 | — |
+| V2 | 40, 560, 1000×562 | — |
+| V3 | 80, 180, 920×518 | 80, 808, 920×518 |
+| V4 | 60, 180, 960×540 | 300, 820, 720×405 |
 
-Cada una de las 4 escenas del canvas "Aitum Vertical" tiene:
-- Su propia fuente de Navegador (1080×1920), apuntando a `index-vertical.html` con el
-  parámetro `?scene=` fijo para esa escena — **no la reutilices en otra escena**:
-
-  | Escena de Aitum | URL de la fuente de Navegador |
-  |---|---|
-  | V1 (cámara + evidencia) | `file:///R:/Leonardo%20obs%20IA/capsula/index-vertical.html?scene=SCENE_V01_VERTICAL` |
-  | V2 (una cámara) | `file:///R:/Leonardo%20obs%20IA/capsula/index-vertical.html?scene=SCENE_V02_SINGLE_VERTICAL` |
-  | V3 (dos cámaras) | `file:///R:/Leonardo%20obs%20IA/capsula/index-vertical.html?scene=SCENE_V03_DUAL_VERTICAL` |
-  | V4 (dos cám. + evidencia) | `file:///R:/Leonardo%20obs%20IA/capsula/index-vertical.html?scene=SCENE_V04_DUAL_EVIDENCE_VERTICAL` |
-
-- Debajo de esa fuente (en orden de capas, más abajo = más atrás), la(s) cámara(s) real(es)
-  (`Webcam`/`Webcam 2`, las mismas fuentes dshow que usa la escena horizontal, agregadas
-  como "fuente existente") posicionadas con tamaño/posición manual para calzar con el
-  hueco transparente que deja el overlay en esa escena — coordenadas en `config.js`,
-  sección `scenes.SCENE_VXX_VERTICAL.cams`:
-
-  | Escena | Cámara 1 (x, y, ancho, alto) | Cámara 2 |
-  |---|---|---|
-  | V1 | 60, 180, 960×540 | — |
-  | V2 | 40, 560, 1000×562 | — |
-  | V3 | 80, 180, 920×518 | 80, 808, 920×518 |
-  | V4 | 60, 180, 960×540 | 300, 820, 720×405 |
-
-  El orden de capas importa: la cámara va **debajo** de la fuente de Navegador (si no, el
-  marco/decoración del overlay no tapa los bordes de la cámara).
-
-> **Ya configurado en este equipo** (verificado 2026-10-03): las 4 escenas y sus fuentes
-> ya existen en el canvas "Aitum Vertical" y están probadas — no hace falta recrearlas acá.
-> Si se reinstala OBS/Aitum o se pierde la configuración, seguir esta misma estructura
-> (canvas propio → 4 escenas → fuente de Navegador dedicada por escena con su `?scene=`
-> → cámara(s) debajo con las coordenadas de arriba).
+> **Ya configurado en este equipo.** Si hay que rearmarlo desde cero: canvas propio → 4 escenas → fuente de Navegador dedicada con su `?scene=` → cámara(s) debajo con esas coordenadas.
