@@ -537,25 +537,26 @@
       list.appendChild(row);
     });
   }
-  // el editor sí es modal: editar es distinto de leer
+  // el editor sí es modal: editar es distinto de leer. Relacionar evidencia = clic en su miniatura del archivo.
   function renderCfEvidenceSection(item) {
-    const addSel = $('#cf-evidence-add'), list = $('#cf-evidence-list');
-    if (!addSel || !list) return;
+    const list = $('#cf-evidence-list'), pick = $('#cf-evidence-pick');
+    if (!list || !pick) return;
     const related = item.relatedEvidenceIds || [];
-    addSel.innerHTML = '<option value="">+ relacionar con el banco…</option>';
-    bank.filter(b => !related.includes(b.id)).forEach(b => addSel.appendChild(new Option(b.name || 'imagen', b.id)));
-    list.innerHTML = '';
-    if (!related.length) { list.innerHTML = '<div class="cf-evidence-empty">Sin evidencia relacionada.</div>'; return; }
     const changed = () => { saveCaseFiles(); if (evQueueCase === item.id) cfPrepare(item, true); renderCfEvidenceSection(item); renderCfReader(); };
+    $('#cf-ev-count').textContent = related.length;
+    // relacionadas, en orden de salida (1.ª = SIGUIENTE)
+    list.innerHTML = '';
+    if (!related.length) list.innerHTML = '<div class="cfe-empty">Sin evidencia relacionada. Elige abajo, en el archivo.</div>';
     related.forEach((id, idx) => {
       const bankItem = bank.find(b => b.id === id);
       const st = cfEvidenceStateLabel(bankItem);
       const row = document.createElement('div');
-      row.className = 'cf-evidence-row';
-      row.innerHTML = `<span class="cf-ev-name">${esc((bankItem && bankItem.name) || 'EVIDENCIA')}</span><span class="cf-ev-st cf-ev-st--${st.cls}">${st.text}</span>` +
-        `<span class="cf-ev-note">${idx === 0 ? '1.ª · SIGUIENTE' : 'cola'}</span>` +
+      row.className = 'cfe-rel' + (idx === 0 ? ' cfe-rel--next' : '');
+      row.innerHTML = `<span class="cfe-ord">${idx + 1}</span>${bankItem ? `<img src="${esc(bankItem.dataURL)}" alt="">` : '<span class="cfe-gone">?</span>'}` +
+        `<span class="cfe-rn"></span><span class="cfe-rt">${idx === 0 ? 'SIGUIENTE' : 'COLA'}</span><span class="cf-ev-st cf-ev-st--${st.cls}">${st.text}</span>` +
         `<button type="button" class="btn--sm btn--ghost cf-ev-up" title="Subir en el orden" ${idx === 0 ? 'disabled' : ''}>↑</button>` +
         `<button type="button" class="btn--sm btn--ghost cf-ev-unlink" title="Quitar relación">✕</button>`;
+      row.querySelector('.cfe-rn').textContent = (bankItem && bankItem.name) || 'Ya no está en el archivo';
       row.querySelector('.cf-ev-up').addEventListener('click', () => {
         const r = related.slice(); [r[idx - 1], r[idx]] = [r[idx], r[idx - 1]];
         item.relatedEvidenceIds = r; changed();
@@ -563,17 +564,26 @@
       row.querySelector('.cf-ev-unlink').addEventListener('click', () => { item.relatedEvidenceIds = related.filter(x => x !== id); changed(); });
       list.appendChild(row);
     });
+    // archivo completo: clic = relacionar / quitar (el número indica su orden)
+    pick.innerHTML = '';
+    if (!bank.length) pick.innerHTML = '<div class="cfe-empty">El archivo de evidencias está vacío. Sube imágenes en §06.</div>';
+    bank.forEach(b => {
+      const pos = related.indexOf(b.id);
+      const t = document.createElement('button');
+      t.type = 'button';
+      t.className = 'cfe-th' + (pos >= 0 ? ' on' : '');
+      t.title = (b.name || 'imagen') + (pos >= 0 ? ` · relacionada (#${pos + 1}) — clic para quitar` : ' — clic para relacionar');
+      t.innerHTML = `<img src="${esc(b.dataURL)}" alt="">${pos >= 0 ? `<span class="cfe-badge">${pos + 1}</span>` : ''}`;
+      t.addEventListener('click', () => {
+        item.relatedEvidenceIds = pos >= 0 ? related.filter(x => x !== b.id) : related.concat(b.id);
+        changed();
+      });
+      pick.appendChild(t);
+    });
   }
-  $('#cf-evidence-add').addEventListener('change', () => {
-    const item = cfItem();
-    const id = $('#cf-evidence-add').value;
-    if (!item || !id) return;
-    item.relatedEvidenceIds = (item.relatedEvidenceIds || []).concat(id);
-    saveCaseFiles();
-    if (evQueueCase === item.id) cfPrepare(item, true);
-    renderCfEvidenceSection(item);
-    renderCfReader();
-  });
+  const cfWords = t => { const n = (t.match(/\S+/g) || []).length; return n + (n === 1 ? ' palabra' : ' palabras'); };
+  const cfSyncType = () => $$('#cf-type-seg [data-cftype]').forEach(b => b.classList.toggle('on', b.dataset.cftype === $('#cf-type').value));
+  $$('#cf-type-seg [data-cftype]').forEach(b => b.addEventListener('click', () => { $('#cf-type').value = b.dataset.cftype; cfSyncType(); saveCurrentCaseFile(); renderCaseFiles(); }));
 
   // seleccionar = leer aquí + PREPARAR (nunca emitir) sus evidencias en §05
   function openCaseFile(id) {
@@ -589,8 +599,10 @@
     if (!item) return;
     $('#cf-num').textContent = '#' + pad3(item.num);
     $('#cf-type').value = item.type;
+    cfSyncType();
     $('#cf-title').value = item.title || '';
     $('#cf-body').value = item.body || '';
+    $('#cf-count').textContent = cfWords(item.body || '');
     $('#cf-meta').textContent = 'GUARDADO';
     $('#cf-archive').textContent = item.status === 'archivado' ? '↺ REACTIVAR' : '🗄 ARCHIVAR';
     renderCfEvidenceSection(item);
@@ -634,6 +646,7 @@
     item.body = $('#cf-body').value;
     saveCaseFiles();
     $('#cf-meta').textContent = 'GUARDADO';
+    $('#cf-meta').classList.remove('is-busy');
   }
   function cfNavigate(dir) {
     // La lista está ordenada del más nuevo al más viejo (cfFilteredList ordena por num descendente),
@@ -649,9 +662,12 @@
   // autoguardado del editor (el lector se refresca al guardar)
   const cfTyping = () => {
     $('#cf-meta').textContent = 'ESCRIBIENDO…';
+    $('#cf-meta').classList.add('is-busy');
+    $('#cf-count').textContent = cfWords($('#cf-body').value);
     clearTimeout(cfTimer);
     cfTimer = setTimeout(() => { saveCurrentCaseFile(); renderCaseFiles(); }, 400);
   };
+  $('#cf-modal').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); cfCloseEditor(); } });
   $('#cf-title').addEventListener('input', cfTyping);
   $('#cf-body').addEventListener('input', cfTyping);
   $('#cf-type').addEventListener('change', () => { saveCurrentCaseFile(); renderCaseFiles(); });
