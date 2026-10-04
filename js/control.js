@@ -1811,6 +1811,7 @@
         `<button type="button" class="btn--sm btn--ghost km-reset" title="Volver al de fábrica${r.def ? ' (' + esc(comboLabel(r.def)) + ')' : ' (ninguno)'}" ${r.kind === 'cb' || r.key === r.def ? 'disabled' : ''}>↺</button>`;
       row.querySelector('.km-l').textContent = r.label;
       const btn = row.querySelector('.km-key');
+      btn.dataset.keyact = r.id;
       btn.textContent = r.key ? comboLabel(r.key) : 'sin atajo';
       btn.classList.toggle('km-key--empty', !r.key);
       btn.addEventListener('click', () => kmListen(r, btn));
@@ -1821,15 +1822,21 @@
     });
   }
   function kmListen(row, btn) {
-    kmStopListen();
+    if (kmListening) { kmListening = null; refreshKeyUIs(); btn = document.querySelector(`[data-keyact="${row.id}"]`) || btn; } // al cambiar de botón se repinta todo: se busca el nuevo
     kmListening = { row, btn };
     btn.classList.add('km-key--listen');
     btn.textContent = 'PULSA UNA TECLA…';
   }
+  // cada lugar donde se ve o se pide una tecla se repinta junto (editor de atajos, efectos y soundboard)
+  function refreshKeyUIs() {
+    kmRender();
+    if (typeof renderSfx === 'function') renderSfx();
+    if (typeof renderSnBoard === 'function') renderSnBoard();
+  }
   function kmStopListen() {
     if (!kmListening) return;
     kmListening = null;
-    kmRender();
+    refreshKeyUIs();
   }
   // asigna (o quita, con '') una combinación; si ya era de otra acción, pregunta antes de quitársela
   function kmAssign(row, combo) {
@@ -1845,7 +1852,7 @@
     if (row.kind === 'cb') { const b = cbList.find(x => x.id === row.id); if (b) b.key = combo; saveCb(); renderCustom(); }
     else if (combo === row.def) delete kmOver[row.id]; // vuelve al de fábrica: no hace falta guardar nada
     else kmOver[row.id] = combo;
-    saveKm(); rebuildKeymap(); syncKbd(); kmListening = null; kmRender();
+    saveKm(); rebuildKeymap(); syncKbd(); kmListening = null; refreshKeyUIs();
     return true;
   }
   // captura global (fase de captura): mientras se escucha, la tecla pulsada NO dispara nada más
@@ -1952,7 +1959,24 @@
     r.readAsDataURL(file);
   });
 
-  // --- (1) efectos del programa ---
+  // --- (1) efectos del programa: cada uno también es una acción (para ponerle tecla) ---
+  SFX_INFO.forEach(([name, label]) => {
+    const id = 'sfx:' + name;
+    if (ACT[id]) return;
+    const a = { id, group: 'SONIDO', label: `Efecto · ${label}`, key: '', run: () => { if (panelLocked) return; obs.emit({ cmd: 'testSound', name }).then(() => log('→ sonido · ' + name), e => { log(e.message, true); toast('✕ ' + errText(e), 'err'); }); } };
+    ACTIONS.push(a); ACT[id] = a;
+  });
+  // botón de tecla reutilizable: muestra la tecla vigente o «＋ TECLA»; al pulsarlo espera la combinación
+  function keyButton(actId, extraClass) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'key-btn' + (extraClass ? ' ' + extraClass : ''); b.dataset.keyact = actId;
+    const k = ACT[actId] ? keyOf(ACT[actId]) : '';
+    b.textContent = k ? comboLabel(k) : '＋ TECLA';
+    b.classList.toggle('key-btn--empty', !k);
+    b.title = k ? 'Tecla rápida. Clic para cambiarla (⌫ la quita, Esc cancela)' : 'Clic y pulsa la tecla (o combinación) con la que quieres disparar este sonido';
+    b.addEventListener('click', e => { e.stopPropagation(); kmListen({ kind: 'act', id: actId, def: '' }, b); });
+    return b;
+  }
   function applySfx(name, url, label) {
     if (url) snStore.files[name] = url; else delete snStore.files[name];
     if (!saveSn()) return Promise.resolve(false);
@@ -1966,10 +1990,11 @@
       const url = snStore.files[name] || '', isData = /^data:/i.test(url);
       const row = document.createElement('div');
       row.className = 'sfx-row' + (url ? ' sfx-row--custom' : '');
-      row.innerHTML = '<button type="button" class="sfx-play" title="Probar este sonido ahora">▶</button><div class="sfx-t"><b></b><small></small></div><span class="sfx-st"></span>' +
+      row.innerHTML = '<button type="button" class="sfx-play" title="Probar este sonido ahora">▶</button><div class="sfx-t"><b></b><small></small></div><span class="sfx-keyslot"></span><span class="sfx-st"></span>' +
         '<div class="sfx-src"><input type="text" autocomplete="off" spellcheck="false" aria-label="Link o ruta del sonido"><label class="btn btn--sm upload" title="Elegir un archivo de audio (≤ 500 KB)">📁<input type="file" accept="audio/*"></label><button type="button" class="btn--sm btn--ghost sfx-reset" title="Volver al sonido sintetizado" aria-label="Restablecer">↺</button></div>';
       row.querySelector('b').textContent = label; row.querySelector('small').textContent = desc;
       row.querySelector('.sfx-st').textContent = url ? 'PERSONALIZADO' : 'SINTETIZADO';
+      row.querySelector('.sfx-keyslot').appendChild(keyButton('sfx:' + name));
       const inp = row.querySelector('input[type=text]');
       inp.placeholder = 'sintetizado · pega un link o ruta para reemplazarlo';
       inp.value = isData ? '📎 archivo cargado' : url; inp.readOnly = isData;
@@ -2021,15 +2046,17 @@
     box.classList.toggle('editing', snEditMode);
     $('#sn-edit-toggle').classList.toggle('on', snEditMode);
     snStore.custom.forEach(sn => {
+      const cell = document.createElement('div');
+      cell.className = 'sn-cell';
       const el = document.createElement('button');
       el.type = 'button'; el.className = 'sn'; el.dataset.sn = sn.id;
       el.title = `${sn.name} · ${sn.url.startsWith('data:') ? (sn.file || 'archivo cargado') : sn.url}${snEditMode ? ' — clic para editar' : ''}`;
-      el.innerHTML = '<span class="sn-i" aria-hidden="true">♪</span><span class="sn-n"></span><kbd></kbd>';
+      el.innerHTML = '<span class="sn-i" aria-hidden="true">♪</span><span class="sn-n"></span>';
       el.querySelector('.sn-n').textContent = sn.name;
-      el.querySelector('kbd').dataset.kbd = 'snd:' + sn.id;
       if (snEditMode) el.insertAdjacentHTML('beforeend', '<span class="cb-pen">✎</span>');
       el.addEventListener('click', () => (snEditMode ? snOpen(sn.id) : (playCustomSound(sn), el.classList.add('fired'), setTimeout(() => el.classList.remove('fired'), 220))));
-      box.appendChild(el);
+      cell.append(el, keyButton('snd:' + sn.id, 'key-btn--tile'));
+      box.appendChild(cell);
     });
     const add = document.createElement('button');
     add.type = 'button'; add.className = 'sn sn--add'; add.title = 'Crear un sonido nuevo';
@@ -2357,6 +2384,7 @@
     $('#fx-summary').innerHTML = known ? `<b>${n}</b> ACTIVE / ${FX_KEYS.length}` : 'ESTADO DESCONOCIDO · elige un modo';
   }
   function renderAudioSummary() {
+    $('#snd-off-note').hidden = !!C.sound.enabled;
     const d = C.sound.duck || {};
     $('#audio-summary').innerHTML = `SFX ${C.sound.enabled ? '<b>● ON</b>' : '○ OFF'} · VOL ${Math.round(C.sound.volume * 100)}% · AMB ${amb.ambient ? '<b>ON</b>' : 'OFF'} · DUCK ${d.enabled ? `<b>ON</b> (${(d.inputs || []).length})` : 'OFF'}`;
   }

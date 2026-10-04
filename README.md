@@ -159,6 +159,7 @@ Ajustes → **AUDIO**:
 
 - **Efectos del programa** (alerta, sello, flash, papel, cinta, barrido, impacto, bip, estática): cada uno suena *sintetizado* por defecto, sin archivos. Para cambiarlo, escribe un **link** (`https://…/sonido.mp3`), una **ruta** (`assets/sounds/alerta.mp3`) o elige un **archivo** (📁, ≤ 500 KB; queda guardado dentro del panel y del overlay). **▶** lo prueba al instante; **↺** vuelve al sintetizado. Los cambios se mandan al overlay y se guardan allí; al conectar con OBS el panel los reenvía por si acaso. Solo se aceptan `https://`, rutas relativas y audio incrustado.
 - **Mis sonidos** (soundboard): **+ NUEVO SONIDO** → nombre, link/ruta/archivo, volumen y **tecla rápida** (clic en el campo y pulsa la combinación, p. ej. `F9` o `Ctrl+Shift+1`). Cada sonido es una acción más: aparece en **⌨ ATAJOS** (grupo SONIDO), en la paleta `Ctrl+K` y se puede usar dentro de **macros** y botones personalizados. **✎ EDITAR** cambia o borra uno.
+- **Teclas rápidas, a la vista**: cada efecto del programa y cada sonido de «Mis sonidos» tiene un botón **＋ TECLA** (o la tecla ya asignada). Haz clic y pulsa la combinación (`F7`, `Ctrl+Shift+1`…); `⌫` la quita y `Esc` cancela. Si la tecla ya era de otra acción, pregunta si se la quitas. Todo queda también en **⌨ ATAJOS**, grupo SONIDO.
 - Sigue valiendo el interruptor general «Sonidos de la transmisión activados» (si está apagado, nada suena).
 
 ### Respaldo, Preview/TAKE y macros

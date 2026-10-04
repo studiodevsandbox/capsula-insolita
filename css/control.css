@@ -1401,3 +1401,17 @@ body[data-eff=mid] .top-status, body[data-eff=narrow] .top-status { flex-basis: 
 
 /* la barra superior (con sus popovers) siempre por encima del contenido */
 .topbar { position: sticky; z-index: 30; }
+
+/* tecla rápida visible en cada sonido */
+.key-btn { padding: 0 9px; min-height: 28px; font: 600 11px var(--mono); letter-spacing: .08em; color: var(--cream); background: linear-gradient(180deg, #2a2a2a, #161616); border: 1px solid #000; border-bottom-width: 2px; }
+.key-btn--empty { color: var(--grey); font-weight: 400; background: transparent; border: 1px dashed #4a4a4a; }
+.key-btn--empty:hover { color: var(--y); border-color: var(--y); }
+.key-btn.km-key--listen { background: var(--y); color: #000; border-color: var(--y); animation: armed 700ms steps(2) infinite; }
+.sfx-row { grid-template-columns: 32px minmax(0, 1fr) auto auto; grid-template-areas: "p t key st" "src src src src"; }
+.sfx-keyslot { grid-area: key; }
+.sn-cell { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sn-cell .sn { flex: 1; }
+.key-btn--tile { width: 100%; }
+.sn kbd { display: none; }
+
+.snd-off-note { margin-top: 8px; padding: 8px 10px; background: #1d0307; border: 1px solid var(--r2); color: #ff8a96; font-size: 11px; line-height: 1.5; border-radius: var(--radius); }
