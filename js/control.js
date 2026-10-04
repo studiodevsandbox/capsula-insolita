@@ -204,10 +204,10 @@
   if (typeof live.mode !== 'string') live.mode = null;
   if (typeof live.lastAlert !== 'string') live.lastAlert = 'NUEVA EVIDENCIA';
   if (live.ev && !Number.isFinite(Number(live.ev.num))) live.ev = null;
-  live.scene = null; live.obsScene = null; // la escena SIEMPRE se pregunta a OBS
+  live.scene = null; live.obsScene = null; live.obsSceneUuid = null; // la escena SIEMPRE se pregunta a OBS
   const saveLive = () => {
     const copy = Object.assign({}, live);
-    delete copy.scene; delete copy.obsScene;
+    delete copy.scene; delete copy.obsScene; delete copy.obsSceneUuid;
     try { localStorage.setItem(LIVE_KEY, JSON.stringify(copy)); } catch (e) { /* sin almacenamiento */ }
   };
 
@@ -269,7 +269,7 @@
     } else if (cls === 'wait') {
       s.textContent = 'CONNECTING';
     } else {
-      live.scene = null; live.obsScene = null; overlayActive = null;
+      live.scene = null; live.obsScene = null; live.obsSceneUuid = null; overlayActive = null;
       if (code === 4009) {
         authFailed = true;
         s.textContent = 'AUTH FAILED';
@@ -288,7 +288,7 @@
     renderAll();
   };
   obs.onevent = (type, data) => {
-    if (type === 'CurrentProgramSceneChanged') setObsScene(data.sceneName);
+    if (type === 'CurrentProgramSceneChanged') setObsScene(data.sceneName, data.sceneUuid);
   };
   $('#connect').addEventListener('click', () => connect(true));
   $('#reconnect').addEventListener('click', () => { $('#lost-msg').textContent = 'conectando…'; connect(true); });
@@ -303,12 +303,30 @@
     const hit = Object.keys(map).find(k => norm(k) === norm(name));
     return hit ? map[hit] : null;
   }
-  function setObsScene(name) {
-    if (live.obsScene === name) return;
+  // ---------- mapa de aprendizaje uuid→escena interna ----------
+  // El nombre de una escena de OBS puede cambiar; su sceneUuid nunca. La primera vez que el
+  // panel reconoce una escena por NOMBRE (contra config.js), la "engancha" guardando su uuid
+  // acá. De ahí en más se reconoce por uuid aunque Rox la renombre en OBS.
+  const SCENE_UUID_KEY = 'lci-scene-uuid-map-v1';
+  const sceneUuidMap = (() => { const v = readJSON(SCENE_UUID_KEY); return isObj(v) ? v : {}; })();
+  const saveSceneUuidMap = () => { try { localStorage.setItem(SCENE_UUID_KEY, JSON.stringify(sceneUuidMap)); } catch (e) { /* sin almacenamiento */ } };
+  function resolveSceneKey(sceneUuid, sceneName) {
+    if (sceneUuid && sceneUuidMap[sceneUuid]) return sceneUuidMap[sceneUuid];
+    const key = mapObsScene(sceneName);
+    if (key && sceneUuid) {
+      sceneUuidMap[sceneUuid] = key;
+      saveSceneUuidMap();
+      migrateFramingToUuid(sceneName, sceneUuid);
+    }
+    return key || null;
+  }
+  function setObsScene(name, uuid) {
+    if (live.obsScene === name && live.obsSceneUuid === uuid) return;
     live.obsScene = name;
-    live.scene = mapObsScene(name);
+    live.obsSceneUuid = uuid || null;
+    live.scene = resolveSceneKey(uuid, name);
     refreshOverlayActive();
-    applyFramingForScene(name);
+    applyFramingForScene();
     renderAll();
   }
   // ¿la fuente del overlay está realmente en el programa? Se pregunta solo al conectar y al
@@ -326,7 +344,9 @@
       .finally(renderOverlay);
   }
   function refreshScene() {
-    obs.request('GetCurrentProgramScene').then(r => setObsScene(r.currentProgramSceneName), () => {});
+    // el campo de uuid en esta respuesta se llama "currentProgramSceneUuid" (inconsistente con
+    // el evento CurrentProgramSceneChanged, que usa "sceneUuid" — así lo define obs-websocket 5.x)
+    obs.request('GetCurrentProgramScene').then(r => setObsScene(r.currentProgramSceneName, r.currentProgramSceneUuid), () => {});
   }
   const sceneLabel = key => (C.scenes[key] && C.scenes[key].label) || key;
 
@@ -670,18 +690,28 @@
       });
     } catch (e) { /* sin lista, los selects quedan solo con lo que ya estaba guardado */ }
   }
+  // migración: si había encuadres guardados por NOMBRE (formato viejo) y recién se aprendió el
+  // uuid de ese nombre, se mueven a la clave uuid (una sola vez por escena). No es crítico si
+  // algún caso raro no migra: el encuadre viejo simplemente queda huérfano.
+  function migrateFramingToUuid(sceneName, sceneUuid) {
+    if (!sceneName || !sceneUuid || !framing[sceneName] || framing[sceneUuid]) return;
+    framing[sceneUuid] = framing[sceneName];
+    delete framing[sceneName];
+    saveFraming();
+  }
   async function saveFramingFor(id) {
     const sourceName = $(`#cam${id}-source`).value;
     const sceneName = live.obsScene;
+    const sceneUuid = live.obsSceneUuid;
     if (!sourceName) { toast('✕ ELIGE PRIMERO LA FUENTE DE OBS', 'err'); return; }
-    if (!sceneName) { toast('✕ OBS NO TIENE ESCENA ACTIVA', 'err'); return; }
+    if (!sceneUuid) { toast('✕ OBS NO TIENE ESCENA ACTIVA', 'err'); return; }
     try {
-      const { sceneItemId } = await obs.request('GetSceneItemId', { sceneName, sourceName });
-      const { sceneItemTransform } = await obs.request('GetSceneItemTransform', { sceneName, sceneItemId });
+      const { sceneItemId } = await obs.request('GetSceneItemId', { sceneUuid, sourceName });
+      const { sceneItemTransform } = await obs.request('GetSceneItemTransform', { sceneUuid, sceneItemId });
       const clean = {};
       TRANSFORM_KEYS.forEach(k => { if (sceneItemTransform[k] !== undefined) clean[k] = sceneItemTransform[k]; });
-      framing[sceneName] = framing[sceneName] || {};
-      framing[sceneName][sourceName] = clean;
+      framing[sceneUuid] = framing[sceneUuid] || {};
+      framing[sceneUuid][sourceName] = clean;
       saveFraming();
       toast(`📐 ENCUADRE GUARDADO · ${sceneName}`, 'ok');
       activity(`📐 Encuadre de "${sourceName}" guardado para ${sceneName}`);
@@ -690,14 +720,15 @@
       toast('✕ ' + (/sourceName|item/i.test(e.message) ? 'ESA FUENTE NO ESTÁ EN LA ESCENA ACTUAL' : e.message), 'err');
     }
   }
-  async function applyFramingForScene(sceneName) {
-    if (!sceneName || !obs.connected) return;
-    const bySource = framing[sceneName];
+  async function applyFramingForScene() {
+    const sceneUuid = live.obsSceneUuid;
+    if (!sceneUuid || !obs.connected) return;
+    const bySource = framing[sceneUuid];
     if (!bySource) return;
     for (const sourceName of Object.keys(bySource)) {
       try {
-        const { sceneItemId } = await obs.request('GetSceneItemId', { sceneName, sourceName });
-        await obs.request('SetSceneItemTransform', { sceneName, sceneItemId, sceneItemTransform: bySource[sourceName] });
+        const { sceneItemId } = await obs.request('GetSceneItemId', { sceneUuid, sourceName });
+        await obs.request('SetSceneItemTransform', { sceneUuid, sceneItemId, sceneItemTransform: bySource[sourceName] });
       } catch (e) { /* esa fuente ya no está en esta escena: se ignora */ }
     }
   }
