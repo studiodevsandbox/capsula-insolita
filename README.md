@@ -153,6 +153,14 @@ Base única de **expedientes** (Historia · Evidencia · Pista · Testimonio). L
 - **Contar la historia**: el lector parte el texto en párrafos; un clic (o ↑ ↓ con el lector enfocado) deja el **marcador de lectura** («voy por aquí») y atenúa el resto. **○ MARCAR CONTADO** deja una ✓ en la lista; filtros **SIN CONTAR** y **CON EVIDENCIA** y buscador (número, título, texto). **→ LOWER THIRD** prepara el lower third con el texto seleccionado (o el título) sin sacarlo al aire. **⇪ IMPORTAR** crea expedientes desde `.txt` / `.md` (cada archivo uno; si trae líneas `# Título`, cada una abre uno nuevo; ≤ 500 KB).
 - Contadores en vivo y **🗄 VER ARCHIVADOS**. Se guarda en este navegador (`lci-casefiles-v1`); las notas del sistema viejo se migran solas. Código en `js/control.js` (`CF_KEY`, `cfPrepare`, `evQueue`).
 
+### Sonidos: enlaces de los efectos y soundboard con teclas
+
+Ajustes → **AUDIO**:
+
+- **Efectos del programa** (alerta, sello, flash, papel, cinta, barrido, impacto, bip, estática): cada uno suena *sintetizado* por defecto, sin archivos. Para cambiarlo, escribe un **link** (`https://…/sonido.mp3`), una **ruta** (`assets/sounds/alerta.mp3`) o elige un **archivo** (📁, ≤ 500 KB; queda guardado dentro del panel y del overlay). **▶** lo prueba al instante; **↺** vuelve al sintetizado. Los cambios se mandan al overlay y se guardan allí; al conectar con OBS el panel los reenvía por si acaso. Solo se aceptan `https://`, rutas relativas y audio incrustado.
+- **Mis sonidos** (soundboard): **+ NUEVO SONIDO** → nombre, link/ruta/archivo, volumen y **tecla rápida** (clic en el campo y pulsa la combinación, p. ej. `F9` o `Ctrl+Shift+1`). Cada sonido es una acción más: aparece en **⌨ ATAJOS** (grupo SONIDO), en la paleta `Ctrl+K` y se puede usar dentro de **macros** y botones personalizados. **✎ EDITAR** cambia o borra uno.
+- Sigue valiendo el interruptor general «Sonidos de la transmisión activados» (si está apagado, nada suena).
+
 ### Respaldo, Preview/TAKE y macros
 
 - **Respaldo** (Ajustes → RESPALDO): **⬇ DESCARGAR RESPALDO** guarda en un `.json` expedientes, banco de evidencias, atajos, botones/macros y ajustes (todo lo `lci-*` de este navegador). **⬆ RESTAURAR…** lo devuelve (pide confirmación, valida el archivo y, si no cabe, deja todo como estaba). Muestra el último respaldo y cuánto espacio queda (~5 MB por navegador); avisa si llevas más de 14 días sin respaldar.
@@ -170,7 +178,7 @@ Base única de **expedientes** (Historia · Evidencia · Pista · Testimonio). L
 - **Colores con un solo significado**: 🔴 **rojo = al aire** (escena ON AIR, evidencia y lower third visibles, botones que sacan algo al aire como MANDAR AL AIRE) · 🟡 **amarillo = seleccionado / preparado** (SIGUIENTE, pestaña, transición elegida) · ⚪ **blanco = modo activo** (clean / investigation).
 - **🔓 BLOQUEAR** (`Ctrl+Shift+L`, cambiable en ⌨ ATAJOS): desactiva botones y atajos del Deck, Evidence Control, Cámaras, Lower Third y los OUTRO, para no tocar nada sin querer mientras hablas. **OCULTAR TODO** sigue funcionando y Case Files se puede seguir leyendo.
 - **VISTA** (barra superior): NORMAL (50/50) · LECTURA (Case Files más grande) · OPERACIÓN (Evidence Control + Archivo suben sobre Case Files y el Deck) · COMPACTO (menos aire entre cajas). Se recuerda.
-- **A− / A+**: tamaño de todo el panel (90 % a 130 %). Dentro de Case Files, el lector tiene además su propio A− / A+ para leer a distancia.
+- **A− / A+**: tamaño de todo el panel (90 % a 130 %). Con letra grande el diseño se reordena solo (Case Files arriba y el Deck debajo, a todo el ancho) para que nada se aplaste. Dentro de Case Files, el lector tiene además su propio A− / A+ para leer a distancia.
 - Los avisos salen abajo a la derecha y ya no tapan "Now playing".
 
 ### Distribución: CASE FILES + CONTROL DECK (zona superior 50 % / 50 %)

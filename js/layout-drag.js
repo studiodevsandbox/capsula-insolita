@@ -23,7 +23,7 @@
     if (!h) {
       h = document.createElement('div');
       h.className = 'lci-drag-handle lci-drawers-handle';
-      h.textContent = '⠿ AJUSTES (EFECTOS · TRANSICIONES · AUDIO · OBS · DEBUG)';
+      h.textContent = '⠿ AJUSTES';
       drawers.insertBefore(h, drawers.firstChild);
     }
     return h;

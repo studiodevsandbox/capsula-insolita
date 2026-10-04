@@ -515,11 +515,12 @@ window.LCI_STAGE = window.LCI_STAGE || { w: 1920, h: 1080 };
       } catch (e) { /* el sonido nunca rompe el overlay */ }
     }
 
-    // sondeo único: ¿qué .mp3 de sound.files existen de verdad? (los que no, se sintetizan)
-    try {
-      const files = S().files || {};
-      Object.keys(files).forEach(name => {
-        if (!files[name]) return;
+    // sondeo: ¿el archivo de un efecto existe de verdad? (si no, se sintetiza). Se hace al cargar y cada vez que cambia
+    function probe(name) {
+      try {
+        const src = (S().files || {})[name];
+        if (!src) { delete avail[name]; return; }
+        delete avail[name];
         let a = new Audio(), timer = 0;
         const fin = ok => {
           if (!a) return;
@@ -534,9 +535,13 @@ window.LCI_STAGE = window.LCI_STAGE || { w: 1920, h: 1080 };
         a.oncanplaythrough = () => fin(true);
         a.onerror = () => fin(false);
         timer = setTimeout(() => fin(!!a && a.readyState >= 1), 4000);
-        a.src = files[name];
-      });
-    } catch (e) { /* sin HTMLAudio: todo sintetizado */ }
+        a.src = src;
+      } catch (e) { /* sin HTMLAudio: todo sintetizado */ }
+    }
+    const DEFAULT_FILES = Object.assign({}, S().files || {});
+    Object.keys(DEFAULT_FILES).forEach(probe);
+    // URL aceptable: ruta relativa, http(s) o audio incrustado (nunca javascript: ni otros esquemas)
+    const okUrl = u => typeof u === 'string' && u.length <= 3000000 && (/^data:audio\//i.test(u) || /^https?:\/\//i.test(u) || !/^[a-z][a-z0-9+.-]*:/i.test(u));
 
     return {
       play(name) {
@@ -546,6 +551,28 @@ window.LCI_STAGE = window.LCI_STAGE || { w: 1920, h: 1080 };
           const file = s.files && has(s.files, name) && s.files[name];
           if (file && (avail[name] === true || (s.synth === false && avail[name] !== false))) { playFile(file); return; }
           if (s.synth !== false && has(R, name)) voice(name);
+        } catch (e) { /* el sonido nunca rompe el overlay */ }
+      },
+      // cambia (o restablece, con '') el archivo de un efecto del programa y lo vuelve a sondear
+      setFile(name, url) {
+        const s = S();
+        if (!has(R, name) && !has(DEFAULT_FILES, name)) return false;
+        s.files = s.files || {};
+        if (url) { if (!okUrl(url)) return false; s.files[name] = url; }
+        else if (has(DEFAULT_FILES, name)) s.files[name] = DEFAULT_FILES[name];
+        else delete s.files[name];
+        probe(name);
+        return true;
+      },
+      defaults: () => Object.assign({}, DEFAULT_FILES),
+      // sonido suelto (soundboard del panel): archivo o link, con su volumen relativo
+      playUrl(url, level) {
+        try {
+          const s = S();
+          if (!s.enabled || !okUrl(url)) return;
+          const a = new Audio(url);
+          a.volume = Math.max(0, Math.min(1, vol() * unit(level, 1)));
+          a.play().catch(() => {});
         } catch (e) { /* el sonido nunca rompe el overlay */ }
       },
       sync,

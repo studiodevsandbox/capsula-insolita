@@ -265,6 +265,7 @@
       lost.hidden = true;
       loadAudioInputs(); loadFramingSources(); loadFramingScenes(); refreshScene();
       if (typeof startOutputsPoll === 'function') startOutputsPoll();
+      if (typeof syncSoundFiles === 'function') syncSoundFiles();
       if (origVolumeDb.size) restoreAudio(++duckGen); // un duck quedó sin restaurar al cortarse: se devuelve el volumen
       if (!announcedOk) { announcedOk = true; toast('● OBS CONNECTED', 'ok'); activity('● OBS conectado', 'info'); }
     } else if (cls === 'wait') {
@@ -507,6 +508,7 @@
     $('#cf-r-num').textContent = '#' + pad3(item.num);
     $('#cf-r-type').textContent = cfTypeLabel(item.type);
     $('#cf-r-title').textContent = item.title || '(sin título)';
+    $('#cf-r-title').title = item.title || '';
     const body = $('#cf-r-body');
     const paras = (item.body || '').split(/\n+/).map(t => t.trim()).filter(Boolean);
     const sig = item.id + '|' + (item.body || '');
@@ -526,10 +528,11 @@
     body.style.setProperty('--cf-fs', CF_FS[cfFs] + 'px');
     cfPaintMark(item);
     $('#cf-r-told').classList.toggle('on', !!item.told);
-    $('#cf-r-told').textContent = item.told ? '✓ CONTADO' : '○ MARCAR CONTADO';
+    $('#cf-r-told').textContent = item.told ? '✓ CONTADO' : '○ CONTADO';
     $('#cf-fs-m').disabled = cfFs === 0; $('#cf-fs-p').disabled = cfFs === CF_FS.length - 1;
     body.classList.toggle('is-empty', !item.body);
-    $('#cf-r-archive').textContent = item.status === 'archivado' ? '↺ REACTIVAR' : '🗄 ARCHIVAR';
+    $('#cf-r-archive').textContent = item.status === 'archivado' ? '↺' : '🗄';
+    $('#cf-r-archive').title = item.status === 'archivado' ? 'Reactivar este expediente' : 'Archivar este expediente';
     renderCfRelated();
     const list = cfFilteredList(), idx = list.findIndex(x => x.id === item.id);
     $('#cf-r-prev').disabled = !(idx >= 0 && idx < list.length - 1);
@@ -1571,14 +1574,6 @@
     send({ cmd: 'sound', ambientVolume: v }, { ok: `♪ AMBIENTE → ${Math.round(v * 100)}%`, apply: () => { amb.ambientVolume = v; saveAmb(); } });
   });
 
-  const sndTests = $('#snd-tests');
-  Object.keys(C.sound.files || {}).forEach(name => {
-    const b = document.createElement('button');
-    b.textContent = name;
-    b.addEventListener('click', () => obs.emit({ cmd: 'testSound', name }).then(() => log('→ probar sonido · ' + name), e => { log(e.message, true); toast('✕ ' + errText(e), 'err'); }));
-    sndTests.appendChild(b);
-  });
-
   // ducking: lo guardado en el panel manda; si no hay nada guardado, config.js
   const duckEnabled = $('#duck-enabled'), duckAmount = $('#duck-amount'), duckHold = $('#duck-hold');
   if (saved['duck-enabled'] !== undefined) C.sound.duck.enabled = !!saved['duck-enabled'];
@@ -1756,6 +1751,7 @@
     if ((e.ctrlKey || e.metaKey) && !e.altKey && k.toLowerCase() === 'k') { e.preventDefault(); palOpen() ? palClose() : palShow(); return; }
     if (k === 'Escape') {
       if (palOpen()) { palClose(); return; }
+      if (!$('#sn-modal').hidden) { $('#sn-modal').hidden = true; return; }
       if (!$('#cb-modal').hidden) { $('#cb-modal').hidden = true; return; }
       if (kmOpen()) { kmClose(); return; }
       if (!$('#cf-modal').hidden) { cfCloseEditor(); return; }
@@ -1767,7 +1763,7 @@
       if (cuedId) { cue(null); return; }
       return;
     }
-    if (palOpen() || kmOpen() || !$('#cb-modal').hidden) return;
+    if (palOpen() || kmOpen() || !$('#cb-modal').hidden || !$('#sn-modal').hidden) return;
     if (isTyping(document.activeElement) || e.repeat) return;
     if (panelLocked) { // con candado solo se atiende desbloquear y el pánico
       const c = comboFromEvent(e);
@@ -1929,6 +1925,191 @@
   setDeckCollapsed(!!saved['cdeck-collapsed']);
   $('#cdeck-toggle').addEventListener('click', () => setDeckCollapsed(!cdeck.classList.contains('cdeck--collapsed')));
 
+  /* =====================================================================================
+     SONIDOS: (1) enlace/archivo de cada efecto del programa, (2) soundboard propio con atajos.
+     Los efectos nunca necesitan archivos (se sintetizan); esto solo sirve para reemplazarlos.
+     ===================================================================================== */
+  const SN_KEY = 'lci-sounds-v1';
+  const SFX_INFO = [
+    ['alert', 'ALERTA', 'al lanzar una alerta'], ['stamp', 'SELLO', 'cuando cae un sello'],
+    ['shutter', 'FLASH · FOTO', 'al aparecer una evidencia'], ['paper', 'PAPEL', 'documentos y carpetas'],
+    ['tape', 'CINTA', 'la cinta amarilla'], ['whoosh', 'BARRIDO', 'cambios de escena'],
+    ['impact', 'IMPACTO', 'intro, outro y golpes'], ['beep', 'BIP', 'indicador «en vivo»'], ['static', 'ESTÁTICA', 'interferencia CCTV · glitch']
+  ];
+  const SN_MAX_BYTES = 500 * 1024;
+  const snUrlOk = u => typeof u === 'string' && u.length <= 800000 && (/^data:audio\//i.test(u) || /^https?:\/\//i.test(u) || !/^[a-z][a-z0-9+.-]*:/i.test(u));
+  let snStore = (() => {
+    const v = readJSON(SN_KEY) || {};
+    return { files: isObj(v.files) ? v.files : {}, custom: Array.isArray(v.custom) ? v.custom.filter(x => isObj(x) && typeof x.id === 'string' && typeof x.name === 'string' && snUrlOk(x.url)).map(x => ({ id: x.id, name: x.name.slice(0, 28), url: x.url, volume: Math.max(0.1, Math.min(1, Number(x.volume) || 1)), file: typeof x.file === 'string' ? x.file : '' })) : [] };
+  })();
+  const saveSn = () => { try { localStorage.setItem(SN_KEY, JSON.stringify(snStore)); return true; } catch (e) { toast('✕ NO CABE: EL ARCHIVO DE SONIDO ES DEMASIADO PESADO', 'err'); return false; } };
+  const readAudioFile = file => new Promise((res, rej) => {
+    if (!file) return rej(new Error('sin archivo'));
+    if (!/^audio\//i.test(file.type)) return rej(new Error('ARCHIVO NO COMPATIBLE · SOLO AUDIO'));
+    if (file.size > SN_MAX_BYTES) return rej(new Error('ARCHIVO MUY PESADO · MÁX. 500 KB (usa un link para sonidos largos)'));
+    const r = new FileReader();
+    r.onload = () => res(r.result); r.onerror = () => rej(new Error('NO SE PUDO LEER EL ARCHIVO'));
+    r.readAsDataURL(file);
+  });
+
+  // --- (1) efectos del programa ---
+  function applySfx(name, url, label) {
+    if (url) snStore.files[name] = url; else delete snStore.files[name];
+    if (!saveSn()) return Promise.resolve(false);
+    renderSfx();
+    return send({ cmd: 'soundFiles', files: { [name]: url } }, { ok: `♪ ${label} → ${url ? 'SONIDO PERSONALIZADO' : 'SINTETIZADO'}` });
+  }
+  function renderSfx() {
+    const list = $('#sfx-list');
+    list.innerHTML = '';
+    SFX_INFO.forEach(([name, label, desc]) => {
+      const url = snStore.files[name] || '', isData = /^data:/i.test(url);
+      const row = document.createElement('div');
+      row.className = 'sfx-row' + (url ? ' sfx-row--custom' : '');
+      row.innerHTML = '<button type="button" class="sfx-play" title="Probar este sonido ahora">▶</button><div class="sfx-t"><b></b><small></small></div><span class="sfx-st"></span>' +
+        '<div class="sfx-src"><input type="text" autocomplete="off" spellcheck="false" aria-label="Link o ruta del sonido"><label class="btn btn--sm upload" title="Elegir un archivo de audio (≤ 500 KB)">📁<input type="file" accept="audio/*"></label><button type="button" class="btn--sm btn--ghost sfx-reset" title="Volver al sonido sintetizado" aria-label="Restablecer">↺</button></div>';
+      row.querySelector('b').textContent = label; row.querySelector('small').textContent = desc;
+      row.querySelector('.sfx-st').textContent = url ? 'PERSONALIZADO' : 'SINTETIZADO';
+      const inp = row.querySelector('input[type=text]');
+      inp.placeholder = 'sintetizado · pega un link o ruta para reemplazarlo';
+      inp.value = isData ? '📎 archivo cargado' : url; inp.readOnly = isData;
+      row.querySelector('.sfx-reset').disabled = !url;
+      row.querySelector('.sfx-play').addEventListener('click', () => obs.emit({ cmd: 'testSound', name }).then(() => log('→ probar sonido · ' + name), e => { log(e.message, true); toast('✕ ' + errText(e), 'err'); }));
+      inp.addEventListener('change', () => {
+        const v = inp.value.trim();
+        if (v && !snUrlOk(v)) { toast('✕ LINK NO VÁLIDO · USA https://… o una ruta como assets/sounds/x.mp3', 'err'); renderSfx(); return; }
+        applySfx(name, v, label);
+      });
+      row.querySelector('input[type=file]').addEventListener('change', e => {
+        const f = e.target.files[0]; e.target.value = '';
+        readAudioFile(f).then(d => applySfx(name, d, label), err => toast('✕ ' + err.message, 'err'));
+      });
+      row.querySelector('.sfx-reset').addEventListener('click', () => applySfx(name, '', label));
+      list.appendChild(row);
+    });
+  }
+  // al conectar con OBS se reenvían los enlaces guardados (por si el overlay se reinició sin ellos)
+  function syncSoundFiles() {
+    const f = Object.assign({}, snStore.files);
+    if (Object.keys(f).length) obs.emit({ cmd: 'soundFiles', files: f }).catch(() => {});
+  }
+
+  // --- (2) soundboard: cada sonido es una acción más del registro (atajos, macros y ⌨ ATAJOS ya lo ven) ---
+  function playCustomSound(sn) {
+    if (panelLocked) return Promise.resolve(false);
+    return send({ cmd: 'playSound', url: sn.url, volume: sn.volume }, { ok: `♪ ${sn.name}` });
+  }
+  function registerSn(sn) {
+    const id = 'snd:' + sn.id;
+    const old = ACT[id];
+    if (old) { old.label = sn.name; old.run = () => playCustomSound(sn); return; }
+    const a = { id, group: 'SONIDO', label: sn.name, run: () => playCustomSound(sn), key: '' };
+    ACTIONS.push(a); ACT[id] = a;
+  }
+  function unregisterSn(snId) {
+    const id = 'snd:' + snId, i = ACTIONS.findIndex(a => a.id === id);
+    if (i >= 0) ACTIONS.splice(i, 1);
+    delete ACT[id];
+    if (id in kmOver) { delete kmOver[id]; saveKm(); }
+  }
+  snStore.custom.forEach(registerSn);
+  rebuildKeymap();
+  let snEditMode = false, snEditingId = null, snData = null;
+  function renderSnBoard() {
+    const box = $('#sn-grid');
+    box.innerHTML = '';
+    box.classList.toggle('editing', snEditMode);
+    $('#sn-edit-toggle').classList.toggle('on', snEditMode);
+    snStore.custom.forEach(sn => {
+      const el = document.createElement('button');
+      el.type = 'button'; el.className = 'sn'; el.dataset.sn = sn.id;
+      el.title = `${sn.name} · ${sn.url.startsWith('data:') ? (sn.file || 'archivo cargado') : sn.url}${snEditMode ? ' — clic para editar' : ''}`;
+      el.innerHTML = '<span class="sn-i" aria-hidden="true">♪</span><span class="sn-n"></span><kbd></kbd>';
+      el.querySelector('.sn-n').textContent = sn.name;
+      el.querySelector('kbd').dataset.kbd = 'snd:' + sn.id;
+      if (snEditMode) el.insertAdjacentHTML('beforeend', '<span class="cb-pen">✎</span>');
+      el.addEventListener('click', () => (snEditMode ? snOpen(sn.id) : (playCustomSound(sn), el.classList.add('fired'), setTimeout(() => el.classList.remove('fired'), 220))));
+      box.appendChild(el);
+    });
+    const add = document.createElement('button');
+    add.type = 'button'; add.className = 'sn sn--add'; add.title = 'Crear un sonido nuevo';
+    add.innerHTML = '<span class="cb-plus">+</span><span class="cb-add-t">NUEVO</span>';
+    add.addEventListener('click', () => snOpen(null));
+    box.appendChild(add);
+    syncKbd(box);
+  }
+  const snName = $('#sn-name'), snUrl = $('#sn-url'), snVol = $('#sn-vol'), snKey = $('#sn-key'), snErr = $('#sn-err');
+  function snOpen(id) {
+    snEditingId = id || null;
+    const sn = id && snStore.custom.find(x => x.id === id);
+    $('#sn-title').textContent = sn ? 'EDITAR SONIDO' : 'NUEVO SONIDO';
+    snName.value = sn ? sn.name : '';
+    snData = sn && sn.url.startsWith('data:') ? { dataURL: sn.url, name: sn.file || 'archivo' } : null;
+    snUrl.value = snData ? '📎 ' + snData.name : (sn ? sn.url : ''); snUrl.readOnly = !!snData;
+    snVol.value = sn ? sn.volume : 1; $('#sn-vol-val').textContent = Math.round(snVol.value * 100) + '%';
+    const a = sn && ACT['snd:' + sn.id];
+    snKey.dataset.raw = a ? keyOf(a) : ''; snKey.value = comboLabel(snKey.dataset.raw);
+    snErr.textContent = '';
+    $('#sn-delete').hidden = !sn;
+    $('#sn-modal').hidden = false;
+    snName.focus();
+  }
+  const snCurrentUrl = () => (snData ? snData.dataURL : snUrl.value.trim());
+  snUrl.addEventListener('input', () => { if (snData && !snUrl.readOnly) snData = null; });
+  snUrl.addEventListener('dblclick', () => { if (snData) { snData = null; snUrl.value = ''; snUrl.readOnly = false; snUrl.focus(); } });
+  $('#sn-file').addEventListener('change', e => {
+    const f = e.target.files[0]; e.target.value = '';
+    readAudioFile(f).then(d => { snData = { dataURL: d, name: f.name }; snUrl.value = '📎 ' + f.name; snUrl.readOnly = true; if (!snName.value.trim()) snName.value = f.name.replace(/\.[^.]+$/, '').slice(0, 28).toUpperCase(); snErr.textContent = ''; },
+      err => { snErr.textContent = err.message; });
+  });
+  snVol.addEventListener('input', () => { $('#sn-vol-val').textContent = Math.round(snVol.value * 100) + '%'; });
+  $('#sn-try').addEventListener('click', () => { const u = snCurrentUrl(); if (!snUrlOk(u) || !u) { snErr.textContent = 'Pon un link, una ruta o elige un archivo.'; return; } send({ cmd: 'playSound', url: u, volume: Number(snVol.value) }, { ok: '♪ PRUEBA' }); });
+  snKey.addEventListener('keydown', e => {
+    if (e.key === 'Escape' || e.key === 'Tab') return;
+    e.preventDefault(); e.stopPropagation();
+    const combo = comboFromEvent(e);
+    if (!combo) return;
+    snKey.dataset.raw = combo; snKey.value = comboLabel(combo);
+    const o = keyOwner(combo, snEditingId ? { kind: 'act', id: 'snd:' + snEditingId } : null);
+    snErr.textContent = o ? (o.reserved ? 'Esa tecla está reservada.' : `Ya es de: ${o.label} (al guardar te pregunto si se la quitas).`) : '';
+  });
+  $('#sn-key-clear').addEventListener('click', () => { snKey.dataset.raw = ''; snKey.value = ''; snErr.textContent = ''; });
+  $('#sn-new').addEventListener('click', () => snOpen(null));
+  $('#sn-edit-toggle').addEventListener('click', () => { snEditMode = !snEditMode; renderSnBoard(); });
+  $('#sn-cancel').addEventListener('click', () => { $('#sn-modal').hidden = true; });
+  $('#sn-modal').addEventListener('click', e => { if (e.target.id === 'sn-modal') $('#sn-modal').hidden = true; });
+  $('#sn-save').addEventListener('click', () => {
+    const url = snCurrentUrl(), key = snKey.dataset.raw || '';
+    if (!url) { snErr.textContent = 'Pon un link, una ruta o elige un archivo de audio.'; return; }
+    if (!snUrlOk(url)) { snErr.textContent = 'Link no válido: usa https://… o una ruta como assets/sounds/x.mp3'; return; }
+    if (key && KEY_RESERVED.has(key)) { snErr.textContent = 'Esa tecla está reservada.'; return; }
+    const name = snName.value.trim().slice(0, 28) || 'SONIDO';
+    const vol = Number(snVol.value) || 1, file = snData ? snData.name : '';
+    let sn = snEditingId && snStore.custom.find(x => x.id === snEditingId);
+    const backup = JSON.stringify(snStore);
+    if (sn) Object.assign(sn, { name, url, volume: vol, file });
+    else { sn = { id: 'sn' + Date.now() + Math.random().toString(36).slice(2, 5), name, url, volume: vol, file }; snStore.custom.push(sn); }
+    if (!saveSn()) { snStore = JSON.parse(backup); return; }
+    registerSn(sn);
+    const row = { kind: 'act', id: 'snd:' + sn.id, def: '' };
+    const cur = keyOf(ACT[row.id]);
+    if (key !== cur) kmAssign(row, key); // pregunta antes de quitarle la tecla a otra acción
+    rebuildKeymap(); renderSnBoard(); syncKbd();
+    $('#sn-modal').hidden = true;
+    toast(`✓ SONIDO "${name}" GUARDADO`, 'ok');
+  });
+  $('#sn-delete').addEventListener('click', () => {
+    const sn = snStore.custom.find(x => x.id === snEditingId);
+    if (!sn || !confirm(`¿Borrar el sonido "${sn.name}"?`)) return;
+    snStore.custom = snStore.custom.filter(x => x.id !== sn.id);
+    saveSn(); unregisterSn(sn.id); rebuildKeymap();
+    // los botones/macros que lo usaban quedan marcados como "acción inexistente"
+    renderSnBoard(); if (typeof renderCustom === 'function') renderCustom();
+    $('#sn-modal').hidden = true;
+  });
+  renderSfx();
+  renderSnBoard();
+
   /* ---------- PERSONALIZADOS: botones propios que ejecutan acciones REALES del registro ACTIONS ---------- */
   const CB_KEY = 'lci-custom-buttons-v1';
   // un botón = lista de pasos [{ action, delay }]; con 1 paso es un botón simple, con varios es una MACRO
@@ -2021,15 +2202,15 @@
     box.appendChild(add);
   }
   const cbName = $('#cb-name'), cbKey = $('#cb-key'), cbErr = $('#cb-err'), cbStepsBox = $('#cb-steps');
-  const cbGroups = [...new Set(ACTIONS.map(a => a.group))];
+  const cbGroups = () => [...new Set(ACTIONS.map(a => a.group))]; // dinámico: los sonidos nuevos crean su grupo
   let cbDraft = []; // pasos en edición
   function cbRenderSteps() {
     cbStepsBox.innerHTML = '';
     cbDraft.forEach((st, i) => {
       const row = document.createElement('div');
       row.className = 'cb-step';
-      const group = (ACT[st.action] && ACT[st.action].group) || cbGroups[0];
-      row.innerHTML = `<span class="cb-step-n">${i + 1}</span><select class="cb-sg" aria-label="Tipo de acción">${cbGroups.map(g => `<option${g === group ? ' selected' : ''}>${esc(g)}</option>`).join('')}</select>` +
+      const group = (ACT[st.action] && ACT[st.action].group) || cbGroups()[0];
+      row.innerHTML = `<span class="cb-step-n">${i + 1}</span><select class="cb-sg" aria-label="Tipo de acción">${cbGroups().map(g => `<option${g === group ? ' selected' : ''}>${esc(g)}</option>`).join('')}</select>` +
         '<select class="cb-sa" aria-label="Acción"></select>' +
         `<label class="cb-sd" title="Espera antes del siguiente paso (ms)">+<input type="number" min="0" max="10000" step="100" value="${st.delay}" aria-label="Espera en milisegundos"> ms</label>` +
         `<button type="button" class="btn--sm btn--ghost cb-up" title="Subir" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" class="btn--sm btn--ghost cb-rm" title="Quitar paso" ${cbDraft.length === 1 ? 'disabled' : ''}>✕</button>`;
@@ -2435,6 +2616,13 @@
   const setTopbarH = () => document.documentElement.style.setProperty('--topbar-h', topbar.offsetHeight + 'px');
   setTopbarH();
   if (window.ResizeObserver) new ResizeObserver(setTopbarH).observe(topbar); else window.addEventListener('resize', setTopbarH);
+
+  // popover ⚙ VISTA: vista, tamaño de texto y orden de cajas (antes ocupaban media barra superior)
+  const viewPop = $('#view-pop'), viewBtn = $('#open-view');
+  const viewPopSet = open => { viewPop.hidden = !open; viewBtn.setAttribute('aria-expanded', String(open)); };
+  viewBtn.addEventListener('click', e => { e.stopPropagation(); viewPopSet(viewPop.hidden); });
+  document.addEventListener('click', e => { if (!viewPop.hidden && !viewPop.contains(e.target)) viewPopSet(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !viewPop.hidden) { viewPopSet(false); e.stopPropagation(); } }, true);
   // vista del panel (NORMAL 50/50 · LECTURA · OPERACIÓN · COMPACTO) y tamaño de texto
   const VIEWS = ['normal', 'lectura', 'operacion', 'compacto'];
   function setView(v) { if (!VIEWS.includes(v)) v = 'normal'; document.body.dataset.view = v; $('#view-select').value = v; keep('view', v); }
@@ -2442,7 +2630,10 @@
   setView(saved.view);
   const UI_SIZES = [0.9, 1, 1.1, 1.2, 1.3];
   let uiSize = UI_SIZES.includes(saved['ui-size']) ? saved['ui-size'] : 1;
-  function setUiSize(z) { uiSize = z; document.documentElement.style.zoom = z === 1 ? '' : String(z); keep('ui-size', z); $('#ui-smaller').disabled = z === UI_SIZES[0]; $('#ui-bigger').disabled = z === UI_SIZES[UI_SIZES.length - 1]; if (window.ResizeObserver === undefined) setTopbarH(); }
+  // el zoom achica el ancho útil: los puntos de quiebre usan el ancho EFECTIVO (ventana / zoom), no el de la ventana
+  function syncEff() { const eff = window.innerWidth / (uiSize || 1); document.body.dataset.eff = eff >= 1480 ? 'wide' : eff >= 1180 ? 'mid' : 'narrow'; }
+  window.addEventListener('resize', syncEff);
+  function setUiSize(z) { uiSize = z; syncEff(); document.documentElement.style.zoom = z === 1 ? '' : String(z); keep('ui-size', z); $('#ui-smaller').disabled = z === UI_SIZES[0]; $('#ui-bigger').disabled = z === UI_SIZES[UI_SIZES.length - 1]; if (window.ResizeObserver === undefined) setTopbarH(); }
   $('#ui-smaller').addEventListener('click', () => setUiSize(UI_SIZES[Math.max(0, UI_SIZES.indexOf(uiSize) - 1)]));
   $('#ui-bigger').addEventListener('click', () => setUiSize(UI_SIZES[Math.min(UI_SIZES.length - 1, UI_SIZES.indexOf(uiSize) + 1)]));
   setUiSize(uiSize);

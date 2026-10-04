@@ -20,22 +20,33 @@
   </div>
   <div class="top-status">
     <span id="conn" class="conn conn--wait">CONNECTING</span>
-    <span class="chip" id="top-overlay">OVERLAY <b>—</b></span>
-    <span class="chip" id="top-scene">ESCENA <b>—</b></span>
     <span class="chip" id="top-live" title="Estado de la transmisión / grabación en OBS">AIRE <b>—</b></span>
+    <span class="chip" id="top-scene">ESCENA <b>—</b></span>
     <span class="chip" id="top-mode">MODE <b>—</b></span>
-    <div class="top-tools">
-      <button id="panel-lock" class="lock-btn" title="Bloquea los botones y atajos (OCULTAR TODO sigue activo). Vuelve a pulsar para desbloquear.">🔓 BLOQUEAR <kbd data-kbd="panel-lock"></kbd></button>
-      <button class="top-panic" id="top-panic" data-act="hideall" title="Ocultar todo: evidencia, lower third y alertas (pánico)">■ OCULTAR TODO</button>
-      <select id="view-select" title="Vista del panel: NORMAL 50/50 · LECTURA (Case Files grande) · OPERACIÓN (evidencia arriba) · COMPACTO"><option value="normal">VISTA · NORMAL</option><option value="lectura">VISTA · LECTURA</option><option value="operacion">VISTA · OPERACIÓN</option><option value="compacto">VISTA · COMPACTO</option></select>
-      <span class="ui-size" title="Tamaño del texto del panel"><button id="ui-smaller" aria-label="Texto más pequeño">A−</button><button id="ui-bigger" aria-label="Texto más grande">A+</button></span>
-      <button id="layout-toggle" title="Arrastrá una caja por su título y soltala sobre otra para intercambiar el orden. Clic de nuevo para bloquear y no mover nada sin querer en vivo.">⠿ CAJAS</button>
-      <select id="layout-preset-select" title="Cargar un preset de orden guardado"></select>
-      <button id="layout-preset-save" title="Guardar el orden actual como preset nuevo">💾</button>
-      <button id="layout-preset-delete" title="Borrar el preset elegido en la lista">✕</button>
-      <button id="layout-reset" title="Restablecer el orden original de las cajas (recarga la página)">↺</button>
-      <button id="open-palette" title="Buscar y ejecutar cualquier acción (Ctrl+K)"><span class="open-palette-label">BUSCAR</span> <kbd>CTRL K</kbd></button>
-      <button id="open-keys" title="Editar atajos de teclado (?)">⌨ ATAJOS</button>
+    <span class="chip" id="top-overlay">OVERLAY <b>—</b></span>
+  </div>
+  <div class="top-tools">
+    <button id="panel-lock" class="lock-btn" title="Bloquea los botones y atajos (OCULTAR TODO sigue activo). Vuelve a pulsar para desbloquear.">🔓 BLOQUEAR <kbd data-kbd="panel-lock"></kbd></button>
+    <button class="top-panic" id="top-panic" data-act="hideall" title="Ocultar todo: evidencia, lower third y alertas (pánico)">■ OCULTAR TODO</button>
+    <button id="open-palette" title="Buscar y ejecutar cualquier acción (Ctrl+K)"><span class="open-palette-label">BUSCAR</span> <kbd>CTRL K</kbd></button>
+    <button id="open-keys" title="Editar atajos de teclado (?)">⌨ ATAJOS</button>
+    <div class="view-wrap">
+      <button id="open-view" aria-haspopup="true" aria-expanded="false" title="Vista, tamaño de texto y orden de las cajas">⚙ VISTA ▾</button>
+      <div class="view-pop" id="view-pop" hidden>
+        <div class="vp-row"><span class="mlabel">VISTA</span>
+          <select id="view-select" title="NORMAL 50/50 · LECTURA (Case Files grande) · OPERACIÓN (evidencia arriba) · COMPACTO"><option value="normal">NORMAL · 50/50</option><option value="lectura">LECTURA</option><option value="operacion">OPERACIÓN</option><option value="compacto">COMPACTO</option></select></div>
+        <div class="vp-row"><span class="mlabel">TEXTO</span>
+          <span class="ui-size" title="Tamaño del texto del panel"><button id="ui-smaller" aria-label="Texto más pequeño">A−</button><button id="ui-bigger" aria-label="Texto más grande">A+</button></span></div>
+        <div class="vp-row vp-row--col"><span class="mlabel">ORDEN DE LAS CAJAS</span>
+          <div class="vp-boxes">
+            <button id="layout-toggle" title="Arrastra una caja por su título y suéltala sobre otra para intercambiar el orden. Clic de nuevo para bloquear.">⠿ CAJAS</button>
+            <select id="layout-preset-select" title="Cargar un preset de orden guardado"></select>
+            <button id="layout-preset-save" title="Guardar el orden actual como preset nuevo">💾</button>
+            <button id="layout-preset-delete" title="Borrar el preset elegido en la lista">✕</button>
+            <button id="layout-reset" title="Restablecer el orden original de las cajas (recarga la página)">↺</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   <div id="lost" class="lost" hidden>
@@ -55,7 +66,7 @@
   <div class="np" id="np-mode-box"><span class="np-k">MODO</span><span class="np-v" id="np-mode">—</span></div>
 </section>
 <div class="lock-banner" id="lock-banner" hidden>🔒 PANEL BLOQUEADO · botones y atajos desactivados (OCULTAR TODO sigue activo) · <kbd data-kbd="panel-lock"></kbd> o el candado para desbloquear</div>
-<div class="nowbar-note">ESCENA = LO QUE DICE OBS · EL RESTO = ÚLTIMO ENVIADO DESDE ESTE PANEL · "SIN DATO" = AÚN NO ENVIADO DESDE ESTE PANEL</div>
+<div class="nowbar-note"><b>—</b> = aún no enviado desde este panel · la ESCENA la informa OBS</div>
 
     <div class="zones" id="zones">
 <section class="card card--danger emerg-bar" id="card-emergency">
@@ -68,6 +79,7 @@
       </div>
     </section>
 
+<div class="zone-h zh-top"><span>HISTORIA · CONTROL RÁPIDO</span></div>
 <div class="top-zone">
     <section class="card" id="card-notes">
       <header class="card-h"><span class="card-id">§02</span><h2>CASE FILES</h2><span class="card-meta" id="cf-counters">00 EXPEDIENTES · 00 ACTIVOS · 00 EN EMISIÓN</span></header>
@@ -105,10 +117,10 @@
           <div class="cf-r-btns">
             <button class="btn--sm btn--primary" id="cf-r-show" title="Prepara las evidencias relacionadas en §04 (1.ª = SIGUIENTE, resto = COLA). No manda nada al aire.">▶ MOSTRAR</button>
             <button class="btn--sm" id="cf-r-told" title="Marcar como ya contado en el programa">✓ CONTADO</button>
-            <button class="btn--sm" id="cf-r-lt" title="Prepara el lower third con el texto seleccionado (o el título). No sale al aire.">→ LOWER THIRD</button>
+            <button class="btn--sm" id="cf-r-lt" title="Prepara el lower third con el texto seleccionado (o el título). No sale al aire.">→ LT</button>
             <button class="btn--sm" id="cf-r-edit" title="Abrir el editor del expediente">✎ EDITAR</button>
-            <button class="btn--sm btn--ghost" id="cf-r-archive" title="Archivar / reactivar este expediente">🗄 ARCHIVAR</button>
-            <button class="btn--sm btn--ghost" id="cf-r-delete" title="Borrar este expediente">✕ BORRAR</button>
+            <button class="btn--sm btn--ghost" id="cf-r-archive" title="Archivar / reactivar este expediente">🗄</button>
+            <button class="btn--sm btn--ghost" id="cf-r-delete" title="Borrar este expediente">✕</button>
             <span class="cf-nav">
               <button class="btn--sm btn--ghost" id="cf-r-prev" title="Expediente anterior en esta pestaña">←</button>
               <button class="btn--sm btn--ghost" id="cf-r-next" title="Expediente siguiente en esta pestaña">→</button>
@@ -186,6 +198,7 @@
 </div>
 
 
+<div class="zone-h zh-ev"><span>EVIDENCIAS</span></div>
 <div class="ev-row">
     <section class="card" id="card-ev">
       <header class="card-h"><span class="card-id">§04</span><h2>EVIDENCE CONTROL</h2><span class="card-meta" id="ev-meta">—</span></header>
@@ -269,6 +282,7 @@
 
 </div>
 
+<div class="zone-h zone-h--solo"><span>SUPERVISIÓN · REGISTRO · AJUSTES</span></div>
 <main class="deck">
 
   <!-- ============ COLUMNA A: programa ============ -->
@@ -365,7 +379,7 @@
   <div class="col col-c">
     <div class="drawers">
       <details class="drawer" id="dr-hud">
-        <summary><span class="dr-t">HORA · UBICACIÓN · EN VIVO</span><span class="dr-s" id="hud-summary">—</span></summary>
+        <summary><span class="dr-t">HORA Y LUGAR</span><span class="dr-s" id="hud-summary">—</span></summary>
         <div class="drawer-body">
           <div class="hint">La cartela de arriba a la derecha del overlay (horizontal). Escribe el lugar desde donde transmites y elige la zona horaria; se aplica con el botón y queda guardado en OBS.</div>
           <label class="field" style="margin-top:8px"><span>UBICACIÓN</span><input id="hud-location" data-keep="hud-location" maxlength="60" placeholder="CIUDAD · PAÍS" autocomplete="off"></label>
@@ -422,6 +436,12 @@
             <input type="range" id="snd-volume" min="0" max="1" step="0.05" value="0.6" data-keep="snd-volume">
             <span id="snd-volume-val" class="mlabel tabnum">60%</span>
           </div>
+          <div class="sub-k">EFECTOS DEL PROGRAMA · el sonido de cada cosa que pasa en pantalla</div>
+          <div class="hint">Cada efecto suena <b>sintetizado</b> por defecto (no necesitas archivos). Para cambiarlo, pega un link o una ruta (<code>https://…/sonido.mp3</code>, <code>assets/sounds/alerta.mp3</code>) o elige un archivo pequeño (≤ 500 KB). ▶ lo prueba al instante.</div>
+          <div class="sfx-list" id="sfx-list"></div>
+          <div class="sub-k">MIS SONIDOS · soundboard con tecla rápida
+            <span class="sm-tools"><button class="btn--sm btn--ghost" id="sn-edit-toggle" title="Mostrar editar en cada botón">✎ EDITAR</button><button class="btn--sm btn--primary" id="sn-new">+ NUEVO SONIDO</button></span></div>
+          <div class="sn-grid" id="sn-grid"></div>
           <div class="sub-k">AMBIENTE · room tone de fondo</div>
           <label class="check"><input type="checkbox" id="amb-enabled"> Ambiente activado</label>
           <div class="vol" style="margin-top:8px">
@@ -429,8 +449,6 @@
             <input type="range" id="amb-volume" min="0" max="1" step="0.02" value="0.18">
             <span id="amb-volume-val" class="mlabel tabnum">18%</span>
           </div>
-          <div class="sub-k">PROBAR SONIDOS</div>
-          <div class="row" id="snd-tests"></div>
           <div class="sub-k">DUCKING · baja una fuente de OBS mientras suena un efecto y la sube sola</div>
           <label class="check"><input type="checkbox" id="duck-enabled" data-keep="duck-enabled"> Ducking activado</label>
           <div id="duck-inputs"><div class="bank-empty">Conectando a OBS para listar las fuentes de audio…</div></div>
@@ -512,6 +530,31 @@
       <button class="btn--sm btn--ghost" id="cf-archive" title="Archivar / reactivar este expediente">🗄 ARCHIVAR</button>
       <button class="btn--sm btn--ghost cfe-del" id="cf-delete" title="Borrar este expediente">✕ BORRAR</button>
       <span class="hint cfe-foot-h">Se guarda solo · <kbd>Esc</kbd> cierra</span>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="sn-modal" hidden>
+  <div class="modal-box" role="dialog" aria-label="Sonido personalizado">
+    <div class="modal-h"><span class="card-id">SND</span><span class="dr-t" id="sn-title">NUEVO SONIDO</span></div>
+    <div class="cb-form">
+      <label class="field"><span>NOMBRE</span><input id="sn-name" maxlength="28" placeholder="APLAUSOS, SUSPENSO, RISAS…" autocomplete="off"></label>
+      <label class="field"><span>LINK O RUTA DEL SONIDO</span>
+        <div class="row"><input id="sn-url" style="flex:1" placeholder="https://…/sonido.mp3  ·  assets/sounds/aplausos.mp3" autocomplete="off" spellcheck="false">
+          <label class="btn btn--sm upload" title="Elegir un archivo de audio (≤ 500 KB)">📁 ARCHIVO<input id="sn-file" type="file" accept="audio/*"></label>
+          <button type="button" class="btn--sm" id="sn-try" title="Escuchar antes de guardar">▶ PROBAR</button></div>
+      </label>
+      <div class="grid2">
+        <label class="field"><span>VOLUMEN <em id="sn-vol-val" style="font-style:normal;color:var(--y)">100%</em></span><input id="sn-vol" type="range" min="0.1" max="1" step="0.05" value="1"></label>
+        <label class="field"><span>ATAJO DE TECLADO (clic y pulsa)</span>
+          <div class="row"><input id="sn-key" readonly placeholder="sin atajo" style="flex:1"><button type="button" class="btn--sm btn--ghost" id="sn-key-clear">QUITAR</button></div></label>
+      </div>
+      <div class="hint" id="sn-err" style="color:#ff5a6a"></div>
+    </div>
+    <div class="modal-f cf-modal-f">
+      <button class="btn--sm btn--primary" id="sn-save">GUARDAR</button>
+      <button class="btn--sm" id="sn-cancel">CANCELAR</button>
+      <button class="btn--sm btn--danger" id="sn-delete" hidden style="margin-left:auto">✕ BORRAR</button>
     </div>
   </div>
 </div>
