@@ -182,6 +182,13 @@ Ajustes → **AUDIO**:
 - **A− / A+**: tamaño de todo el panel (90 % a 130 %). Con letra grande el diseño se reordena solo (Case Files arriba y el Deck debajo, a todo el ancho) para que nada se aplaste. Dentro de Case Files, el lector tiene además su propio A− / A+ para leer a distancia.
 - Los avisos salen abajo a la derecha y ya no tapan "Now playing".
 
+### Teleprompter, estados de verificación y aspecto Dossier
+
+- **📜 PROMPTER** (botón del lector, o la acción «Abrir / cerrar el teleprompter»): el lector se convierte en teleprompter *en la misma pantalla*. Texto grande que se desplaza solo, con una **línea marcador** (▶ ◀) donde está la lectura. Si dejaste un marcador de lectura en el expediente, arranca desde ahí. Velocidad en **palabras por minuto** (60–260) y tiempo que falta; clic en un párrafo salta a él; la rueda del mouse lo mueve a mano. **⚙ AJUSTES**: tamaño, interlineado, ancho, altura del marcador, colores (blanco, amarillo, negro sobre papel, verde), **espejo** para cristal de teleprompter y cuenta atrás de 3 s. Teclas de fábrica: `P` leer/pausar, `[` más lento, `]` más rápido; todas editables en ⌨ ATAJOS, igual que «volver al principio». `Esc` sale. Al cambiar de tema (p. ej. con la escaleta) carga el nuevo texto en pausa. No usa nada del overlay.
+- **Estados de verificación**: cada expediente tiene uno (SIN CONFIRMAR · EN VERIFICACIÓN · VERIFICADO · DESMENTIDO de fábrica). Se elige en la cabecera del lector, se ve como un punto de color en la lista y se puede filtrar. **⚙** edita los estados: nombre, color, texto del sello (vacío = sin sello) y color del sello (rojo, gris, verde, ámbar); añade, ordena o borra. **▣ SELLO** sella en pantalla el estado del expediente (solo cuando lo pulsas; también como acción asignable a tecla o macro).
+- **Aspecto** (⚙ VISTA → ASPECTO): **DOSSIER** (por defecto) viste Case Files como un expediente físico: pestañas de carpeta, fichas de archivo con el tipo como sello de tinta, hoja de papel con renglones y marca «CONFIDENCIAL», y evidencias como polaroids con chinche. **LIMPIO** vuelve a la consola oscura. Solo cambia el panel; el público no ve nada de esto.
+- **Tamaño del texto**: A− / A+ ahora va del 70 % al 130 % en pasos (se ve el porcentaje).
+
 ### ESCALETA (rundown) en Case Files
 
 Pestaña **ESCALETA** (al lado de EXPEDIENTES, en Case Files): los temas del programa en orden, como en una producción de TV.

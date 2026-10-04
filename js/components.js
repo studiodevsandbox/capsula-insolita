@@ -659,9 +659,10 @@
     ], { duration: 250, easing: 'cubic-bezier(.55,0,.75,.2)' });
   }
   LCI.Stamps = {
-    async show(text) {
-      const t = String(text || 'CONFIDENCIAL').toUpperCase();
-      const st = el('div', 'stamp stamp--' + (STAMP_COLOR[t] || 'red'), `<span>${esc(t)}</span>`);
+    async show(text, color) {
+      const t = String(text || 'CONFIDENCIAL').toUpperCase().slice(0, 28);
+      const col = ['red', 'gray', 'green', 'amber'].includes(color) ? color : (STAMP_COLOR[t] || 'red');
+      const st = el('div', 'stamp stamp--' + col, `<span>${esc(t)}</span>`);
       const group = document.querySelector('#evidence:not([hidden]) .ev__group');
       let host;
       if (group) {

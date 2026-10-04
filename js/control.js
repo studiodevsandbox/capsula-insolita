@@ -445,6 +445,7 @@
     let list = cfFilter === 'all' ? items : items.filter(i => i.type === cfFilter);
     if (cfOnlyUntold) list = list.filter(i => !i.told);
     if (cfOnlyEv) list = list.filter(i => (i.relatedEvidenceIds || []).length);
+    if (cfVf) list = list.filter(i => vfOf(i).id === cfVf);
     const toks = norm(cfQuery).split(/\s+/).filter(Boolean);
     if (toks.length) list = list.filter(i => { const hay = norm('#' + i.num + ' ' + pad3(i.num) + ' ' + (i.title || '') + ' ' + (i.body || '') + ' ' + cfTypeLabel(i.type)); return toks.every(t => hay.includes(t)); });
     return list.slice().sort((a, b) => b.num - a.num);
@@ -489,7 +490,7 @@
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'cf-item' + (item.status === 'archivado' ? ' cf-item--archived' : '') + (item.id === cfOpenId ? ' cf-item--sel' : '');
-      row.innerHTML = `<span class="cf-dot cf-dot--${cfDotClass(item)}"></span><span class="cf-num">#${pad3(item.num)}</span><span class="cf-t"></span>${item.told ? '<span class="cf-told" title="Ya contado en el programa">✓</span>' : ''}${(rdReady && rdPosOfCf(item.id) >= 0) ? `<span class="cf-rd" title="Tema ${rdPosOfCf(item.id) + 1} de la escaleta">E${rdPosOfCf(item.id) + 1}</span>` : ''}<span class="cf-ty">${esc(cfTypeLabel(item.type))}</span>`;
+      row.innerHTML = `<span class="cf-dot cf-dot--${cfDotClass(item)}"></span><span class="cf-num">#${pad3(item.num)}</span><span class="cf-t"></span>${vfReady ? `<span class="cf-vf" style="--c:${vfOf(item).color}" title="${esc(vfOf(item).label)}"></span>` : ''}${item.told ? '<span class="cf-told" title="Ya contado en el programa">✓</span>' : ''}${(rdReady && rdPosOfCf(item.id) >= 0) ? `<span class="cf-rd" title="Tema ${rdPosOfCf(item.id) + 1} de la escaleta">E${rdPosOfCf(item.id) + 1}</span>` : ''}<span class="cf-ty">${esc(cfTypeLabel(item.type))}</span>`;
       row.querySelector('.cf-t').textContent = (item.title || '(sin título)') + (item.status === 'archivado' ? ' · ARCHIVADO' : '');
       row.addEventListener('click', () => openCaseFile(item.id));
       box.appendChild(row);
@@ -527,6 +528,8 @@
     }
     body.style.setProperty('--cf-fs', CF_FS[cfFs] + 'px');
     cfPaintMark(item);
+    if (vfReady) vfPaintSelect(item);
+    if (tpReady) tpSync(item);
     $('#cf-r-told').classList.toggle('on', !!item.told);
     if (rdReady) { const p = rdPosOfCf(item.id); $('#cf-r-rd').textContent = p >= 0 ? `✓ EN ESCALETA · TEMA ${p + 1}` : '＋ ESCALETA'; $('#cf-r-rd').classList.toggle('on', p >= 0); $('#cf-r-rd').disabled = p >= 0; }
     $('#cf-r-told').textContent = item.told ? '✓ CONTADO' : '○ CONTADO';
@@ -1757,6 +1760,8 @@
       if (kmOpen()) { kmClose(); return; }
       if (!$('#cf-modal').hidden) { cfCloseEditor(); return; }
       if (macroRun) { macroRun.cancelled = true; toast('MACRO CANCELADA', 'info'); return; }
+      if (!$('#vf-modal').hidden) { $('#vf-modal').hidden = true; return; }
+      if (tpReady && tp.on) { tpClose(); return; }
       if (trPopOpen()) { trPopSet(false); return; }
       if (panelLocked) return;
       if (armed) { disarm(); toast('CANCELADO', 'info'); return; }
@@ -1764,7 +1769,7 @@
       if (cuedId) { cue(null); return; }
       return;
     }
-    if (palOpen() || kmOpen() || !$('#cb-modal').hidden || !$('#sn-modal').hidden) return;
+    if (palOpen() || kmOpen() || !$('#cb-modal').hidden || !$('#sn-modal').hidden || !$('#vf-modal').hidden) return;
     if (isTyping(document.activeElement) || e.repeat) return;
     if (panelLocked) { // con candado solo se atiende desbloquear y el pánico
       const c = comboFromEvent(e);
@@ -1932,6 +1937,188 @@
   }
   setDeckCollapsed(!!saved['cdeck-collapsed']);
   $('#cdeck-toggle').addEventListener('click', () => setDeckCollapsed(!cdeck.classList.contains('cdeck--collapsed')));
+
+  /* =====================================================================================
+     ESTADOS DE VERIFICACIÓN: cada expediente tiene uno (SIN CONFIRMAR / EN VERIFICACIÓN / VERIFICADO /
+     DESMENTIDO de fábrica). Nombre, color y sello son tuyos. El sello solo sale al aire al pulsar ▣ SELLO.
+     ===================================================================================== */
+  var vfReady = false; // las primeras pintadas de Case Files ocurren antes de cargar los estados
+  const VF_KEY = 'lci-verif-v1';
+  const VF_STAMP_COLORS = [['red', 'ROJO'], ['gray', 'GRIS'], ['green', 'VERDE'], ['amber', 'ÁMBAR']];
+  const VF_DEFAULT = [
+    { id: 'sin', label: 'SIN CONFIRMAR', color: '#9a9a9a', stamp: '', stampColor: 'gray' },
+    { id: 'ver', label: 'EN VERIFICACIÓN', color: '#ffb020', stamp: 'PENDIENTE', stampColor: 'gray' },
+    { id: 'ok', label: 'VERIFICADO', color: '#5fd08a', stamp: 'VERIFICADO', stampColor: 'green' },
+    { id: 'no', label: 'DESMENTIDO', color: '#ff5a6a', stamp: 'DESMENTIDO', stampColor: 'red' }
+  ];
+  let vfStates = (() => {
+    const v = readJSON(VF_KEY);
+    const ok = Array.isArray(v) ? v.filter(x => isObj(x) && typeof x.id === 'string' && typeof x.label === 'string').slice(0, 12).map(x => ({
+      id: x.id, label: x.label.slice(0, 22), color: /^#[0-9a-f]{6}$/i.test(x.color) ? x.color : '#9a9a9a',
+      stamp: String(x.stamp || '').slice(0, 24), stampColor: VF_STAMP_COLORS.some(c => c[0] === x.stampColor) ? x.stampColor : 'red' })) : [];
+    return ok.length ? ok : VF_DEFAULT.map(x => Object.assign({}, x));
+  })();
+  vfReady = true;
+  var cfVf = ''; // filtro de la lista por estado (var: la lista se pinta antes de llegar aquí)
+  const saveVf = () => { try { localStorage.setItem(VF_KEY, JSON.stringify(vfStates)); } catch (e) { toast('✕ NO PUDE GUARDAR LOS ESTADOS', 'err'); } };
+  const vfOf = item => vfStates.find(s => s.id === item.verif) || vfStates[0];
+  function vfFill() {
+    const sel = $('#cf-r-vf'), flt = $('#cf-f-vf');
+    sel.innerHTML = vfStates.map(s => `<option value="${esc(s.id)}">${esc(s.label)}</option>`).join('');
+    const cur = flt.value;
+    flt.innerHTML = '<option value="">ESTADO · TODOS</option>' + vfStates.map(s => `<option value="${esc(s.id)}">${esc(s.label)}</option>`).join('');
+    flt.value = vfStates.some(s => s.id === cur) ? cur : ''; cfVf = flt.value;
+  }
+  function vfPaintSelect(item) {
+    const st = vfOf(item), sel = $('#cf-r-vf');
+    sel.value = st.id; sel.style.setProperty('--c', st.color);
+    $('#cf-r-stamp').disabled = !st.stamp;
+    $('#cf-r-stamp').title = st.stamp ? `Sella en pantalla «${st.stamp}». Solo sale cuando lo pulsas.` : `El estado «${st.label}» no tiene sello (⚙ para configurarlo)`;
+  }
+  $('#cf-r-vf').addEventListener('change', e => { const it = cfItem(); if (!it) return; it.verif = e.target.value; saveCaseFiles(); renderCaseFiles(); });
+  $('#cf-f-vf').addEventListener('change', e => { cfVf = e.target.value; renderCaseFiles(); });
+  function vfStamp() {
+    if (panelLocked) return Promise.resolve(false);
+    const it = cfItem();
+    if (!it) { toast('ELIGE UN EXPEDIENTE PRIMERO', 'info'); return Promise.resolve(false); }
+    const st = vfOf(it);
+    if (!st.stamp) { toast(`EL ESTADO «${st.label}» NO TIENE SELLO`, 'info'); return Promise.resolve(false); }
+    return send({ cmd: 'stamp', text: st.stamp, color: st.stampColor }, { ok: `✓ SELLO · ${st.stamp}` });
+  }
+  $('#cf-r-stamp').addEventListener('click', vfStamp);
+  act('vf-stamp', 'CASE FILES', 'Sellar en pantalla el estado del expediente', vfStamp);
+  // editor de estados
+  function renderVfModal() {
+    const list = $('#vf-list');
+    list.innerHTML = '';
+    vfStates.forEach((st, i) => {
+      const row = document.createElement('div');
+      row.className = 'vf-row';
+      row.innerHTML = '<input type="color" class="vf-color" aria-label="Color">' +
+        '<input type="text" class="vf-label" maxlength="22" placeholder="NOMBRE DEL ESTADO" aria-label="Nombre">' +
+        '<input type="text" class="vf-stamp" maxlength="24" placeholder="sello (vacío = ninguno)" aria-label="Texto del sello">' +
+        `<select class="vf-sc" aria-label="Color del sello">${VF_STAMP_COLORS.map(c => `<option value="${c[0]}">${c[1]}</option>`).join('')}</select>` +
+        `<button type="button" class="btn--sm btn--ghost vf-up" ${i === 0 ? 'disabled' : ''} title="Subir">↑</button><button type="button" class="btn--sm btn--ghost vf-x" ${vfStates.length === 1 ? 'disabled' : ''} title="Borrar este estado">✕</button>`;
+      row.querySelector('.vf-color').value = st.color; row.querySelector('.vf-label').value = st.label;
+      row.querySelector('.vf-stamp').value = st.stamp; row.querySelector('.vf-sc').value = st.stampColor;
+      const upd = () => {
+        st.color = row.querySelector('.vf-color').value; st.label = row.querySelector('.vf-label').value.trim().slice(0, 22) || 'ESTADO';
+        st.stamp = row.querySelector('.vf-stamp').value.trim().toUpperCase().slice(0, 24); st.stampColor = row.querySelector('.vf-sc').value;
+        saveVf(); vfFill(); const it = cfItem(); if (it) vfPaintSelect(it); renderCaseFiles();
+      };
+      row.querySelectorAll('input, select').forEach(n => n.addEventListener('change', upd));
+      row.querySelector('.vf-up').addEventListener('click', () => { [vfStates[i - 1], vfStates[i]] = [vfStates[i], vfStates[i - 1]]; saveVf(); vfFill(); renderVfModal(); renderCaseFiles(); });
+      row.querySelector('.vf-x').addEventListener('click', () => { if (!confirm(`¿Borrar el estado «${st.label}»? Los expedientes que lo tengan pasan al primero de la lista.`)) return; vfStates.splice(i, 1); saveVf(); vfFill(); renderVfModal(); renderCaseFiles(); const it = cfItem(); if (it) vfPaintSelect(it); });
+      list.appendChild(row);
+    });
+  }
+  $('#vf-config').addEventListener('click', () => { renderVfModal(); $('#vf-modal').hidden = false; });
+  $('#vf-close').addEventListener('click', () => { $('#vf-modal').hidden = true; });
+  $('#vf-modal').addEventListener('click', e => { if (e.target.id === 'vf-modal') $('#vf-modal').hidden = true; });
+  $('#vf-add').addEventListener('click', () => { if (vfStates.length >= 12) { toast('MÁXIMO 12 ESTADOS', 'info'); return; } vfStates.push({ id: 'vf' + Date.now().toString(36), label: 'NUEVO ESTADO', color: '#c9a900', stamp: '', stampColor: 'red' }); saveVf(); vfFill(); renderVfModal(); });
+  $('#vf-reset').addEventListener('click', () => { if (!confirm('¿Volver a los 4 estados de fábrica?')) return; vfStates = VF_DEFAULT.map(x => Object.assign({}, x)); saveVf(); vfFill(); renderVfModal(); renderCaseFiles(); const it = cfItem(); if (it) vfPaintSelect(it); });
+  vfFill();
+
+  /* =====================================================================================
+     TELEPROMPTER (en la misma pantalla, dentro del lector de Case Files)
+     Velocidad en palabras por minuto: los píxeles por segundo se calculan con el alto real del texto,
+     así sirve con cualquier tamaño de letra. El bucle de animación solo existe mientras está leyendo.
+     ===================================================================================== */
+  var tpReady = false;
+  const TP_KEY = 'tp-settings';
+  const TP_THEMES = { blanco: ['#000', '#fff'], amarillo: ['#000', '#FFD400'], papel: ['#E8E2D5', '#111'], verde: ['#000', '#8CFF9E'] };
+  const tp = Object.assign({ on: false, playing: false, pos: 0, itemId: null, raf: 0, last: 0, tick: 0, counting: 0, words: 0 },
+    { wpm: 140, fs: 52, lh: 1.5, w: 82, mk: 34, theme: 'blanco', mirror: false, count: true }, isObj(saved[TP_KEY]) ? saved[TP_KEY] : {});
+  tpReady = true;
+  const tpNum = (v, lo, hi, d) => { v = Number(v); return Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
+  const tpClean = () => { tp.wpm = tpNum(tp.wpm, 60, 260, 140); tp.fs = tpNum(tp.fs, 22, 110, 52); tp.lh = tpNum(tp.lh, 1.1, 2.2, 1.5); tp.w = tpNum(tp.w, 40, 100, 82); tp.mk = tpNum(tp.mk, 10, 70, 34); if (!TP_THEMES[tp.theme]) tp.theme = 'blanco'; };
+  tpClean();
+  const tpSave = () => keep(TP_KEY, { wpm: tp.wpm, fs: tp.fs, lh: tp.lh, w: tp.w, mk: tp.mk, theme: tp.theme, mirror: !!tp.mirror, count: !!tp.count });
+  const tpView = $('#tp-view'), tpText = $('#tp-text');
+  const tpMarkerPx = () => Math.round(tpView.clientHeight * tp.mk / 100);
+  const tpMax = () => Math.max(0, tpText.scrollHeight - tpView.clientHeight);
+  function tpStyle() {
+    const [bg, fg] = TP_THEMES[tp.theme], root = $('#tp');
+    root.style.setProperty('--tp-bg', bg); root.style.setProperty('--tp-fg', fg);
+    root.style.setProperty('--tp-fs', tp.fs + 'px'); root.style.setProperty('--tp-lh', tp.lh); root.style.setProperty('--tp-w', tp.w + '%');
+    tpText.classList.toggle('mirror', !!tp.mirror);
+    const mk = tpMarkerPx();
+    $('#tp-marker').style.top = tp.mk + '%';
+    tpText.style.paddingTop = mk + 'px'; tpText.style.paddingBottom = Math.max(0, tpView.clientHeight - mk) + 'px';
+    $('#tp-wpm').value = tp.wpm; $('#tp-wpm-v').textContent = tp.wpm;
+    $('#tp-fs').value = tp.fs; $('#tp-lh').value = tp.lh; $('#tp-w').value = tp.w; $('#tp-mk').value = tp.mk;
+    $('#tp-theme').value = tp.theme; $('#tp-mirror').checked = !!tp.mirror; $('#tp-count-on').checked = !!tp.count;
+  }
+  const tpPxPerSec = () => { const body = Math.max(1, tpText.scrollHeight - parseFloat(tpText.style.paddingTop || 0) - parseFloat(tpText.style.paddingBottom || 0)); return (body / Math.max(1, tp.words)) * tp.wpm / 60; };
+  function tpPaint() {
+    const max = tpMax(), p = max ? tp.pos / max : 0;
+    $('#tp-prog').style.width = Math.round(p * 100) + '%';
+    const left = Math.max(0, (max - tp.pos) / Math.max(1, tpPxPerSec()));
+    $('#tp-time').textContent = '≈ ' + fmtMS(left * 1000) + (tp.playing ? '' : ' · en pausa');
+  }
+  function tpSetPos(v) { tp.pos = Math.max(0, Math.min(tpMax(), v)); tpView.scrollTop = tp.pos; tpPaint(); }
+  function tpLoop(ts) {
+    if (!tp.playing) return;
+    const dt = Math.min(0.1, (ts - (tp.last || ts)) / 1000); tp.last = ts;
+    tpSetPos(tp.pos + tpPxPerSec() * dt);
+    if (tp.pos >= tpMax() - 0.5) { tpPause(); toast('📜 FIN DEL TEXTO', 'info'); return; }
+    tp.raf = requestAnimationFrame(tpLoop);
+  }
+  function tpRun() { tp.playing = true; tp.last = 0; $('#tp-play-t').textContent = '❚❚ PAUSA'; $('#tp').classList.add('is-playing'); cancelAnimationFrame(tp.raf); tp.raf = requestAnimationFrame(tpLoop); }
+  function tpPause() { tp.playing = false; clearTimeout(tp.counting); tp.counting = 0; $('#tp-count').hidden = true; cancelAnimationFrame(tp.raf); $('#tp-play-t').textContent = '▶ LEER'; $('#tp').classList.remove('is-playing'); tpPaint(); }
+  function tpPlayToggle() {
+    if (!tp.on) { if (!tpOpen()) return; }
+    if (tp.playing || tp.counting) { tpPause(); return; }
+    if (tp.pos >= tpMax() - 0.5) tpSetPos(0);
+    if (!tp.count || tp.pos > 4) { tpRun(); return; }
+    let n = 3; const cnt = $('#tp-count'); cnt.hidden = false; cnt.textContent = n;
+    const step = () => { n--; if (n <= 0) { cnt.hidden = true; tp.counting = 0; tpRun(); return; } cnt.textContent = n; tp.counting = setTimeout(step, 1000); };
+    tp.counting = setTimeout(step, 1000);
+  }
+  function tpLoad(item) {
+    tpPause();
+    tp.itemId = item.id;
+    const paras = (item.body || '').split(/\n+/).map(t => t.trim()).filter(Boolean);
+    tpText.innerHTML = '';
+    if (!paras.length) { const p = document.createElement('p'); p.textContent = '(este expediente no tiene texto todavía)'; tpText.appendChild(p); }
+    paras.forEach((t, i) => { const p = document.createElement('p'); p.textContent = t; p.dataset.i = i; p.addEventListener('click', () => tpSetPos(p.offsetTop - tpMarkerPx())); tpText.appendChild(p); });
+    tp.words = (item.body || '').match(/\S+/g) ? (item.body.match(/\S+/g).length) : 1;
+    $('#tp-title').textContent = `#${pad3(item.num)} ${item.title || ''}`;
+    tpStyle();
+    const m = Number.isInteger(item.mark) && tpText.children[item.mark] ? tpText.children[item.mark] : null;
+    tpSetPos(m ? m.offsetTop - tpMarkerPx() : 0); // si dejaste un marcador, el prompter arranca ahí
+  }
+  function tpOpen() {
+    const it = cfItem();
+    if (!it) { toast('ELIGE UN EXPEDIENTE PARA LEERLO EN EL PROMPTER', 'info'); return false; }
+    tp.on = true; $('#cf-reader').classList.add('tp-on'); $('#tp').hidden = false;
+    tpLoad(it);
+    return true;
+  }
+  function tpClose() { tpPause(); tp.on = false; $('#tp').hidden = true; $('#cf-reader').classList.remove('tp-on'); }
+  // el lector llama aquí al cambiar de expediente: el prompter carga el nuevo texto y espera en pausa
+  function tpSync(item) { if (tp.on && item && tp.itemId !== item.id) tpLoad(item); }
+  $('#cf-r-tp').addEventListener('click', () => (tp.on ? tpClose() : tpOpen()));
+  $('#tp-exit').addEventListener('click', tpClose);
+  $('#tp-play').addEventListener('click', tpPlayToggle);
+  $('#tp-restart').addEventListener('click', () => { tpPause(); tpSetPos(0); });
+  tpView.addEventListener('wheel', e => { e.preventDefault(); tpSetPos(tp.pos + e.deltaY); }, { passive: false });
+  const tpBind = (id, key, conv) => $(id).addEventListener('input', e => { tp[key] = conv ? conv(e.target) : e.target.value; tpClean(); tpSave(); const keepPos = tp.words ? tp.pos / Math.max(1, tpMax()) : 0; tpStyle(); tpSetPos(keepPos * tpMax()); });
+  tpBind('#tp-wpm', 'wpm'); tpBind('#tp-fs', 'fs'); tpBind('#tp-lh', 'lh'); tpBind('#tp-w', 'w'); tpBind('#tp-mk', 'mk');
+  tpBind('#tp-theme', 'theme'); tpBind('#tp-mirror', 'mirror', n => n.checked); tpBind('#tp-count-on', 'count', n => n.checked);
+  $('#tp-set-toggle').addEventListener('click', () => { const o = $('#tp-set').hidden; $('#tp-set').hidden = !o; $('#tp-set-toggle').setAttribute('aria-expanded', String(o)); });
+  const tpSpeed = d => { tp.wpm = tpNum(tp.wpm + d, 60, 260, 140); tpSave(); tpStyle(); tpPaint(); toast(`📜 ${tp.wpm} ppm`, 'info'); };
+  act('tp-toggle', 'PROMPTER', 'Abrir / cerrar el teleprompter', () => (tp.on ? tpClose() : tpOpen()));
+  act('tp-play', 'PROMPTER', 'Teleprompter · leer / pausar', tpPlayToggle, 'P');
+  act('tp-slower', 'PROMPTER', 'Teleprompter · más lento', () => tpSpeed(-10), '[');
+  act('tp-faster', 'PROMPTER', 'Teleprompter · más rápido', () => tpSpeed(10), ']');
+  act('tp-restart', 'PROMPTER', 'Teleprompter · volver al principio', () => { if (tp.on) { tpPause(); tpSetPos(0); } });
+  window.addEventListener('resize', () => { if (tp.on) { tpStyle(); tpSetPos(tp.pos); } });
+
+  /* ASPECTO de Case Files: DOSSIER (expediente físico) o LIMPIO (consola). Solo el panel, no el overlay. */
+  function setAspect(v) { if (v !== 'limpio') v = 'dossier'; document.body.dataset.aspect = v; $('#aspect-select').value = v; keep('aspect', v); }
+  $('#aspect-select').addEventListener('change', e => setAspect(e.target.value));
+  setAspect(saved.aspect);
 
   /* =====================================================================================
      ESCALETA (rundown): los temas del programa en orden, con minutos, tema actual, atraso y
@@ -2872,12 +3059,12 @@
   function setView(v) { if (!VIEWS.includes(v)) v = 'normal'; document.body.dataset.view = v; $('#view-select').value = v; keep('view', v); }
   $('#view-select').addEventListener('change', e => setView(e.target.value));
   setView(saved.view);
-  const UI_SIZES = [0.9, 1, 1.1, 1.2, 1.3];
+  const UI_SIZES = [0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3]; // de más pequeño (70 %) a más grande (130 %)
   let uiSize = UI_SIZES.includes(saved['ui-size']) ? saved['ui-size'] : 1;
   // el zoom achica el ancho útil: los puntos de quiebre usan el ancho EFECTIVO (ventana / zoom), no el de la ventana
   function syncEff() { const eff = window.innerWidth / (uiSize || 1); document.body.dataset.eff = eff >= 1480 ? 'wide' : eff >= 1180 ? 'mid' : 'narrow'; }
   window.addEventListener('resize', syncEff);
-  function setUiSize(z) { uiSize = z; syncEff(); document.documentElement.style.zoom = z === 1 ? '' : String(z); keep('ui-size', z); $('#ui-smaller').disabled = z === UI_SIZES[0]; $('#ui-bigger').disabled = z === UI_SIZES[UI_SIZES.length - 1]; if (window.ResizeObserver === undefined) setTopbarH(); }
+  function setUiSize(z) { uiSize = z; syncEff(); document.documentElement.style.zoom = z === 1 ? '' : String(z); keep('ui-size', z); $('#ui-size-v').textContent = Math.round(z * 100) + '%'; $('#ui-smaller').disabled = z === UI_SIZES[0]; $('#ui-bigger').disabled = z === UI_SIZES[UI_SIZES.length - 1]; if (window.ResizeObserver === undefined) setTopbarH(); }
   $('#ui-smaller').addEventListener('click', () => setUiSize(UI_SIZES[Math.max(0, UI_SIZES.indexOf(uiSize) - 1)]));
   $('#ui-bigger').addEventListener('click', () => setUiSize(UI_SIZES[Math.min(UI_SIZES.length - 1, UI_SIZES.indexOf(uiSize) + 1)]));
   setUiSize(uiSize);

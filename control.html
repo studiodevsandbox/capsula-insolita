@@ -36,8 +36,10 @@
       <div class="view-pop" id="view-pop" hidden>
         <div class="vp-row"><span class="mlabel">VISTA</span>
           <select id="view-select" title="NORMAL 50/50 · LECTURA (Case Files grande) · OPERACIÓN (evidencia arriba) · COMPACTO"><option value="normal">NORMAL · 50/50</option><option value="lectura">LECTURA</option><option value="operacion">OPERACIÓN</option><option value="compacto">COMPACTO</option></select></div>
+        <div class="vp-row"><span class="mlabel">ASPECTO</span>
+          <select id="aspect-select" title="Aspecto de Case Files: DOSSIER (expediente físico) o LIMPIO (consola)"><option value="dossier">DOSSIER · expediente</option><option value="limpio">LIMPIO · consola</option></select></div>
         <div class="vp-row"><span class="mlabel">TEXTO</span>
-          <span class="ui-size" title="Tamaño del texto del panel"><button id="ui-smaller" aria-label="Texto más pequeño">A−</button><button id="ui-bigger" aria-label="Texto más grande">A+</button></span></div>
+          <span class="ui-size" title="Tamaño del texto del panel"><button id="ui-smaller" aria-label="Texto más pequeño">A−</button><span class="ui-size-v" id="ui-size-v">100%</span><button id="ui-bigger" aria-label="Texto más grande">A+</button></span></div>
         <div class="vp-row vp-row--col"><span class="mlabel">ORDEN DE LAS CAJAS</span>
           <div class="vp-boxes">
             <button id="layout-toggle" title="Arrastra una caja por su título y suéltala sobre otra para intercambiar el orden. Clic de nuevo para bloquear.">⠿ CAJAS</button>
@@ -96,6 +98,7 @@
           <input id="cf-search" type="search" placeholder="buscar en expedientes…" autocomplete="off" spellcheck="false">
           <button type="button" class="cf-chip" id="cf-f-untold" title="Solo los que todavía no has contado en el programa">SIN CONTAR</button>
           <button type="button" class="cf-chip" id="cf-f-ev" title="Solo los que tienen evidencia relacionada">CON EVIDENCIA</button>
+          <select id="cf-f-vf" class="cf-vfsel" title="Filtrar por estado de verificación"></select>
         </div>
         <div class="cf-list" id="cf-list"></div>
         <div class="pv-foot">
@@ -129,11 +132,38 @@
       </div>
       <article class="cf-reader" id="cf-reader" aria-live="polite">
         <div class="cf-reader-empty" id="cf-reader-empty">Elige un expediente de la lista para leerlo aquí. Sus evidencias se preparan solas en §04 (nada sale al aire hasta que lo mandes).</div>
+        <div class="tp" id="tp" hidden>
+          <div class="tp-head">
+            <span class="card-id">PROMPTER</span><b class="tp-title" id="tp-title"></b>
+            <span class="tp-time" id="tp-time" title="Tiempo que falta de lectura">--:--</span>
+            <button type="button" class="btn--sm" id="tp-exit" title="Salir del teleprompter (Esc)">✕ SALIR</button>
+          </div>
+          <div class="tp-view" id="tp-view"><div class="tp-marker" id="tp-marker"></div><div class="tp-text" id="tp-text"></div><div class="tp-count" id="tp-count" hidden></div></div>
+          <div class="tp-bar">
+            <div class="tp-prog"><i id="tp-prog"></i></div>
+            <div class="tp-ctl">
+              <button type="button" class="btn--sm" id="tp-restart" title="Volver al principio">⏮</button>
+              <button type="button" class="tp-play" id="tp-play" title="Leer / pausar"><span id="tp-play-t">▶ LEER</span> <kbd data-kbd="tp-play"></kbd></button>
+              <label class="tp-speed" title="Velocidad de lectura en palabras por minuto"><span>VELOCIDAD</span><input type="range" id="tp-wpm" min="60" max="260" step="5"><b id="tp-wpm-v">140</b><i>ppm</i></label>
+              <button type="button" class="btn--sm btn--ghost" id="tp-set-toggle" aria-expanded="false">⚙ AJUSTES</button>
+            </div>
+            <div class="tp-set" id="tp-set" hidden>
+              <label><span>TAMAÑO</span><input type="range" id="tp-fs" min="22" max="110" step="2"></label>
+              <label><span>INTERLINEADO</span><input type="range" id="tp-lh" min="1.1" max="2.2" step="0.05"></label>
+              <label><span>ANCHO</span><input type="range" id="tp-w" min="40" max="100" step="2"></label>
+              <label><span>MARCADOR</span><input type="range" id="tp-mk" min="10" max="70" step="2"></label>
+              <label><span>COLORES</span><select id="tp-theme"><option value="blanco">BLANCO sobre negro</option><option value="amarillo">AMARILLO sobre negro</option><option value="papel">NEGRO sobre papel</option><option value="verde">VERDE sobre negro</option></select></label>
+              <label class="check"><input type="checkbox" id="tp-mirror"> espejo (cristal de teleprompter)</label>
+              <label class="check"><input type="checkbox" id="tp-count-on"> cuenta atrás de 3 s</label>
+            </div>
+          </div>
+        </div>
         <div class="cf-reader-main" id="cf-reader-main" hidden>
           <div class="cf-reader-h">
             <span class="card-id" id="cf-r-num">#000</span>
             <span class="cf-r-type" id="cf-r-type">HISTORIA</span>
             <h3 class="cf-r-title" id="cf-r-title"></h3>
+            <span class="cf-vfbox"><select id="cf-r-vf" class="vf-select" title="Estado de verificación de este expediente"></select><button type="button" id="vf-config" class="vf-cfg" title="Editar los estados (nombre, color y sello)" aria-label="Editar estados">⚙</button></span>
             <span class="cf-fs" title="Tamaño de la letra del lector"><button type="button" id="cf-fs-m" aria-label="Letra más pequeña">A−</button><button type="button" id="cf-fs-p" aria-label="Letra más grande">A+</button></span>
           </div>
           <div class="cf-r-body" id="cf-r-body" tabindex="0"></div>
@@ -143,6 +173,8 @@
           </div>
           <div class="cf-r-btns">
             <button class="btn--sm btn--primary" id="cf-r-show" title="Prepara las evidencias relacionadas en §04 (1.ª = SIGUIENTE, resto = COLA). No manda nada al aire.">▶ MOSTRAR</button>
+            <button class="btn--sm" id="cf-r-tp" title="Leer este expediente como teleprompter, aquí mismo">📜 PROMPTER</button>
+            <button class="btn--sm" id="cf-r-stamp" title="Sella en pantalla el estado de verificación (VERIFICADO, DESMENTIDO…). Solo sale cuando lo pulsas.">▣ SELLO</button>
             <button class="btn--sm" id="cf-r-rd" title="Añadir este expediente a la escaleta del programa">＋ ESCALETA</button>
             <button class="btn--sm" id="cf-r-told" title="Marcar como ya contado en el programa">✓ CONTADO</button>
             <button class="btn--sm" id="cf-r-lt" title="Prepara el lower third con el texto seleccionado (o el título). No sale al aire.">→ LT</button>
@@ -560,6 +592,15 @@
       <button class="btn--sm btn--ghost cfe-del" id="cf-delete" title="Borrar este expediente">✕ BORRAR</button>
       <span class="hint cfe-foot-h">Se guarda solo · <kbd>Esc</kbd> cierra</span>
     </div>
+  </div>
+</div>
+
+<div class="modal" id="vf-modal" hidden>
+  <div class="modal-box" role="dialog" aria-label="Estados de verificación">
+    <div class="modal-h"><span class="card-id">ESTADOS</span><span class="dr-t">ESTADOS DE VERIFICACIÓN</span><button class="btn--sm" id="vf-close" style="margin-left:auto">LISTO</button></div>
+    <div class="hint" style="padding:10px 14px 0">Cada expediente tiene uno. Defines el nombre, el color y el sello que cae en pantalla (si lo hay). El sello solo sale cuando pulsas <b>▣ SELLO</b>.</div>
+    <div class="vf-list" id="vf-list"></div>
+    <div class="modal-f cf-modal-f"><button class="btn--sm btn--primary" id="vf-add">+ NUEVO ESTADO</button><button class="btn--sm btn--ghost" id="vf-reset">RESTABLECER</button></div>
   </div>
 </div>
 

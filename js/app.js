@@ -159,7 +159,7 @@
         LCI.Alerts.show(cmd.text);
         break;
       case 'stamp':
-        LCI.Stamps.show(cmd.text);
+        LCI.Stamps.show(cmd.text, cmd.color);
         break;
       case 'hud': { // cartela de hora / lugar / cronómetro
         const h = pickFields(data, ['location', 'timezone', 'timeFormat', 'showSeconds', 'showDate', 'showElapsed', 'showLocation']);

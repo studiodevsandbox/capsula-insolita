@@ -420,6 +420,8 @@ body:not(.is-outro) .cam.is-focus .cam__tag::after {
 }
 .stamp::before { content: ''; position: absolute; inset: 5px; border: 1.5px solid currentColor; }
 .stamp--gray { color: #4f4f4f; }
+.stamp--green { color: #1f6b3d; }
+.stamp--amber { color: #a86a00; }
 .stamp--xl { font-size: 120px; padding: 22px 54px 14px; border-width: 9px; color: #c21820; }
 .stamp--xl::before { inset: 12px; border-width: 3px; }
 .stamp-slip { padding: 16px 24px; background: var(--paper-bg); box-shadow: 0 14px 30px rgba(0, 0, 0, .7); transform: rotate(-3deg); }
