@@ -1484,7 +1484,7 @@
     else if (obs.connected && overlayActive === false) { txt = 'OVERLAY <b class="bad">FUERA DEL PROGRAMA</b>'; cls = 'chip chip--bad'; }
     else if (obs.connected && overlayActive === 'missing') { txt = `OVERLAY <b class="bad">NO ENCONTRADO</b>`; cls = 'chip chip--bad'; }
     c.innerHTML = txt; c.className = cls;
-    c.title = `Fuente "${OVERLAY_SOURCE}" en OBS — se consulta al conectar y al cambiar de escena`;
+    c.title = `Fuentes "${OVERLAY_SOURCES.join(', ')}" en OBS — se consulta al conectar y al cambiar de escena`;
   }
   function renderObs() {
     const host = $('#host').value || C.obs.host, port = $('#port').value || C.obs.port;
