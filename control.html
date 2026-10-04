@@ -119,31 +119,28 @@
       <div class="alerts" id="alerts"></div>
       <details class="cdeck-stamps"><summary>SELLOS · caen sobre la evidencia si está visible</summary><div class="stamps" id="stamps"></div></details>
     </div>
-    <div class="sm sm--tx" id="sm-tx">
-      <div class="sm-k">3 · TRANSCRIPCIÓN <span class="sm-m" id="tx-state">ESTADO: NO CONECTADO</span></div>
-      <div class="tx-btns">
-        <button class="tx-btn" id="tx-start" disabled title="Sin módulo de transcripción en el proyecto">▶ START</button>
-        <button class="tx-btn" id="tx-pause" disabled title="Sin módulo de transcripción en el proyecto">❚❚ PAUSE</button>
-        <button class="tx-btn" id="tx-stop" disabled title="Sin módulo de transcripción en el proyecto">■ STOP</button>
+    <div class="sm sm--trans" id="sm-trans">
+      <div class="sm-k">4 · TRANSICIÓN <span class="sm-m" id="tr-sel-label">—</span>
+        <span class="sm-tools"><button class="btn--sm btn--primary" id="tr-preview" data-act="tr-run" title="Lanza la transición elegida sin cambiar de escena (T)">▶ PROBAR <kbd>T</kbd></button></span>
       </div>
-      <div class="sm-empty">Este proyecto aún no incluye un sistema de transcripción: los controles se conectan aquí cuando exista.</div>
+      <div class="tr-tiles" id="tr-tiles" role="radiogroup" aria-label="Transición al cambiar de escena"></div>
     </div>
     <div class="sm sm--mode" id="sm-mode">
-      <div class="sm-k">4 · MODO <span class="sm-m" id="mode-meta">—</span></div>
+      <div class="sm-k">5 · MODO <span class="sm-m" id="mode-meta">—</span></div>
       <div class="modes">
         <button class="mode-btn" data-mode="clean"><kbd>C</kbd><span class="m-t">CLEAN</span><span class="m-s">SOLO INFORMACIÓN</span></button>
         <button class="mode-btn" data-mode="investigation"><kbd>I</kbd><span class="m-t">INVESTIGATION</span><span class="m-s">TODOS LOS EFECTOS</span></button>
       </div>
     </div>
     <div class="sm sm--scenes" id="sm-scenes">
-      <div class="sm-k">5 · SCENE SWITCHER <span class="sm-m">TECLAS 1–4</span></div>
+      <div class="sm-k">3 · SCENE SWITCHER <span class="sm-m">TECLAS 1–4</span></div>
       <div class="scenes">
         <button class="scene-btn" data-scene="SCENE_01_CAMERA"><span class="sc-n">SCN 01<kbd>1</kbd></span><span class="sc-t">Una cámara</span></button>
         <button class="scene-btn" data-scene="SCENE_02_DUAL_CAMERA"><span class="sc-n">SCN 02<kbd>2</kbd></span><span class="sc-t">Dos cámaras</span></button>
         <button class="scene-btn" data-scene="SCENE_03_CAMERA_EVIDENCE"><span class="sc-n">SCN 03<kbd>3</kbd></span><span class="sc-t">Cámara + evidencia</span></button>
         <button class="scene-btn" data-scene="SCENE_04_DUAL_CAMERA_EVIDENCE"><span class="sc-n">SCN 04<kbd>4</kbd></span><span class="sc-t">Dos cám. + evidencia</span></button>
       </div>
-      <div class="scene-tr"><span class="mlabel">TRANSICIÓN</span><select id="tr" data-keep="tr"></select></div>
+      <select id="tr" data-keep="tr" hidden aria-hidden="true" tabindex="-1"></select>
     </div>
     <div class="sm sm--custom" id="sm-custom">
       <div class="sm-k">6 · PERSONALIZADOS

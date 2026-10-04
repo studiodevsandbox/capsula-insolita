@@ -157,11 +157,13 @@ Base única de **expedientes** (Historia · Evidencia · Pista · Testimonio). L
 Bajo "Now playing" hay dos áreas de igual peso, fijas (no se arrastran ni se redimensionan):
 
 - **Izquierda · CASE FILES** — "¿qué estoy contando?": pestañas, lista única de expedientes (a la izquierda) y lector con scroll interno (a la derecha). Debajo del lector: evidencias relacionadas y los botones MOSTRAR / EDITAR / ARCHIVAR / BORRAR / ← →.
-- **Derecha · CONTROL DECK** — "¿qué necesito pulsar?": **1 Quick Actions · 2 Alertas (+ sellos) · 3 Transcripción · 4 Modo · 5 Scene Switcher (+ transición) · 6 Personalizados**. Se puede **▾ CONTRAER / ▸ EXPANDIR** (queda una línea con lo esencial; el estado se recuerda).
+- **Derecha · CONTROL DECK** — "¿qué necesito pulsar?": **1 Quick Actions · 2 Alertas (+ sellos) · 3 Scene Switcher · 4 Transición · 5 Modo · 6 Personalizados**. Se puede **▾ CONTRAER / ▸ EXPANDIR** (queda una línea con lo esencial; el estado se recuerda).
 - Debajo: **EMERGENCY (§10)** como barra secundaria siempre visible (OCULTAR TODO · OUTRO caso cerrado / continuará · QUITAR INTRO/OUTRO; el botón ■ OCULTAR TODO también está en la barra superior en pantallas angostas), y después Cámaras, Evidence Control, Archivo de Evidencias, Lower Third, Activity Log y Ajustes (estas columnas sí se pueden reordenar con ⠿ MOVER CAJAS).
 - En pantallas ≤ 1100 px (dock de OBS) Case Files y Control Deck se apilan.
 
-**Transcripción**: el proyecto no incluye ningún sistema de transcripción (no existe en el código ni en el historial de git), así que START / PAUSE / STOP aparecen deshabilitados con el estado "NO CONECTADO" en lugar de simular una función. Cuando exista, se conecta en `#sm-tx`.
+**Transición**: baldosas con pictograma (corte, tape, flash, paper, file, cctv, stamp, redflash, document, glitch, evidence). La elegida es la que se usa al cambiar de escena (se recuerda); **▶ PROBAR** (`T`) la lanza sola sin cambiar de escena. Una transición nueva en `config.js → transitionTimings` aparece sola con un icono genérico (el pictograma propio se agrega en `TR_ICON`, `js/control.js`).
+
+**Transcripción**: el proyecto no incluye ningún sistema de transcripción, por eso no hay módulo en el Deck.
 
 **Personalizados**: **+ NUEVO BOTÓN** → nombre, tipo de acción, acción y atajo (clic en el campo y pulsa la tecla, p. ej. `F8`). Solo ofrece acciones reales del registro del panel (las de Ctrl+K). **✎ EDITAR** permite renombrar, cambiar acción/atajo o borrar. Rechaza teclas reservadas o ya usadas. Se guardan en `lci-custom-buttons-v1`.
 

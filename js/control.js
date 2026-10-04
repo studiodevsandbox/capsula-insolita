@@ -917,6 +917,35 @@
   });
   if (saved.tr) trSel.value = saved.tr; else trSel.value = C.transitions.sceneChange;
   trSel.addEventListener('change', () => renderAll());
+
+  // Pictogramas de cada transición (SVG en línea: sin imágenes que cargar ni mantener)
+  const TR_ICON = {
+    none: '<rect x="3" y="9" width="9" height="12"/><rect x="18" y="9" width="9" height="12"/><path d="M15 6v18" stroke-dasharray="2 2"/>',
+    tape: '<g transform="rotate(-20 15 15)"><rect x="1" y="10" width="28" height="10" class="y"/><path d="M6 10l-4 10M13 10l-4 10M20 10l-4 10M27 10l-4 10"/></g>',
+    flash: '<path d="M17 3L7 17h7l-2 10 11-15h-7z" class="y"/>',
+    paper: '<path d="M7 3h12l5 5v19H7z"/><path d="M19 3v5h5"/><path d="M11 14h9M11 18h9M11 22h6"/>',
+    file: '<path d="M3 8h8l2 3h14v14H3z"/><path d="M3 13h24"/>',
+    cctv: '<rect x="3" y="9" width="18" height="11" rx="1"/><path d="M21 13l7-3v10l-7-3"/><circle cx="8" cy="14.5" r="1.6" class="r"/><path d="M8 24h10"/>',
+    stamp: '<path d="M12 4h6v8h-3l3 4H12l3-4h-3z"/><rect x="5" y="17" width="20" height="5"/><path d="M5 26h20"/>',
+    redflash: '<circle cx="15" cy="15" r="9" class="r"/><circle cx="15" cy="15" r="4"/><path d="M15 2v4M15 24v4M2 15h4M24 15h4"/>',
+    document: '<rect x="6" y="3" width="18" height="24"/><path d="M10 8h10M10 12h10M10 16h10M10 20h6"/><circle cx="21" cy="22" r="3" class="y"/>',
+    glitch: '<rect x="3" y="6" width="17" height="6"/><rect x="10" y="13" width="17" height="5" class="r"/><rect x="5" y="20" width="14" height="5"/>',
+    evidence: '<rect x="5" y="5" width="20" height="22"/><rect x="8" y="8" width="14" height="12"/><path d="M8 20l5-5 4 4 2-2 3 3"/><path d="M10 24h10"/><circle cx="15" cy="5" r="2" class="r"/>'
+  };
+  const TR_ICON_DEFAULT = '<rect x="4" y="6" width="22" height="18"/><path d="M4 12h22"/>';
+  const trTiles = $('#tr-tiles');
+  [...trSel.options].forEach(o => {
+    const n = o.value, tm = C.transitionTimings[n];
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'tr-tile'; b.dataset.trpick = n;
+    b.setAttribute('role', 'radio');
+    b.title = n === 'none' ? 'Corte directo, sin efecto' : `${n} · ${tm ? tm.total : '?'} ms`;
+    b.innerHTML = `<svg viewBox="0 0 30 30" aria-hidden="true">${TR_ICON[n] || TR_ICON_DEFAULT}</svg><span class="tr-n"></span><span class="tr-ms"></span>`;
+    b.querySelector('.tr-n').textContent = n === 'none' ? 'corte' : n;
+    b.querySelector('.tr-ms').textContent = tm ? (tm.total / 1000).toFixed(1) + ' s' : '0 s';
+    b.addEventListener('click', () => { trSel.value = n; trSel.dispatchEvent(new Event('change')); });
+    trTiles.appendChild(b);
+  });
   let cueScene = null;
   async function goScene(key) {
     if (!C.scenes[key]) return;
@@ -1908,6 +1937,8 @@
     $('#qa-tr-s').textContent = currentTr();
     $('#tr-summary').innerHTML = `ESCENA → <b>${esc(t === 'none' ? 'CORTE' : t.toUpperCase())}</b> · ${allTr.length} DISPONIBLES`;
     $$('#trs [data-tr]').forEach(b => b.classList.toggle('sel', b.dataset.tr === t));
+    $$('#tr-tiles [data-trpick]').forEach(b => { const on = b.dataset.trpick === t; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
+    $('#tr-sel-label').innerHTML = `AL CAMBIAR DE ESCENA: <b>${esc(t === 'none' ? 'CORTE' : t.toUpperCase())}</b>`;
   }
   function renderAll() {
     renderNow(); renderScenes(); renderCams(); renderModes(); renderFx();
