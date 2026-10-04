@@ -7,7 +7,7 @@
    (localStorage), no viaja a OBS ni a otra PC. */
 (function () {
   'use strict';
-  const KEY = 'lci.order.v1';
+  const KEY = 'lci.order.v2'; // v2: Evidence Control / Archivo salieron de las columnas (fila fija de 2) y Lower Third bajó
   const PRESETS_KEY = 'lci.order.presets.v1';
   let editing = false;
   let dragId = null;
@@ -23,7 +23,7 @@
     if (!h) {
       h = document.createElement('div');
       h.className = 'lci-drag-handle lci-drawers-handle';
-      h.textContent = '⠿ AJUSTES (EFECTOS · TRANSICIONES · AUDIO · OBS · DEBUG)';
+      h.textContent = '⠿ AJUSTES';
       drawers.insertBefore(h, drawers.firstChild);
     }
     return h;
@@ -51,7 +51,8 @@
       if (!col) return;
       cols[colClass].forEach(id => {
         const el = document.getElementById(id);
-        if (el) col.appendChild(el);
+        // Case Files, Control Deck y Emergency tienen lugar fijo (fuera de .col): un orden guardado viejo no los mueve
+        if (el && el.closest('.col')) col.appendChild(el);
       });
     });
   }
@@ -133,7 +134,7 @@
     document.querySelectorAll('.lci-drag-handle').forEach(h => h.setAttribute('draggable', on ? 'true' : 'false'));
     const btn = document.getElementById('layout-toggle');
     if (btn) {
-      btn.textContent = on ? '🔓 EDITANDO · CLIC PARA BLOQUEAR' : '⠿ MOVER CAJAS';
+      btn.textContent = on ? '🔓 EDITANDO · BLOQUEAR' : '⠿ CAJAS';
       btn.classList.toggle('layout-toggle--on', on);
     }
   }

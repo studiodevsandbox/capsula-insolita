@@ -159,8 +159,39 @@
         LCI.Alerts.show(cmd.text);
         break;
       case 'stamp':
-        LCI.Stamps.show(cmd.text);
+        LCI.Stamps.show(cmd.text, cmd.color);
         break;
+      case 'hud': { // cartela de hora / lugar / cronómetro
+        const h = pickFields(data, ['location', 'timezone', 'timeFormat', 'showSeconds', 'showDate', 'showElapsed', 'showLocation']);
+        if (h.timeFormat !== undefined) h.timeFormat = h.timeFormat === '24h' ? '24h' : '12h';
+        if (h.location !== undefined) h.location = String(h.location).slice(0, 60);
+        if (h.timezone !== undefined) h.timezone = String(h.timezone).slice(0, 60) || 'auto';
+        Object.assign(C.hud, h);
+        LCI.state.save({ hud: C.hud });
+        LCI.Hud.render();
+        break;
+      }
+      case 'soundFiles': { // enlaces de los efectos del programa: { nombre: url | '' (restablecer) }
+        const f = (data.files && typeof data.files === 'object') ? data.files : {};
+        const store = Object.assign({}, LCI.state.load().soundFiles || {});
+        Object.keys(f).forEach(k => {
+          const url = typeof f[k] === 'string' ? f[k] : '';
+          if (!LCI.sound.setFile(k, url)) return;
+          if (url) store[k] = url; else delete store[k];
+        });
+        LCI.state.save({ soundFiles: store });
+        break;
+      }
+      case 'playSound': // soundboard: link o archivo con volumen propio
+        LCI.sound.playUrl(cmd.url, cmd.volume);
+        break;
+      case 'clockStart': { // inicio del cronómetro "en vivo": epoch en ms (null = ahora)
+        const t = Number(cmd.start);
+        LCI.clock.start = Number.isFinite(t) && t > 0 && t <= Date.now() ? t : Date.now();
+        LCI.state.save({ clockStart: LCI.clock.start });
+        LCI.clock.tick();
+        break;
+      }
       case 'focus':
         LCI.Focus.set(data.target, data.ms);
         break;
@@ -285,6 +316,9 @@
     if (P.get('reset') === '1') LCI.state.clear();
     const saved = P.get('demo') === '1' ? {} : LCI.state.load();
     ['camera1', 'camera2', 'evidence', 'lowerThird', 'sound'].forEach(k => { if (saved[k]) Object.assign(C[k], saved[k]); });
+    C.hud = Object.assign({}, C.hud, saved.hud || {});
+    if (saved.soundFiles && typeof saved.soundFiles === 'object') Object.keys(saved.soundFiles).forEach(k => LCI.sound.setFile(k, saved.soundFiles[k]));
+    if (Number.isFinite(saved.clockStart) && saved.clockStart <= Date.now()) LCI.clock.start = saved.clockStart;
 
     if (P.get('preview') === '1') document.body.classList.add('is-preview');
     fit();

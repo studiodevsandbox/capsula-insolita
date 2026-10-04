@@ -115,9 +115,20 @@
   };
   LCI.Hud = {
     render() {
+      const h = C.hud || {};
+      const pin = '<svg class="hud__pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>';
+      const when = [];
+      if (h.showDate !== false) when.push('<span data-huddate>---</span>');
+      when.push('<b class="hud__time" data-hudtime>--:--</b>');
+      const where = h.showLocation !== false && h.location ? `<div class="hud__row hud__row--where">${pin}<span class="hud__loc">${esc(h.location)}</span></div>` : '';
       document.getElementById('hud').innerHTML = `
         <div class="hud hud--tl"><span class="k">CASE</span><b>#${esc(C.brand.caseNumber)}</b><span class="sep">/</span><span>FILE OPEN</span><span class="sep">/</span><span>${esc(C.brand.caseId)}</span></div>
-        <div class="hud hud--tr"><span class="led led--blink"></span><b class="hud__rec">REC</b><b data-elapsed>00:00:00</b><span class="sep">/</span><span data-clock>--:--:--</span></div>`;
+        <div class="hud hud--tr">
+          ${h.showElapsed !== false ? '<div class="hud__row hud__row--live"><span class="led led--blink"></span><b class="hud__rec">EN VIVO</b><b class="hud__elapsed" data-elapsed>00:00:00</b></div>' : ''}
+          <div class="hud__row hud__row--sub">${when.join('<span class="sep">·</span>')}</div>
+          ${where}
+        </div>`;
+      if (LCI.clock && LCI.clock.tick) { LCI.clock.setup(); LCI.clock.tick(); }
     }
   };
 
@@ -648,9 +659,10 @@
     ], { duration: 250, easing: 'cubic-bezier(.55,0,.75,.2)' });
   }
   LCI.Stamps = {
-    async show(text) {
-      const t = String(text || 'CONFIDENCIAL').toUpperCase();
-      const st = el('div', 'stamp stamp--' + (STAMP_COLOR[t] || 'red'), `<span>${esc(t)}</span>`);
+    async show(text, color) {
+      const t = String(text || 'CONFIDENCIAL').toUpperCase().slice(0, 28);
+      const col = ['red', 'gray', 'green', 'amber'].includes(color) ? color : (STAMP_COLOR[t] || 'red');
+      const st = el('div', 'stamp stamp--' + col, `<span>${esc(t)}</span>`);
       const group = document.querySelector('#evidence:not([hidden]) .ev__group');
       let host;
       if (group) {
