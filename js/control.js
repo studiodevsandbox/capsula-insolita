@@ -680,7 +680,11 @@
   async function loadFramingSources() {
     try {
       const { inputs } = await obs.request('GetInputList');
-      const videoInputs = inputs.filter(i => !AUDIO_KINDS.test(i.inputKind));
+      // Solo cámaras reales (dshow/captura de video): nada de audio ni de las fuentes de
+      // Navegador del overlay (LCI Broadcast/Vertical), que antes no estorbaban porque eran
+      // pocas, pero ahora hay 8 (una por escena) y llenaban el desplegable de opciones que
+      // no son cámaras.
+      const videoInputs = inputs.filter(i => !AUDIO_KINDS.test(i.inputKind) && i.inputKind !== 'browser_source');
       [1, 2].forEach(id => {
         const sel = $(`#cam${id}-source`);
         const current = sel.value;
