@@ -263,7 +263,7 @@
       everConnected = true; retryN = 0;
       s.textContent = 'OBS CONNECTED';
       lost.hidden = true;
-      loadAudioInputs(); loadFramingSources(); refreshScene();
+      loadAudioInputs(); loadFramingSources(); loadFramingScenes(); refreshScene();
       if (origVolumeDb.size) restoreAudio(++duckGen); // un duck quedó sin restaurar al cortarse: se devuelve el volumen
       if (!announcedOk) { announcedOk = true; toast('● OBS CONNECTED', 'ok'); activity('● OBS conectado', 'info'); }
     } else if (cls === 'wait') {
@@ -694,6 +694,41 @@
       });
     } catch (e) { /* sin lista, los selects quedan solo con lo que ya estaba guardado */ }
   }
+  // ---------- lista de las 8 escenas (4 horizontales del canvas Main + 4 verticales del canvas
+  // de Aitum) para el selector manual de "ENCUADRE POR ESCENA". No se hardcodea el uuid del
+  // canvas vertical (puede cambiar si Rox lo recrea): se busca con GetCanvasList el canvas que
+  // NO sea el principal (canvasFlags.MAIN === false) y se le pide su GetSceneList aparte, porque
+  // GetCurrentProgramScene/GetSceneList con canvasUuid de un canvas no-Main no informan la
+  // escena activa de ese canvas (limitación confirmada de OBS/Aitum) — por eso esto es un
+  // selector A MANO, no detección automática.
+  let framingScenes = [];
+  async function loadFramingScenes() {
+    if (!obs.connected) return;
+    const combined = [];
+    try {
+      const { scenes } = await obs.request('GetSceneList');
+      (scenes || []).forEach(s => combined.push({ uuid: s.sceneUuid, name: s.sceneName, kind: 'horizontal' }));
+    } catch (e) { /* sin canvas principal: no debería pasar si OBS está conectado */ }
+    try {
+      const { canvases } = await obs.request('GetCanvasList');
+      const vCanvas = (canvases || []).find(c => c.canvasFlags && c.canvasFlags.MAIN === false);
+      if (vCanvas) {
+        const { scenes } = await obs.request('GetSceneList', { canvasUuid: vCanvas.canvasUuid });
+        (scenes || []).forEach(s => combined.push({ uuid: s.sceneUuid, name: s.sceneName, kind: 'vertical' }));
+      }
+    } catch (e) { /* Aitum no está instalado o no hay canvas secundario: solo quedan las horizontales */ }
+    framingScenes = combined;
+    [1, 2].forEach(id => {
+      const sel = $(`#cam${id}-scene`);
+      // ojo: no se usa sel.value acá como "valor actual" porque al arrancar el <select> solo
+      // tiene la opción vacía (data-keep no pudo fijar el uuid guardado porque esa <option>
+      // todavía no existía) — se lee directo de lo persistido.
+      const current = sel.value || saved[`cam${id}-scene`] || '';
+      sel.innerHTML = '<option value="">— elegir escena —</option>';
+      combined.forEach(s => sel.appendChild(new Option(`${s.kind === 'vertical' ? '▐ VERTICAL · ' : '▬ '}${s.name}`, s.uuid)));
+      if (current && combined.some(s => s.uuid === current)) sel.value = current;
+    });
+  }
   // migración: si había encuadres guardados por NOMBRE (formato viejo) y recién se aprendió el
   // uuid de ese nombre, se mueven a la clave uuid (una sola vez por escena). No es crítico si
   // algún caso raro no migra: el encuadre viejo simplemente queda huérfano.
@@ -703,12 +738,17 @@
     delete framing[sceneName];
     saveFraming();
   }
+  // El encuadre ahora se guarda para la escena elegida en el selector nuevo (#cam{id}-scene,
+  // horizontal o vertical). Si no se elige ninguna, cae en la escena ACTIVA (comportamiento
+  // viejo, sigue andando igual para quien no toque el selector nuevo).
   async function saveFramingFor(id) {
     const sourceName = $(`#cam${id}-source`).value;
-    const sceneName = live.obsScene;
-    const sceneUuid = live.obsSceneUuid;
+    const pickedUuid = $(`#cam${id}-scene`).value;
+    const sceneUuid = pickedUuid || live.obsSceneUuid;
+    const pickedEntry = framingScenes.find(s => s.uuid === sceneUuid);
+    const sceneName = (pickedEntry && pickedEntry.name) || (sceneUuid === live.obsSceneUuid ? live.obsScene : sceneUuid);
     if (!sourceName) { toast('✕ ELIGE PRIMERO LA FUENTE DE OBS', 'err'); return; }
-    if (!sceneUuid) { toast('✕ OBS NO TIENE ESCENA ACTIVA', 'err'); return; }
+    if (!sceneUuid) { toast('✕ ELEGÍ UNA ESCENA (O ACTIVÁ UNA EN OBS)', 'err'); return; }
     try {
       const { sceneItemId } = await obs.request('GetSceneItemId', { sceneUuid, sourceName });
       const { sceneItemTransform } = await obs.request('GetSceneItemTransform', { sceneUuid, sceneItemId });
@@ -721,9 +761,11 @@
       activity(`📐 Encuadre de "${sourceName}" guardado para ${sceneName}`);
       $(`#cam${id}-framing-hint`).textContent = `guardado para "${sceneName}"`;
     } catch (e) {
-      toast('✕ ' + (/sourceName|item/i.test(e.message) ? 'ESA FUENTE NO ESTÁ EN LA ESCENA ACTUAL' : e.message), 'err');
+      toast('✕ ' + (/sourceName|item/i.test(e.message) ? 'ESA FUENTE NO ESTÁ EN LA ESCENA ELEGIDA' : e.message), 'err');
     }
   }
+  // automático: se dispara solo cuando OBS informa el cambio de escena ACTIVA (solo pasa para
+  // el canvas Main/horizontal — el canvas vertical de Aitum nunca manda ese evento, confirmado).
   async function applyFramingForScene() {
     const sceneUuid = live.obsSceneUuid;
     if (!sceneUuid || !obs.connected) return;
@@ -736,7 +778,32 @@
       } catch (e) { /* esa fuente ya no está en esta escena: se ignora */ }
     }
   }
-  [1, 2].forEach(id => $(`#cam${id}-save-framing`).addEventListener('click', () => saveFramingFor(id)));
+  // manual: botón "APLICAR A ESTA ESCENA". Restaura el encuadre guardado de la cámara+escena
+  // elegidas en el selector nuevo, sin importar cuál esté activa ahora. Es el único modo posible
+  // para las escenas verticales (no hay forma de detectarlas solas); también sirve para las
+  // horizontales si Rox quiere reaplicar a mano.
+  async function applyFramingManual(id) {
+    const sourceName = $(`#cam${id}-source`).value;
+    const sceneUuid = $(`#cam${id}-scene`).value;
+    const pickedEntry = framingScenes.find(s => s.uuid === sceneUuid);
+    const sceneName = (pickedEntry && pickedEntry.name) || sceneUuid;
+    if (!sourceName) { toast('✕ ELIGE PRIMERO LA FUENTE DE OBS', 'err'); return; }
+    if (!sceneUuid) { toast('✕ ELEGÍ LA ESCENA A APLICAR', 'err'); return; }
+    const saved_ = framing[sceneUuid] && framing[sceneUuid][sourceName];
+    if (!saved_) { toast(`✕ NO HAY ENCUADRE GUARDADO PARA "${sceneName}"`, 'err'); return; }
+    try {
+      const { sceneItemId } = await obs.request('GetSceneItemId', { sceneUuid, sourceName });
+      await obs.request('SetSceneItemTransform', { sceneUuid, sceneItemId, sceneItemTransform: saved_ });
+      toast(`↺ ENCUADRE APLICADO · ${sceneName}`, 'ok');
+      activity(`↺ Encuadre de "${sourceName}" aplicado a ${sceneName}`);
+    } catch (e) {
+      toast('✕ ' + (/sourceName|item/i.test(e.message) ? 'ESA FUENTE NO ESTÁ EN LA ESCENA ELEGIDA' : e.message), 'err');
+    }
+  }
+  [1, 2].forEach(id => {
+    $(`#cam${id}-save-framing`).addEventListener('click', () => saveFramingFor(id));
+    $(`#cam${id}-apply-framing`).addEventListener('click', () => applyFramingManual(id));
+  });
 
   // ---------- ducking: baja el volumen de las fuentes de OBS que elijas mientras suena un
   // efecto, y lo sube de vuelta gradualmente. Trabaja sobre fuentes reales de OBS (no

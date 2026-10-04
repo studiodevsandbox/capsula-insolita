@@ -100,9 +100,13 @@
         <details class="cam-more"><summary>ENCUADRE POR ESCENA (OBS)</summary>
           <div class="grid2">
             <select id="cam1-source" data-keep="cam1-source"><option value="">— elegir fuente de OBS —</option></select>
-            <button id="cam1-save-framing" class="btn--sm" title="Guarda el tamaño/posición actual de esta fuente para la escena activa">📐 GUARDAR ENCUADRE</button>
+            <select id="cam1-scene" data-keep="cam1-scene" title="Escena objetivo (horizontal o vertical) para guardar/aplicar el encuadre"><option value="">— elegir escena —</option></select>
           </div>
-          <div class="hint" id="cam1-framing-hint">se restaura solo al cambiar a esta escena</div>
+          <div class="grid2">
+            <button id="cam1-save-framing" class="btn--sm" title="Guarda el tamaño/posición actual de esta fuente para la escena elegida arriba (o la activa, si no elegiste ninguna)">📐 GUARDAR ENCUADRE</button>
+            <button id="cam1-apply-framing" class="btn--sm btn--ghost" title="Aplica a mano el encuadre guardado de la escena elegida arriba">↺ APLICAR A ESTA ESCENA</button>
+          </div>
+          <div class="hint" id="cam1-framing-hint">horizontales (LCI 01-04): se restauran solas al cambiar de escena. Verticales (Aitum): no se puede detectar sola la escena activa — elegila arriba y usá "APLICAR A ESTA ESCENA"</div>
         </details>
       </div>
       <div class="cam" id="cam2-box">
@@ -124,9 +128,13 @@
         <details class="cam-more"><summary>ENCUADRE POR ESCENA (OBS)</summary>
           <div class="grid2">
             <select id="cam2-source" data-keep="cam2-source"><option value="">— elegir fuente de OBS —</option></select>
-            <button id="cam2-save-framing" class="btn--sm" title="Guarda el tamaño/posición actual de esta fuente para la escena activa">📐 GUARDAR ENCUADRE</button>
+            <select id="cam2-scene" data-keep="cam2-scene" title="Escena objetivo (horizontal o vertical) para guardar/aplicar el encuadre"><option value="">— elegir escena —</option></select>
           </div>
-          <div class="hint" id="cam2-framing-hint">se restaura solo al cambiar a esta escena</div>
+          <div class="grid2">
+            <button id="cam2-save-framing" class="btn--sm" title="Guarda el tamaño/posición actual de esta fuente para la escena elegida arriba (o la activa, si no elegiste ninguna)">📐 GUARDAR ENCUADRE</button>
+            <button id="cam2-apply-framing" class="btn--sm btn--ghost" title="Aplica a mano el encuadre guardado de la escena elegida arriba">↺ APLICAR A ESTA ESCENA</button>
+          </div>
+          <div class="hint" id="cam2-framing-hint">horizontales (LCI 01-04): se restauran solas al cambiar de escena. Verticales (Aitum): no se puede detectar sola la escena activa — elegila arriba y usá "APLICAR A ESTA ESCENA"</div>
         </details>
       </div>
     </section>
