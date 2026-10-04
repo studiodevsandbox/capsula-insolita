@@ -60,7 +60,16 @@ body.fx-chromaticAberration .brand__title h1 {
   font-size: 12px; letter-spacing: .22em; color: rgba(233, 225, 208, .6);
 }
 .hud--tl { left: 96px; }
-.hud--tr { right: 96px; }
+.hud--tr { right: 96px; flex-direction: column; align-items: flex-end; gap: 7px; }
+.hud__row { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.hud__row--live { font-size: 15px; letter-spacing: .2em; }
+.hud .hud__rec { color: #ec2b3c; letter-spacing: .26em; }
+.hud__elapsed { font-size: 20px; letter-spacing: .12em; color: var(--c-paper-hi); font-variant-numeric: tabular-nums; }
+.hud__row--sub { font-size: 12px; letter-spacing: .2em; color: rgba(233, 225, 208, .72); }
+.hud__time { font-size: 15px; letter-spacing: .14em; color: var(--c-yellow); font-variant-numeric: tabular-nums; }
+.hud__row--where { gap: 7px; font-size: 12px; letter-spacing: .2em; color: rgba(233, 225, 208, .6); }
+.hud__loc { max-width: 380px; overflow: hidden; text-overflow: ellipsis; }
+.hud__pin { flex: none; width: 13px; height: 13px; fill: none; stroke: var(--c-yellow); stroke-width: 1.8; }
 
 /* En vertical (1080 de ancho) el bloque de marca (900px) no deja hueco a los lados
    para el HUD junto al título: se achica la marca y el HUD baja debajo, en vez de
@@ -79,7 +88,7 @@ body.is-vertical #hud { display: none; }
 .hud b { color: var(--c-paper-hi); font-weight: 500; }
 .hud .k { color: var(--c-yellow); }
 .hud .sep { color: rgba(233, 225, 208, .28); }
-body.is-outro .hud--tr .led, body.is-outro .hud__rec { opacity: 0; transition: opacity .6s; }
+body.is-outro .hud--tr .led, body.is-outro .hud__rec, body.is-outro .hud__row--live { opacity: 0; transition: opacity .6s; }
 
 /* ---------- CameraFrame ---------- */
 .cam { position: absolute; }

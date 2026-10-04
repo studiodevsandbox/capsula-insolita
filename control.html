@@ -22,6 +22,7 @@
     <span id="conn" class="conn conn--wait">CONNECTING</span>
     <span class="chip" id="top-overlay">OVERLAY <b>—</b></span>
     <span class="chip" id="top-scene">ESCENA <b>—</b></span>
+    <span class="chip" id="top-live" title="Estado de la transmisión / grabación en OBS">AIRE <b>—</b></span>
     <span class="chip" id="top-mode">MODE <b>—</b></span>
     <div class="top-tools">
       <button id="panel-lock" class="lock-btn" title="Bloquea los botones y atajos (OCULTAR TODO sigue activo). Vuelve a pulsar para desbloquear.">🔓 BLOQUEAR <kbd data-kbd="panel-lock"></kbd></button>
@@ -357,6 +358,33 @@
   <!-- ============ COLUMNA C: ajustes ============ -->
   <div class="col col-c">
     <div class="drawers">
+      <details class="drawer" id="dr-hud">
+        <summary><span class="dr-t">HORA · UBICACIÓN · EN VIVO</span><span class="dr-s" id="hud-summary">—</span></summary>
+        <div class="drawer-body">
+          <div class="hint">La cartela de arriba a la derecha del overlay (horizontal). Escribe el lugar desde donde transmites y elige la zona horaria; se aplica con el botón y queda guardado en OBS.</div>
+          <label class="field" style="margin-top:8px"><span>UBICACIÓN</span><input id="hud-location" data-keep="hud-location" maxlength="60" placeholder="CIUDAD · PAÍS" autocomplete="off"></label>
+          <div class="grid2" style="margin-top:8px">
+            <label class="field"><span>ZONA HORARIA</span><select id="hud-tz" data-keep="hud-tz"><option value="auto">Automática (la de este PC)</option><option value="America/Argentina/Buenos_Aires">Buenos Aires</option><option value="America/Montevideo">Montevideo</option><option value="America/Santiago">Santiago</option><option value="America/Bogota">Bogotá · Lima · Quito</option><option value="America/Caracas">Caracas</option><option value="America/Mexico_City">Ciudad de México</option><option value="America/New_York">Nueva York</option><option value="America/Los_Angeles">Los Ángeles</option><option value="Europe/Madrid">Madrid</option><option value="Europe/London">Londres</option><option value="UTC">UTC</option></select></label>
+            <label class="field"><span>FORMATO DE HORA</span><select id="hud-fmt" data-keep="hud-fmt"><option value="12h">12 h · 02:16 AM</option><option value="24h">24 h · 02:16</option></select></label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <label class="check"><input type="checkbox" id="hud-seconds" data-keep="hud-seconds"> segundos</label>
+            <label class="check"><input type="checkbox" id="hud-date" data-keep="hud-date" checked> fecha</label>
+            <label class="check"><input type="checkbox" id="hud-showloc" data-keep="hud-showloc" checked> ubicación</label>
+            <label class="check"><input type="checkbox" id="hud-showel" data-keep="hud-showel" checked> cronómetro</label>
+          </div>
+          <div class="row" style="margin-top:10px"><button class="btn--primary" id="hud-apply">APLICAR AL OVERLAY</button></div>
+          <div class="sub-k">TIEMPO AL AIRE · lo que ve el público junto a «EN VIVO»</div>
+          <div class="live-box">
+            <div><span class="mlabel">OBS TRANSMITE</span><b class="tabnum" id="live-stream">—</b></div>
+            <div><span class="mlabel">OBS GRABA</span><b class="tabnum" id="live-rec">—</b></div>
+            <div><span class="mlabel">OVERLAY MUESTRA</span><b class="tabnum" id="live-overlay">—</b></div>
+          </div>
+          <label class="check" style="margin-top:8px"><input type="checkbox" id="hud-follow" data-keep="hud-follow" checked> Seguir automáticamente el tiempo de transmisión de OBS</label>
+          <div class="row" style="margin-top:8px"><button id="clock-sync" title="Pone el cronómetro del overlay con el tiempo real de la transmisión de OBS">SINCRONIZAR CON OBS</button><button id="clock-reset" title="Pone el cronómetro del overlay en 00:00:00 ahora mismo">PONER EN 00:00:00</button></div>
+        </div>
+      </details>
+
       <details class="drawer" id="dr-fx">
         <summary><span class="dr-t">EFECTOS</span><span class="dr-s" id="fx-summary">—</span></summary>
         <div class="drawer-body"><div id="fx"></div></div>

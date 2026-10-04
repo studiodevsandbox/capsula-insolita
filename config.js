@@ -8,6 +8,18 @@ window.LCI_CONFIG = {
     caseId: "CAPSULA-017"
   },
 
+  // Cartela de hora/lugar (arriba a la derecha en horizontal). Se cambia también en vivo desde el panel (cajón HORA Y UBICACIÓN).
+  //   timezone: "auto" (la del PC) o una zona IANA, p. ej. "America/Argentina/Buenos_Aires", "Europe/Madrid", "America/Mexico_City"
+  hud: {
+    location: "BUENOS AIRES · ARGENTINA",
+    timezone: "auto",
+    timeFormat: "12h",      // "12h" | "24h"
+    showSeconds: false,
+    showDate: true,
+    showElapsed: true,      // cronómetro "en vivo"
+    showLocation: true
+  },
+
   // Escena inicial si OBS no informa otra: SCENE_01_CAMERA | SCENE_02_DUAL_CAMERA | SCENE_03_CAMERA_EVIDENCE | SCENE_04_DUAL_CAMERA_EVIDENCE
   scene: "SCENE_01_CAMERA",
 

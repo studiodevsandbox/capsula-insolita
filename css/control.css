@@ -976,6 +976,14 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
   .cfe-left { border-right: 0; border-bottom: 1px solid var(--line); }
 }
 
+/* tiempo al aire */
+.chip--air { border-color: var(--r2); color: #ff8a96; }
+.chip--air b { color: #fff; font-variant-numeric: tabular-nums; }
+.live-box { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
+.live-box > div { padding: 8px 10px; background: var(--bg2); border: 1px solid var(--line2); min-width: 0; }
+.live-box .mlabel { display: block; margin-bottom: 4px; }
+.live-box b { font: 400 18px/1 var(--mono); color: var(--white); }
+
 /* =====================================================================================
    SEMÁNTICA DE COLOR (una sola lectura en directo):
      ROJO     = AL AIRE / alerta / tensión (lo que el público ve ahora)

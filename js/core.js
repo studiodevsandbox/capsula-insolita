@@ -563,15 +563,38 @@ window.LCI_STAGE = window.LCI_STAGE || { w: 1920, h: 1080 };
 
   /* ---------- reloj y tiempo en vivo ---------- */
   LCI.clock = {
-    start: Date.now(),
-    tick() {
-      const t = u.clock();
-      document.querySelectorAll('[data-clock]').forEach(n => { n.textContent = t; });
-      const e = Math.floor((Date.now() - this.start) / 1000);
-      const s = [Math.floor(e / 3600), Math.floor(e / 60) % 60, e % 60].map(v => String(v).padStart(2, '0')).join(':');
-      document.querySelectorAll('[data-elapsed]').forEach(n => { n.textContent = s; });
+    start: Date.now(), // inicio del cronómetro "en vivo" (el panel lo sincroniza con OBS; se guarda entre recargas)
+    fmtTime: null, fmtDate: null,
+    // (re)crea los formateadores según C.hud (zona horaria, 12/24 h, segundos). Una zona inválida cae a la del PC.
+    setup() {
+      const h = C.hud || {};
+      const tz = h.timezone && h.timezone !== 'auto' ? h.timezone : undefined;
+      const make = opts => { try { return new Intl.DateTimeFormat('es', Object.assign({ timeZone: tz }, opts)); } catch (e) { return new Intl.DateTimeFormat('es', opts); } };
+      this.fmtTime = make({ hour: '2-digit', minute: '2-digit', second: h.showSeconds ? '2-digit' : undefined, hour12: h.timeFormat !== '24h' });
+      this.fmtDate = make({ weekday: 'short', day: '2-digit', month: 'short' });
     },
-    run() { this.tick(); setInterval(() => this.tick(), 1000); }
+    hudTime(d = new Date()) {
+      if (!this.fmtTime) this.setup();
+      return this.fmtTime.format(d).replace(/\s*([ap])\.?\s?m\.?/i, (m, x) => ' ' + x.toUpperCase() + 'M').toUpperCase();
+    },
+    hudDate(d = new Date()) {
+      if (!this.fmtDate) this.setup();
+      return this.fmtDate.format(d).replace(/[.,]/g, '').toUpperCase();
+    },
+    elapsed() {
+      const e = Math.max(0, Math.floor((Date.now() - this.start) / 1000));
+      return [Math.floor(e / 3600), Math.floor(e / 60) % 60, e % 60].map(v => String(v).padStart(2, '0')).join(':');
+    },
+    tick() {
+      const now = new Date(), t = u.clock(now);
+      document.querySelectorAll('[data-clock]').forEach(n => { n.textContent = t; });
+      const s = this.elapsed();
+      document.querySelectorAll('[data-elapsed]').forEach(n => { n.textContent = s; });
+      const ht = this.hudTime(now), hd = this.hudDate(now);
+      document.querySelectorAll('[data-hudtime]').forEach(n => { n.textContent = ht; });
+      document.querySelectorAll('[data-huddate]').forEach(n => { n.textContent = hd; });
+    },
+    run() { this.setup(); this.tick(); setInterval(() => this.tick(), 1000); }
   };
 
   /* ---------- huecos reales: la atmósfera se recorta donde van las cámaras ---------- */

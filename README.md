@@ -153,6 +153,12 @@ Base única de **expedientes** (Historia · Evidencia · Pista · Testimonio). L
 - **Contar la historia**: el lector parte el texto en párrafos; un clic (o ↑ ↓ con el lector enfocado) deja el **marcador de lectura** («voy por aquí») y atenúa el resto. **○ MARCAR CONTADO** deja una ✓ en la lista; filtros **SIN CONTAR** y **CON EVIDENCIA** y buscador (número, título, texto). **→ LOWER THIRD** prepara el lower third con el texto seleccionado (o el título) sin sacarlo al aire. **⇪ IMPORTAR** crea expedientes desde `.txt` / `.md` (cada archivo uno; si trae líneas `# Título`, cada una abre uno nuevo; ≤ 500 KB).
 - Contadores en vivo y **🗄 VER ARCHIVADOS**. Se guarda en este navegador (`lci-casefiles-v1`); las notas del sistema viejo se migran solas. Código en `js/control.js` (`CF_KEY`, `cfPrepare`, `evQueue`).
 
+### Hora, ubicación y tiempo al aire
+
+- **En el overlay (horizontal, arriba a la derecha)**: `● EN VIVO 01:23:45` (cronómetro), `DOM 04 OCT · 09:09 AM` y `📍 BUENOS AIRES · ARGENTINA`. En vertical no se muestra (no hay sitio sin tapar la cámara).
+- **Cajón «HORA · UBICACIÓN · EN VIVO»** (Ajustes): escribes el lugar, eliges zona horaria (hora del PC, Buenos Aires, Madrid, México…), 12 h o 24 h, con o sin segundos / fecha / ubicación / cronómetro, y **APLICAR AL OVERLAY**. Los valores de fábrica están en `config.js → hud`. Se guarda en OBS y sobrevive a recargas.
+- **Tiempo al aire real**: el panel le pregunta a OBS cada 3 s cuánto lleva transmitiendo (y grabando) y lo muestra arriba (`● EN VIVO 01:02:04`). Con «Seguir automáticamente el tiempo de transmisión de OBS» activo, ese inicio se manda al overlay, así que el `EN VIVO` del público es el tiempo real y coincide en todas las escenas. **SINCRONIZAR** lo fuerza; **PONER EN 00:00:00** lo reinicia a mano.
+
 ### Lectura de colores, candado, vistas y tamaño de texto
 
 - **Colores con un solo significado**: 🔴 **rojo = al aire** (escena ON AIR, evidencia y lower third visibles, botones que sacan algo al aire como MANDAR AL AIRE) · 🟡 **amarillo = seleccionado / preparado** (SIGUIENTE, pestaña, transición elegida) · ⚪ **blanco = modo activo** (clean / investigation).

@@ -264,12 +264,14 @@
       s.textContent = 'OBS CONNECTED';
       lost.hidden = true;
       loadAudioInputs(); loadFramingSources(); loadFramingScenes(); refreshScene();
+      if (typeof startOutputsPoll === 'function') startOutputsPoll();
       if (origVolumeDb.size) restoreAudio(++duckGen); // un duck quedó sin restaurar al cortarse: se devuelve el volumen
       if (!announcedOk) { announcedOk = true; toast('● OBS CONNECTED', 'ok'); activity('● OBS conectado', 'info'); }
     } else if (cls === 'wait') {
       s.textContent = 'CONNECTING';
     } else {
       live.scene = null; live.obsScene = null; live.obsSceneUuid = null; overlayActive = null;
+      if (typeof stopOutputsPoll === 'function') stopOutputsPoll();
       if (code === 4009) {
         authFailed = true;
         s.textContent = 'AUTH FAILED';
@@ -2220,9 +2222,70 @@
     renderEvidence(); renderLt(); renderAlerts(); renderTr(); renderAudioSummary(); renderObs(); renderOverlay();
   }
 
+
+  /* =====================================================================================
+     TIEMPO AL AIRE + CARTELA DE HORA / UBICACIÓN
+     Lee de OBS (GetStreamStatus / GetRecordStatus, cada 3 s mientras hay conexión) cuánto lleva
+     transmitiendo y graba; si "seguir OBS" está activo, manda ese inicio al overlay (cmd clockStart)
+     para que «EN VIVO 01:23:45» sea el tiempo real al aire y coincida en todas las escenas.
+     ===================================================================================== */
+  const onair = { stream: false, rec: false, paused: false, streamMs: 0, recMs: 0, at: 0, syncedStart: null, timer: null };
+  const fmtHMS = ms => { const e = Math.max(0, Math.floor(ms / 1000)); return [Math.floor(e / 3600), Math.floor(e / 60) % 60, e % 60].map(v => String(v).padStart(2, '0')).join(':'); };
+  async function pollOutputs() {
+    if (!obs.connected) return;
+    try {
+      const [st, rc] = await Promise.all([obs.request('GetStreamStatus'), obs.request('GetRecordStatus')]);
+      onair.at = Date.now();
+      onair.stream = !!st.outputActive; onair.streamMs = Number(st.outputDuration) || 0;
+      onair.rec = !!rc.outputActive; onair.paused = !!rc.outputPaused; onair.recMs = Number(rc.outputDuration) || 0;
+      if (onair.stream && $('#hud-follow').checked) syncOverlayClock(false);
+      if (!onair.stream) onair.syncedStart = null; // al cortar la transmisión, la próxima vuelve a sincronizar
+    } catch (e) { /* OBS sin esas solicitudes: el panel sigue igual */ }
+    renderOnAir();
+  }
+  function startOutputsPoll() { if (onair.timer) return; pollOutputs(); onair.timer = setInterval(pollOutputs, 3000); }
+  function stopOutputsPoll() { clearInterval(onair.timer); onair.timer = null; onair.stream = onair.rec = false; onair.syncedStart = null; renderOnAir(); }
+  // manda el inicio real de la transmisión al overlay (solo si cambió más de 5 s, o si es manual)
+  function syncOverlayClock(manual) {
+    if (!onair.stream) { if (manual) toast('OBS NO ESTÁ TRANSMITIENDO · NADA QUE SINCRONIZAR', 'info'); return; }
+    const start = onair.at - onair.streamMs;
+    if (!manual && onair.syncedStart && Math.abs(start - onair.syncedStart) < 5000) return;
+    onair.syncedStart = start;
+    send({ cmd: 'clockStart', start }, { ok: manual ? '✓ CRONÓMETRO SINCRONIZADO CON OBS' : false });
+  }
+  function renderOnAir() {
+    const age = onair.at ? Date.now() - onair.at : 0; // el tiempo sigue corriendo entre consultas
+    const s = onair.stream ? fmtHMS(onair.streamMs + age) : null, r = onair.rec ? fmtHMS(onair.recMs + (onair.paused ? 0 : age)) : null;
+    const chip = $('#top-live');
+    if (!obs.connected) { chip.innerHTML = 'AIRE <b>—</b>'; chip.className = 'chip'; }
+    else if (s) { chip.innerHTML = `● EN VIVO <b>${s}</b>`; chip.className = 'chip chip--air'; }
+    else if (r) { chip.innerHTML = `● REC <b>${r}</b>`; chip.className = 'chip chip--air'; }
+    else { chip.innerHTML = 'FUERA DEL AIRE'; chip.className = 'chip'; }
+    $('#live-stream').textContent = obs.connected ? (s || 'no transmite') : '—';
+    $('#live-rec').textContent = obs.connected ? (r ? r + (onair.paused ? ' (pausa)' : '') : 'no graba') : '—';
+    $('#live-overlay').textContent = onair.syncedStart ? fmtHMS(Date.now() - onair.syncedStart) : 'sin sincronizar';
+    $('#hud-summary').textContent = ($('#hud-location').value || 'SIN UBICACIÓN') + ' · ' + ($('#hud-tz').value === 'auto' ? 'hora del PC' : $('#hud-tz').value.split('/').pop().replace(/_/g, ' '));
+  }
+  const hudPayload = () => ({ cmd: 'hud', location: $('#hud-location').value.trim(), timezone: $('#hud-tz').value, timeFormat: $('#hud-fmt').value,
+    showSeconds: $('#hud-seconds').checked, showDate: $('#hud-date').checked, showLocation: $('#hud-showloc').checked, showElapsed: $('#hud-showel').checked });
+  // valores de arranque = los de config.js (si no hay nada guardado en este navegador)
+  (function initHudFields() {
+    const h = C.hud || {};
+    if (saved['hud-location'] === undefined) $('#hud-location').value = h.location || '';
+    if (saved['hud-tz'] === undefined) $('#hud-tz').value = h.timezone || 'auto';
+    if (saved['hud-fmt'] === undefined) $('#hud-fmt').value = h.timeFormat === '24h' ? '24h' : '12h';
+    if (saved['hud-seconds'] === undefined) $('#hud-seconds').checked = !!h.showSeconds;
+    if ($('#hud-tz').value !== (saved['hud-tz'] === undefined ? (h.timezone || 'auto') : saved['hud-tz'])) $('#hud-tz').value = 'auto';
+  })();
+  $('#hud-apply').addEventListener('click', () => send(hudPayload(), { ok: '✓ HORA Y UBICACIÓN ACTUALIZADAS' }).then(() => renderOnAir()));
+  $('#clock-sync').addEventListener('click', () => syncOverlayClock(true));
+  $('#clock-reset').addEventListener('click', () => send({ cmd: 'clockStart', start: Date.now() }, { ok: '✓ CRONÓMETRO EN 00:00:00' }).then(() => { onair.syncedStart = null; renderOnAir(); }));
+  ['#hud-location', '#hud-tz'].forEach(q => $(q).addEventListener('input', renderOnAir));
+  $('#hud-follow').addEventListener('change', () => { if ($('#hud-follow').checked) { onair.syncedStart = null; pollOutputs(); } });
+
   /* ---------- cabecera: marca y reloj ---------- */
   if (C.brand) { $('#brand-title').textContent = C.brand.title || 'LA CÁPSULA INSÓLITA'; $('#case-no').textContent = C.brand.caseNumber || '—'; }
-  (function tick() { $('#clock').textContent = hhmmss(); setTimeout(tick, 1000 - (Date.now() % 1000)); })();
+  (function tick() { $('#clock').textContent = hhmmss(); renderOnAir(); setTimeout(tick, 1000 - (Date.now() % 1000)); })();
   ['#host', '#port'].forEach(s => $(s).addEventListener('change', renderObs));
   $('#ev-num').addEventListener('input', renderEvidence);
 
