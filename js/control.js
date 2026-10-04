@@ -313,12 +313,16 @@
   }
   // ¿la fuente del overlay está realmente en el programa? Se pregunta solo al conectar y al
   // cambiar de escena (nada de sondeo continuo).
-  const OVERLAY_SOURCE = 'LCI · Broadcast';
+  // Cada escena horizontal (LCI 01-04) tiene su propia fuente dedicada ("LCI Broadcast V1"…"V4",
+  // con ?scene= fijo) en vez de una sola compartida, así que se revisan las 4: alcanza con que
+  // una esté activa (la de la escena que esté al aire en ese momento).
+  const OVERLAY_SOURCES = ['LCI Broadcast V1', 'LCI Broadcast V2', 'LCI Broadcast V3', 'LCI Broadcast V4'];
   let overlayActive = null; // null = desconocido
   function refreshOverlayActive() {
     if (!obs.connected) { overlayActive = null; renderOverlay(); return; }
-    obs.request('GetSourceActive', { sourceName: OVERLAY_SOURCE })
-      .then(r => { overlayActive = !!r.videoActive; }, () => { overlayActive = 'missing'; })
+    Promise.all(OVERLAY_SOURCES.map(name =>
+      obs.request('GetSourceActive', { sourceName: name }).then(r => !!r.videoActive, () => false)
+    )).then(results => { overlayActive = results.some(Boolean) || 'missing'; })
       .finally(renderOverlay);
   }
   function refreshScene() {

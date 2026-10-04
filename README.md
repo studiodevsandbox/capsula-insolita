@@ -36,10 +36,10 @@ Texturas (pared, grano, tinta de sellos) se generan por código: cero imágenes 
 
 ## 2. Cómo funciona con OBS
 
-- Una sola fuente **`LCI · Broadcast`** está en las 4 escenas. Como es la misma fuente, no se recarga al cambiar de escena: escucha `obsSceneChanged` y cambia de layout.
+- Cada escena horizontal tiene **su propia fuente de Navegador** (`LCI Broadcast V1`…`V4`), apuntando a `index.html` con `?scene=` fijo para esa escena — no se comparte una sola fuente entre las 4 (antes sí se compartía; se cambió porque un cambio de escena en OBS es un evento global que le llega a todas las fuentes de Navegador abiertas, y eso podía pisarlas entre sí). Ver sección 16 para el mismo criterio aplicado a las verticales.
 - Las cámaras son fuentes de OBS **debajo** del overlay. El fondo del overlay se recorta (`clip-path`) exactamente donde va cada cámara: son huecos reales.
 - Los comandos (evidencia, alertas, lower third…) viajan por obs-websocket → `CallVendorRequest("obs-browser", "emit_event", { event_name: "lci" })`. Los manda el panel de control (o Claude por MCP).
-- Al cambiar de escena desde el panel, la transición del overlay cubre la pantalla y **en ese instante** el panel corta la escena de OBS: las cámaras nunca se ven saltar. Por eso la transición de OBS está en **Corte**.
+- Por tener una fuente por escena, cambiar de escena en OBS ahora carga esa página de cero (es un archivo local, prácticamente instantáneo) en vez de solo cambiar el layout de una página ya abierta. Transición de OBS: **Corte**.
 
 ### Escenas en OBS (ya creadas)
 
@@ -54,9 +54,9 @@ Si renombras una escena en OBS, cambia también `obs.sceneMap` en `config.js`.
 
 ### Fuente de navegador
 
-- Archivo local: `R:/Leonardo obs IA/capsula/index.html`
+Una por escena, no compartida (ver arriba). Para cada una:
+- Archivo local: `R:/Leonardo obs IA/capsula/index.html`, con `?scene=SCENE_0N_...` agregado a la URL según la escena.
 - Ancho/alto: **igual que tu lienzo de OBS** (ahora 2560×1440). El overlay se escala solo; el diseño base es 1920×1080.
-- Permisos de página: "Acceso de lectura" (para seguir la escena activa).
 - "Controlar audio mediante OBS": activado (para los sonidos).
 
 ## 3. Cambiar cámaras
@@ -120,7 +120,7 @@ Para dejar una evidencia fija al arrancar: `evidence.image` en `config.js`.
 
 1. En `config.js → scenes` agrega por ejemplo `SCENE_05_FULL_EVIDENCE` con `cams`, `evidence`, `lowerThird`, `alert`, `tapes`, `decor`.
 2. Si quieres papeles/hilo propios, agrega una entrada en `DECOR` (`js/components.js`) y referénciala en `decor`.
-3. En OBS crea la escena, añade las cámaras debajo y la fuente `LCI · Broadcast` encima.
+3. En OBS crea la escena, añade las cámaras debajo y una fuente de Navegador propia encima apuntando a `index.html?scene=SCENE_05_...` (no reutilices la de otra escena).
 4. Agrégala a `obs.sceneMap` y (opcional) un botón en `control.html` con `data-scene="SCENE_05_..."`.
 
 Preparadas en la arquitectura (no implementadas): FULL_EVIDENCE, ONLY_EVIDENCE, BREAK, INTERMISSION, INTRO, OUTRO.
@@ -160,7 +160,7 @@ Se guarda en este navegador bajo `lci-casefiles-v1`. Si existían notas del sist
 
 ### Organización ("control room")
 
-- **Barra superior**: estado real de OBS (`OBS CONNECTED` / `CONNECTING` / `OBS OFFLINE` / `CONNECTION LOST` / `AUTH FAILED`), si la fuente `LCI · Broadcast` está en el programa (`OVERLAY`), modo, buscador (Ctrl+K) y `?` (atajos). Si se pierde OBS aparece una franja roja con **RECONNECT**; además reintenta solo (2 s, 4 s, 8 s… hasta 15 s) sin abrir conexiones duplicadas. Con contraseña incorrecta no reintenta.
+- **Barra superior**: estado real de OBS (`OBS CONNECTED` / `CONNECTING` / `OBS OFFLINE` / `CONNECTION LOST` / `AUTH FAILED`), si alguna de las 4 fuentes del overlay (`LCI Broadcast V1`…`V4`) está en el programa (`OVERLAY`), modo, buscador (Ctrl+K) y `?` (atajos). Si se pierde OBS aparece una franja roja con **RECONNECT**; además reintenta solo (2 s, 4 s, 8 s… hasta 15 s) sin abrir conexiones duplicadas. Con contraseña incorrecta no reintenta.
 - **Now playing**: escena al aire (lo que dice OBS, en tiempo real), CAM 01, CAM 02, evidencia, lower third y modo. Todo salvo la escena es **lo último que el panel envió con éxito** (el overlay no responde estado); lo desconocido se muestra como "—".
 - **§01 CASE FILES** (ver sección propia más abajo) · **§02 Scene switcher** (la escena al aire marcada ON AIR; transición elegida abajo) · **§03 Cámaras**.
 - **§04 Quick actions**: evidencia siguiente, investigation, clean, lower third, alerta (repite la última usada), transición (la elegida en §02), intro, outro (dos toques).
