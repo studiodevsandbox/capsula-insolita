@@ -425,6 +425,11 @@
   let cfTimer = null;
   let cfFilter = ['all'].concat(Object.keys(CF_TYPE_LABEL)).includes(saved['cf-filter']) ? saved['cf-filter'] : 'all';
   let cfShowArchived = !!saved['cf-show-archived'];
+  let cfQuery = '';
+  let cfOnlyUntold = !!saved['cf-untold'];
+  let cfOnlyEv = !!saved['cf-onlyev'];
+  const CF_FS = [13, 16, 20, 26]; // tamaños de letra del lector (px)
+  let cfFs = Math.min(CF_FS.length - 1, Math.max(0, Number.isInteger(saved['cf-fs']) ? saved['cf-fs'] : 1));
 
   function cfTypesPresent() {
     const set = new Set(Object.keys(CF_TYPE_LABEL));
@@ -434,7 +439,11 @@
   function cfVisibleItems() { return cfShowArchived ? cf.items.slice() : cf.items.filter(i => i.status !== 'archivado'); }
   function cfFilteredList() {
     const items = cfVisibleItems();
-    const list = cfFilter === 'all' ? items : items.filter(i => i.type === cfFilter);
+    let list = cfFilter === 'all' ? items : items.filter(i => i.type === cfFilter);
+    if (cfOnlyUntold) list = list.filter(i => !i.told);
+    if (cfOnlyEv) list = list.filter(i => (i.relatedEvidenceIds || []).length);
+    const toks = norm(cfQuery).split(/\s+/).filter(Boolean);
+    if (toks.length) list = list.filter(i => { const hay = norm('#' + i.num + ' ' + pad3(i.num) + ' ' + (i.title || '') + ' ' + (i.body || '') + ' ' + cfTypeLabel(i.type)); return toks.every(t => hay.includes(t)); });
     return list.slice().sort((a, b) => b.num - a.num);
   }
   function cfDotClass(item) {
@@ -471,13 +480,13 @@
     renderCfTabs();
     const box = $('#cf-list');
     const list = cfFilteredList();
-    if (!list.length) { box.innerHTML = '<div class="empty">Sin expedientes en esta vista.</div>'; renderCfCounters(); renderCfReader(); return; }
+    if (!list.length) { box.innerHTML = `<div class="empty">${cfQuery || cfOnlyUntold || cfOnlyEv ? 'Nada coincide con los filtros.' : 'Sin expedientes en esta vista.'}</div>`; renderCfCounters(); renderCfReader(); return; }
     box.innerHTML = '';
     list.forEach(item => {
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'cf-item' + (item.status === 'archivado' ? ' cf-item--archived' : '') + (item.id === cfOpenId ? ' cf-item--sel' : '');
-      row.innerHTML = `<span class="cf-dot cf-dot--${cfDotClass(item)}"></span><span class="cf-num">#${pad3(item.num)}</span><span class="cf-t"></span><span class="cf-ty">${esc(cfTypeLabel(item.type))}</span>`;
+      row.innerHTML = `<span class="cf-dot cf-dot--${cfDotClass(item)}"></span><span class="cf-num">#${pad3(item.num)}</span><span class="cf-t"></span>${item.told ? '<span class="cf-told" title="Ya contado en el programa">✓</span>' : ''}<span class="cf-ty">${esc(cfTypeLabel(item.type))}</span>`;
       row.querySelector('.cf-t').textContent = (item.title || '(sin título)') + (item.status === 'archivado' ? ' · ARCHIVADO' : '');
       row.addEventListener('click', () => openCaseFile(item.id));
       box.appendChild(row);
@@ -497,13 +506,26 @@
     $('#cf-r-type').textContent = cfTypeLabel(item.type);
     $('#cf-r-title').textContent = item.title || '(sin título)';
     const body = $('#cf-r-body');
-    const text = item.body || '(sin contenido todavía: usa EDITAR para escribir la historia)';
-    if (body._cfSig !== item.id + '|' + text) {
+    const paras = (item.body || '').split(/\n+/).map(t => t.trim()).filter(Boolean);
+    const sig = item.id + '|' + (item.body || '');
+    if (body._cfSig !== sig) {
       const sameItem = body._cfId === item.id;
-      body.textContent = text;
+      body.innerHTML = '';
+      if (!paras.length) { const p = document.createElement('p'); p.textContent = '(sin contenido todavía: usa EDITAR para escribir la historia)'; body.appendChild(p); }
+      paras.forEach((t, i) => {
+        const p = document.createElement('p');
+        p.textContent = t; p.dataset.i = i;
+        p.addEventListener('click', () => { if (String(window.getSelection()).trim()) return; cfSetMark(i); });
+        body.appendChild(p);
+      });
       if (!sameItem) body.scrollTop = 0; // otro expediente: arranca arriba; el mismo conserva su scroll
-      body._cfSig = item.id + '|' + text; body._cfId = item.id;
+      body._cfSig = sig; body._cfId = item.id;
     }
+    body.style.setProperty('--cf-fs', CF_FS[cfFs] + 'px');
+    cfPaintMark(item);
+    $('#cf-r-told').classList.toggle('on', !!item.told);
+    $('#cf-r-told').textContent = item.told ? '✓ CONTADO' : '○ MARCAR CONTADO';
+    $('#cf-fs-m').disabled = cfFs === 0; $('#cf-fs-p').disabled = cfFs === CF_FS.length - 1;
     body.classList.toggle('is-empty', !item.body);
     $('#cf-r-archive').textContent = item.status === 'archivado' ? '↺ REACTIVAR' : '🗄 ARCHIVAR';
     renderCfRelated();
@@ -594,6 +616,90 @@
     renderCaseFiles();
     if (changedItem) cfPrepare(item);
   }
+  // marcador de lectura: un párrafo resaltado ("voy por aquí"); flechas ↑↓ lo mueven con el lector enfocado
+  function cfPaintMark(item) {
+    const body = $('#cf-r-body'), m = Number.isInteger(item.mark) ? item.mark : -1;
+    body.classList.toggle('has-mark', m >= 0);
+    [...body.children].forEach((p, i) => p.classList.toggle('is-mark', i === m));
+  }
+  function cfSetMark(i, scroll) {
+    const item = cfItem();
+    if (!item) return;
+    const n = $('#cf-r-body').children.length;
+    item.mark = (i === item.mark || i < 0 || i >= n) ? -1 : i;
+    saveCaseFiles();
+    cfPaintMark(item);
+    const p = $('#cf-r-body').children[item.mark];
+    if (scroll && p) p.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+  $('#cf-r-body').addEventListener('keydown', e => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    const item = cfItem();
+    if (!item) return;
+    e.preventDefault();
+    const cur = Number.isInteger(item.mark) ? item.mark : -1, n = $('#cf-r-body').children.length;
+    const next = Math.max(0, Math.min(n - 1, e.key === 'ArrowDown' ? cur + 1 : cur - 1));
+    if (next !== cur) { item.mark = -1; cfSetMark(next, true); }
+  });
+  $('#cf-r-told').addEventListener('click', () => {
+    const item = cfItem();
+    if (!item) return;
+    item.told = !item.told;
+    saveCaseFiles(); renderCaseFiles();
+  });
+  const cfFsSet = d => { cfFs = Math.min(CF_FS.length - 1, Math.max(0, cfFs + d)); keep('cf-fs', cfFs); renderCfReader(); };
+  $('#cf-fs-m').addEventListener('click', () => cfFsSet(-1));
+  $('#cf-fs-p').addEventListener('click', () => cfFsSet(1));
+  // → LOWER THIRD: PREPARA los campos con la selección (o el título); no manda nada al aire
+  $('#cf-r-lt').addEventListener('click', () => {
+    const item = cfItem();
+    if (!item) return;
+    const sel = String(window.getSelection() || '').replace(/\s+/g, ' ').trim();
+    const name = (sel || item.title || '').slice(0, 60);
+    [['#lt-label', 'EXPEDIENTE'], ['#lt-num', item.num], ['#lt-name', name]].forEach(([q, v]) => {
+      const n = $(q); n.value = v;
+      n.dispatchEvent(new Event('input')); n.dispatchEvent(new Event('change'));
+    });
+    toast(`→ LOWER THIRD PREPARADO · ${name || '—'} (aún no sale al aire)`, 'info');
+    $('#card-lt').classList.add('flash-prep'); setTimeout(() => $('#card-lt').classList.remove('flash-prep'), 1200);
+  });
+  // búsqueda y filtros de la lista
+  $('#cf-search').addEventListener('input', () => { cfQuery = $('#cf-search').value; renderCaseFiles(); });
+  const cfSyncChips = () => { $('#cf-f-untold').classList.toggle('on', cfOnlyUntold); $('#cf-f-ev').classList.toggle('on', cfOnlyEv); };
+  $('#cf-f-untold').addEventListener('click', () => { cfOnlyUntold = !cfOnlyUntold; keep('cf-untold', cfOnlyUntold); cfSyncChips(); renderCaseFiles(); });
+  $('#cf-f-ev').addEventListener('click', () => { cfOnlyEv = !cfOnlyEv; keep('cf-onlyev', cfOnlyEv); cfSyncChips(); renderCaseFiles(); });
+  cfSyncChips();
+  // importar .txt / .md: cada archivo = un expediente; si trae líneas «# Título», cada una abre uno nuevo
+  function cfSplitMd(text, base) {
+    const lines = text.split('\n'), parts = [];
+    let cur = null;
+    lines.forEach(l => {
+      const m = /^#\s+(.+)/.exec(l);
+      if (m) { cur = { title: m[1].trim(), body: [] }; parts.push(cur); }
+      else { if (!cur) { cur = { title: base, body: [] }; parts.push(cur); } cur.body.push(l); }
+    });
+    return parts.map(pt => ({ title: pt.title, body: pt.body.join('\n').trim() })).filter(pt => pt.title || pt.body);
+  }
+  $('#cf-import').addEventListener('change', async e => {
+    const files = [...e.target.files]; e.target.value = '';
+    let added = 0, bad = 0;
+    const type = cfFilter !== 'all' ? cfFilter : 'historia';
+    for (const f of files) {
+      if (!/\.(txt|md)$/i.test(f.name) && !/^text\//.test(f.type)) { bad++; continue; }
+      if (f.size > 500 * 1024) { bad++; continue; }
+      let text = '';
+      try { text = (await f.text()).replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').trim(); } catch (err) { bad++; continue; }
+      if (!text) { bad++; continue; }
+      cfSplitMd(text, f.name.replace(/\.[^.]+$/, '')).forEach(pt => {
+        cf.items.push({ id: 'cf' + Date.now() + Math.random().toString(36).slice(2, 7), num: cf.nextNum++, type, title: pt.title.slice(0, 120), body: pt.body, status: 'activo', relatedEvidenceIds: [], ts: Date.now() });
+        added++;
+      });
+    }
+    saveCaseFiles(); renderCaseFiles();
+    if (added) { toast(`✓ ${added} EXPEDIENTE(S) IMPORTADO(S)`, 'ok'); activity(`+ ${added} expediente(s) importado(s)`, 'info'); }
+    if (bad) toast(`✕ ${bad} ARCHIVO(S) NO VÁLIDO(S) · SOLO .TXT / .MD ≤ 500 KB`, 'err');
+  });
+
   function cfEdit() {
     const item = cfItem();
     if (!item) return;
@@ -963,6 +1069,24 @@
     b.addEventListener('dblclick', () => fireTransition(n === 'none' ? currentTr() : n));
     trTiles.appendChild(b);
   });
+  // barra compacta: ◂ [transición elegida ▾] ▸ ▶ ; la rejilla completa es un popover
+  const trPop = $('#tr-pop'), trCur = $('#tr-cur');
+  const trPopOpen = () => !trPop.hidden;
+  function trPopSet(open) { trPop.hidden = !open; trCur.setAttribute('aria-expanded', String(open)); }
+  trCur.addEventListener('click', () => trPopSet(!trPopOpen()));
+  document.addEventListener('click', e => { if (trPopOpen() && !trPop.contains(e.target) && !trCur.contains(e.target)) trPopSet(false); });
+  const trStep = d => {
+    const opts = [...trSel.options], i = opts.findIndex(o => o.value === trSel.value);
+    trSel.value = opts[(i + d + opts.length) % opts.length].value;
+    trSel.dispatchEvent(new Event('change'));
+  };
+  $('#tr-prev').addEventListener('click', () => trStep(-1));
+  $('#tr-next').addEventListener('click', () => trStep(1));
+  trTiles.addEventListener('click', () => trPopSet(false));
+  function renderTrCur() {
+    const t = trSel.value, tm = C.transitionTimings[t];
+    trCur.innerHTML = `<svg viewBox="0 0 30 30" aria-hidden="true">${TR_ICON[t] || TR_ICON_DEFAULT}</svg><span class="tr-n">${t === 'none' ? 'CORTE' : esc(t)}</span><span class="tr-ms">${tm ? (tm.total / 1000).toFixed(1) + ' s' : '0 s'}</span><span class="tr-caret">▾</span>`;
+  }
   let cueScene = null;
   async function goScene(key) {
     if (!C.scenes[key]) return;
@@ -1508,7 +1632,23 @@
   const ACTIONS = [];
   const ACT = {};
   const act = (id, group, label, run, key) => { const a = { id, group, label, run, key }; ACTIONS.push(a); ACT[id] = a; };
-  const runAction = id => { const a = ACT[id]; if (a) a.run(); };
+  // CANDADO: bloquea botones y atajos (excepto OCULTAR TODO y el propio candado) para no tocar nada sin querer
+  let panelLocked = false;
+  const LOCKABLE = '.cdeck-body, .ev-row, #card-lt, #card-cams, #card-emergency .emerg-row, .nowbar';
+  function setLocked(on) {
+    panelLocked = on;
+    document.body.classList.toggle('is-locked', on);
+    $$(LOCKABLE).forEach(el => { if (on) el.setAttribute('inert', ''); else el.removeAttribute('inert'); });
+    $('#lock-banner').hidden = !on;
+    const b = $('#panel-lock');
+    b.innerHTML = (on ? '🔒 DESBLOQUEAR ' : '🔓 BLOQUEAR ') + '<kbd data-kbd="panel-lock"></kbd>';
+    b.classList.toggle('on', on);
+    if (typeof syncKbd === 'function') syncKbd(b);
+    if (on && typeof trPopSet === 'function') trPopSet(false);
+    toast(on ? '🔒 PANEL BLOQUEADO' : '🔓 PANEL DESBLOQUEADO', on ? 'info' : 'ok');
+  }
+  $('#panel-lock').addEventListener('click', () => setLocked(!panelLocked));
+  const runAction = id => { const a = ACT[id]; if (!a) return; if (panelLocked && id !== 'hideall' && id !== 'panel-lock') return; a.run(); };
   // solo las escenas con botón en el panel (las verticales V01-V04 las maneja Aitum Vertical)
   Object.keys(C.scenes).filter(k => document.querySelector(`[data-scene="${k}"]`)).forEach((k, i) => act('scene-' + (i + 1), 'ESCENA', sceneLabel(k), () => goScene(k), i < 9 ? String(i + 1) : null));
   act('ev-next', 'EVIDENCIA', 'Mostrar siguiente evidencia', evNext, 'E');
@@ -1536,6 +1676,7 @@
   act('outro-arm', 'SHOW', 'Outro · caso cerrado (2 toques)', () => arm('outro', '¿CERRAR EL CASO? PULSA OTRA VEZ', () => outro('CASO CERRADO')), 'O');
   act('outro-cont', 'SHOW', 'Outro · continuará (2 toques)', () => arm('outro2', '¿OUTRO · CONTINUARÁ? PULSA OTRA VEZ', () => outro('CONTINUARÁ...')));
   act('reset', 'SHOW', 'Quitar intro / outro', () => $('#reset').click());
+  act('panel-lock', 'PANEL', 'Bloquear / desbloquear el panel', () => setLocked(!panelLocked), 'Ctrl+Shift+L');
   act('hideall', 'EMERGENCIA', 'Ocultar todo (pánico)', hideAll);
   act('sound-toggle', 'AUDIO', 'Sonidos on / off', () => { sndEnabled.checked = !sndEnabled.checked; sndEnabled.dispatchEvent(new Event('change')); });
   act('duck-test', 'AUDIO', 'Probar ducking', () => $('#duck-test').click());
@@ -1600,6 +1741,8 @@
       if (!$('#cb-modal').hidden) { $('#cb-modal').hidden = true; return; }
       if (kmOpen()) { kmClose(); return; }
       if (!$('#cf-modal').hidden) { cfCloseEditor(); return; }
+      if (trPopOpen()) { trPopSet(false); return; }
+      if (panelLocked) return;
       if (armed) { disarm(); toast('CANCELADO', 'info'); return; }
       if (isTyping(document.activeElement)) { document.activeElement.blur(); return; }
       if (cuedId) { cue(null); return; }
@@ -1607,6 +1750,11 @@
     }
     if (palOpen() || kmOpen() || !$('#cb-modal').hidden) return;
     if (isTyping(document.activeElement) || e.repeat) return;
+    if (panelLocked) { // con candado solo se atiende desbloquear y el pánico
+      const c = comboFromEvent(e);
+      if (c && (KEYMAP[c] === 'panel-lock' || KEYMAP[c] === 'hideall')) { e.preventDefault(); runAction(KEYMAP[c]); }
+      return;
+    }
     if (k === '?') { e.preventDefault(); kmShow(); return; }
     if (k === 'Enter' && !e.ctrlKey && !e.metaKey && !e.altKey && cuedId && document.activeElement === document.body) { e.preventDefault(); runAction('ev-next'); return; }
     const combo = comboFromEvent(e);
@@ -1720,7 +1868,7 @@
   const pal = $('#palette'), palInput = $('#pal-input'), palList = $('#pal-list');
   let palItems = [], palSel = 0;
   const palOpen = () => !pal.hidden;
-  function palShow() { palPh(); pal.hidden = false; palInput.value = ''; palFilter(); palInput.focus(); }
+  function palShow() { if (panelLocked) { toast('🔒 PANEL BLOQUEADO', 'info'); return; } palPh(); pal.hidden = false; palInput.value = ''; palFilter(); palInput.focus(); }
   function palClose() { pal.hidden = true; palInput.blur(); }
   function palFilter() {
     const toks = norm(palInput.value).split(/\s+/).filter(Boolean);
@@ -1777,6 +1925,7 @@
     return o ? (o.reserved ? 'Esa tecla está reservada.' : `Esa tecla ya es de: ${o.label}. (Se reasigna desde ⌨ ATAJOS.)`) : '';
   }
   function runCustom(b) {
+    if (panelLocked) return;
     const a = ACT[b.action];
     if (!a) { toast(`✕ "${b.name}": LA ACCIÓN YA NO EXISTE`, 'err'); return; }
     a.run();
@@ -1911,6 +2060,7 @@
     // modo
     setNp('#np-mode-box', '#np-mode', live.mode ? esc(live.mode.toUpperCase()) : NODATA, live.mode === 'investigation' ? 'INV' : null);
     $('#cdeck-sum').innerHTML = `<span class="chip-s chip-s--air"><i></i>${live.scene ? esc(sceneLabel(live.scene).toUpperCase()) : 'SIN ESCENA'}</span><span class="chip-s${live.mode === 'investigation' ? ' chip-s--inv' : ''}"><i></i>${live.mode ? esc(live.mode.toUpperCase()) : 'SIN MODO'}</span>`;
+    $('#top-scene').innerHTML = `ESCENA <b>${live.scene ? esc(sceneLabel(live.scene).toUpperCase()) : (live.obsScene ? esc(live.obsScene) : 'SIN DATO')}</b>`;
     $('#top-mode').innerHTML = `MODE <b>${live.mode ? esc(live.mode.toUpperCase()) : 'SIN DATO'}</b>`;
     $('#top-mode').classList.toggle('chip--inv', live.mode === 'investigation');
   }
@@ -2057,6 +2207,7 @@
   function renderTr() {
     const t = trSel.value;
     $('#qa-tr-s').textContent = currentTr();
+    renderTrCur();
     $$('#tr-tiles [data-trpick]').forEach(b => { const on = b.dataset.trpick === t; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
     $('#tr-sel-label').innerHTML = `AL CAMBIAR DE ESCENA: <b>${esc(t === 'none' ? 'CORTE' : t.toUpperCase())}</b>`;
   }
@@ -2078,6 +2229,18 @@
   const setTopbarH = () => document.documentElement.style.setProperty('--topbar-h', topbar.offsetHeight + 'px');
   setTopbarH();
   if (window.ResizeObserver) new ResizeObserver(setTopbarH).observe(topbar); else window.addEventListener('resize', setTopbarH);
+  // vista del panel (NORMAL 50/50 · LECTURA · OPERACIÓN · COMPACTO) y tamaño de texto
+  const VIEWS = ['normal', 'lectura', 'operacion', 'compacto'];
+  function setView(v) { if (!VIEWS.includes(v)) v = 'normal'; document.body.dataset.view = v; $('#view-select').value = v; keep('view', v); }
+  $('#view-select').addEventListener('change', e => setView(e.target.value));
+  setView(saved.view);
+  const UI_SIZES = [0.9, 1, 1.1, 1.2, 1.3];
+  let uiSize = UI_SIZES.includes(saved['ui-size']) ? saved['ui-size'] : 1;
+  function setUiSize(z) { uiSize = z; document.documentElement.style.zoom = z === 1 ? '' : String(z); keep('ui-size', z); $('#ui-smaller').disabled = z === UI_SIZES[0]; $('#ui-bigger').disabled = z === UI_SIZES[UI_SIZES.length - 1]; if (window.ResizeObserver === undefined) setTopbarH(); }
+  $('#ui-smaller').addEventListener('click', () => setUiSize(UI_SIZES[Math.max(0, UI_SIZES.indexOf(uiSize) - 1)]));
+  $('#ui-bigger').addEventListener('click', () => setUiSize(UI_SIZES[Math.min(UI_SIZES.length - 1, UI_SIZES.indexOf(uiSize) + 1)]));
+  setUiSize(uiSize);
+
   renderBank();
   renderAll();
   syncKbd();

@@ -21,14 +21,18 @@
   <div class="top-status">
     <span id="conn" class="conn conn--wait">CONNECTING</span>
     <span class="chip" id="top-overlay">OVERLAY <b>—</b></span>
+    <span class="chip" id="top-scene">ESCENA <b>—</b></span>
     <span class="chip" id="top-mode">MODE <b>—</b></span>
     <div class="top-tools">
+      <button id="panel-lock" class="lock-btn" title="Bloquea los botones y atajos (OCULTAR TODO sigue activo). Vuelve a pulsar para desbloquear.">🔓 BLOQUEAR <kbd data-kbd="panel-lock"></kbd></button>
       <button class="top-panic" id="top-panic" data-act="hideall" title="Ocultar todo: evidencia, lower third y alertas (pánico)">■ OCULTAR TODO</button>
-      <button id="layout-toggle" title="Arrastrá una caja por su título y soltala sobre otra para intercambiar el orden. Clic de nuevo para bloquear y no mover nada sin querer en vivo.">⠿ MOVER CAJAS</button>
+      <select id="view-select" title="Vista del panel: NORMAL 50/50 · LECTURA (Case Files grande) · OPERACIÓN (evidencia arriba) · COMPACTO"><option value="normal">VISTA · NORMAL</option><option value="lectura">VISTA · LECTURA</option><option value="operacion">VISTA · OPERACIÓN</option><option value="compacto">VISTA · COMPACTO</option></select>
+      <span class="ui-size" title="Tamaño del texto del panel"><button id="ui-smaller" aria-label="Texto más pequeño">A−</button><button id="ui-bigger" aria-label="Texto más grande">A+</button></span>
+      <button id="layout-toggle" title="Arrastrá una caja por su título y soltala sobre otra para intercambiar el orden. Clic de nuevo para bloquear y no mover nada sin querer en vivo.">⠿ CAJAS</button>
       <select id="layout-preset-select" title="Cargar un preset de orden guardado"></select>
-      <button id="layout-preset-save" title="Guardar el orden actual como preset nuevo">💾 GUARDAR PRESET</button>
+      <button id="layout-preset-save" title="Guardar el orden actual como preset nuevo">💾</button>
       <button id="layout-preset-delete" title="Borrar el preset elegido en la lista">✕</button>
-      <button id="layout-reset" title="Vuelve el panel al orden original (recarga la página)">RESTABLECER ORDEN</button>
+      <button id="layout-reset" title="Restablecer el orden original de las cajas (recarga la página)">↺</button>
       <button id="open-palette" title="Buscar y ejecutar cualquier acción (Ctrl+K)"><span class="open-palette-label">BUSCAR</span> <kbd>CTRL K</kbd></button>
       <button id="open-keys" title="Editar atajos de teclado (?)">⌨ ATAJOS</button>
     </div>
@@ -49,9 +53,11 @@
   <div class="np" id="np-lt-box"><span class="np-k">LOWER THIRD</span><span class="np-v" id="np-lt">—</span></div>
   <div class="np" id="np-mode-box"><span class="np-k">MODO</span><span class="np-v" id="np-mode">—</span></div>
 </section>
+<div class="lock-banner" id="lock-banner" hidden>🔒 PANEL BLOQUEADO · botones y atajos desactivados (OCULTAR TODO sigue activo) · <kbd data-kbd="panel-lock"></kbd> o el candado para desbloquear</div>
 <div class="nowbar-note">ESCENA = LO QUE DICE OBS · EL RESTO = ÚLTIMO ENVIADO DESDE ESTE PANEL · "SIN DATO" = AÚN NO ENVIADO DESDE ESTE PANEL</div>
 
-    <section class="card card--danger emerg-bar" id="card-emergency">
+    <div class="zones" id="zones">
+<section class="card card--danger emerg-bar" id="card-emergency">
       <header class="card-h"><span class="card-id">§01</span><h2>EMERGENCY</h2><span class="card-meta">PÁNICO 1 TOQUE · OUTRO 2 TOQUES</span></header>
       <button class="panic" id="hideall"><span class="p-t">■ OCULTAR TODO</span><span class="p-s">EVIDENCIA · LOWER THIRD · ALERTAS</span></button>
       <div class="emerg-row">
@@ -67,11 +73,17 @@
       <div class="cf-tabs" id="cf-tabs"></div>
       <div class="cf-split">
       <div class="cf-left">
+      <div class="cf-tools">
+        <input id="cf-search" type="search" placeholder="buscar en expedientes…" autocomplete="off" spellcheck="false">
+        <button type="button" class="cf-chip" id="cf-f-untold" title="Solo los que todavía no has contado en el programa">SIN CONTAR</button>
+        <button type="button" class="cf-chip" id="cf-f-ev" title="Solo los que tienen evidencia relacionada">CON EVIDENCIA</button>
+      </div>
       <div class="cf-list" id="cf-list"></div>
       <div class="pv-foot">
         
         <button class="btn--sm btn--ghost" id="cf-show-archived" title="Mostrar también los expedientes archivados en la lista">🗄 VER ARCHIVADOS</button>
         <button class="btn--sm btn--ghost" id="notes-clear-all" title="Borrar todos los expedientes">VACIAR TODOS</button>
+        <label class="btn upload btn--sm btn--ghost" title="Importar .txt o .md: cada archivo (o cada línea que empiece con «# ») es un expediente">⇪ IMPORTAR<input id="cf-import" type="file" accept=".txt,.md,text/plain,text/markdown" multiple></label>
         <button class="btn--sm btn--primary" id="notes-add" title="Crear un expediente nuevo">+ NUEVO</button>
       </div>
           </div>
@@ -82,6 +94,7 @@
             <span class="card-id" id="cf-r-num">#000</span>
             <span class="cf-r-type" id="cf-r-type">HISTORIA</span>
             <h3 class="cf-r-title" id="cf-r-title"></h3>
+            <span class="cf-fs" title="Tamaño de la letra del lector"><button type="button" id="cf-fs-m" aria-label="Letra más pequeña">A−</button><button type="button" id="cf-fs-p" aria-label="Letra más grande">A+</button></span>
           </div>
           <div class="cf-r-body" id="cf-r-body" tabindex="0"></div>
           <div class="cf-r-ev">
@@ -90,6 +103,8 @@
           </div>
           <div class="cf-r-btns">
             <button class="btn--sm btn--primary" id="cf-r-show" title="Prepara las evidencias relacionadas en §04 (1.ª = SIGUIENTE, resto = COLA). No manda nada al aire.">▶ MOSTRAR</button>
+            <button class="btn--sm" id="cf-r-told" title="Marcar como ya contado en el programa">✓ CONTADO</button>
+            <button class="btn--sm" id="cf-r-lt" title="Prepara el lower third con el texto seleccionado (o el título). No sale al aire.">→ LOWER THIRD</button>
             <button class="btn--sm" id="cf-r-edit" title="Abrir el editor del expediente">✎ EDITAR</button>
             <button class="btn--sm btn--ghost" id="cf-r-archive" title="Archivar / reactivar este expediente">🗄 ARCHIVAR</button>
             <button class="btn--sm btn--ghost" id="cf-r-delete" title="Borrar este expediente">✕ BORRAR</button>
@@ -124,26 +139,8 @@
         <button class="qa" data-act="outro-arm" id="qa-outro"><svg class="qi" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14"/></svg><kbd data-kbd="outro-arm"></kbd><span class="qa-t">Outro</span><span class="qa-s" id="qa-outro-s">2 toques · caso cerrado</span></button>
       </div>
     </div>
-    <div class="sm sm--alerts" id="sm-alerts">
-      <div class="sm-k">2 · ALERTAS <span class="sm-m">▲ = CRÍTICA</span></div>
-      <div class="alerts" id="alerts"></div>
-      <details class="cdeck-stamps"><summary>SELLOS · caen sobre la evidencia si está visible</summary><div class="stamps" id="stamps"></div></details>
-    </div>
-    <div class="sm sm--trans" id="sm-trans">
-      <div class="sm-k">4 · TRANSICIÓN <span class="sm-m" id="tr-sel-label">—</span>
-        <span class="sm-tools"><button class="btn--sm btn--primary" id="tr-preview" data-act="tr-run" title="Lanza la transición elegida sin cambiar de escena (T)">▶ PROBAR <kbd data-kbd="tr-run"></kbd></button></span>
-      </div>
-      <div class="tr-tiles" id="tr-tiles" role="radiogroup" aria-label="Transición al cambiar de escena"></div>
-    </div>
-    <div class="sm sm--mode" id="sm-mode">
-      <div class="sm-k">5 · MODO <span class="sm-m" id="mode-meta">—</span></div>
-      <div class="modes">
-        <button class="mode-btn" data-mode="clean"><kbd data-kbd="mode-clean"></kbd><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/></svg><span class="m-t">CLEAN</span><span class="m-s">SOLO INFORMACIÓN</span></button>
-        <button class="mode-btn" data-mode="investigation"><kbd data-kbd="mode-investigation"></kbd><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M15 15l6 6"/><path d="M7 10h6" class="f"/></svg><span class="m-t">INVESTIGATION</span><span class="m-s">TODOS LOS EFECTOS</span></button>
-      </div>
-    </div>
     <div class="sm sm--scenes" id="sm-scenes">
-      <div class="sm-k">3 · SCENE SWITCHER <span class="sm-m">TECLAS 1–4</span></div>
+      <div class="sm-k">2 · SCENE SWITCHER <span class="sm-m">TECLAS 1–4</span></div>
       <div class="scenes">
         <button class="scene-btn" data-scene="SCENE_01_CAMERA"><span class="sc-n">SCN 01<kbd data-kbd="scene-1"></kbd></span><svg class="sc-d" viewBox="0 0 48 28" aria-hidden="true"><rect class="scr" x="1" y="1" width="46" height="26"/><rect class="cam" x="5" y="5" width="38" height="18"/><circle class="rec" cx="8" cy="8" r="1.4"/></svg><span class="sc-t">Una cámara</span></button>
         <button class="scene-btn" data-scene="SCENE_02_DUAL_CAMERA"><span class="sc-n">SCN 02<kbd data-kbd="scene-2"></kbd></span><svg class="sc-d" viewBox="0 0 48 28" aria-hidden="true"><rect class="scr" x="1" y="1" width="46" height="26"/><rect class="cam" x="5" y="5" width="18" height="18"/><rect class="cam" x="25" y="5" width="18" height="18"/><circle class="rec" cx="8" cy="8" r="1.4"/><circle class="rec" cx="28" cy="8" r="1.4"/></svg><span class="sc-t">Dos cámaras</span></button>
@@ -151,6 +148,31 @@
         <button class="scene-btn" data-scene="SCENE_04_DUAL_CAMERA_EVIDENCE"><span class="sc-n">SCN 04<kbd data-kbd="scene-4"></kbd></span><svg class="sc-d" viewBox="0 0 48 28" aria-hidden="true"><rect class="scr" x="1" y="1" width="46" height="26"/><rect class="cam" x="5" y="5" width="12" height="18"/><rect class="cam" x="18" y="5" width="12" height="18"/><rect class="ev" x="33" y="6" width="10" height="13" transform="rotate(4 38 12)"/><circle class="rec" cx="8" cy="8" r="1.2"/><circle class="rec" cx="21" cy="8" r="1.2"/></svg><span class="sc-t">Dos cám. + evidencia</span></button>
       </div>
       <select id="tr" data-keep="tr" hidden aria-hidden="true" tabindex="-1"></select>
+    </div>
+    <div class="sm sm--alerts" id="sm-alerts">
+      <div class="sm-k">3 · ALERTAS <span class="sm-m">▲ = CRÍTICA</span></div>
+      <div class="alerts" id="alerts"></div>
+      <details class="cdeck-stamps"><summary>SELLOS · caen sobre la evidencia si está visible</summary><div class="stamps" id="stamps"></div></details>
+    </div>
+    <div class="sm sm--mode" id="sm-mode">
+      <div class="sm-k">4 · MODO <span class="sm-m" id="mode-meta">—</span></div>
+      <div class="modes">
+        <button class="mode-btn" data-mode="clean"><kbd data-kbd="mode-clean"></kbd><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/></svg><span class="m-t">CLEAN</span><span class="m-s">SOLO INFORMACIÓN</span></button>
+        <button class="mode-btn" data-mode="investigation"><kbd data-kbd="mode-investigation"></kbd><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M15 15l6 6"/><path d="M7 10h6" class="f"/></svg><span class="m-t">INVESTIGATION</span><span class="m-s">TODOS LOS EFECTOS</span></button>
+      </div>
+    </div>
+    <div class="sm sm--trans" id="sm-trans">
+      <div class="sm-k">5 · TRANSICIÓN <span class="sm-m" id="tr-sel-label">—</span></div>
+      <div class="tr-bar">
+        <button type="button" class="tr-step" id="tr-prev" title="Transición anterior" aria-label="Transición anterior">◂</button>
+        <button type="button" class="tr-cur" id="tr-cur" title="Elegir otra transición" aria-haspopup="true" aria-expanded="false"></button>
+        <button type="button" class="tr-step" id="tr-next" title="Transición siguiente" aria-label="Transición siguiente">▸</button>
+        <button class="btn--sm btn--primary" id="tr-preview" data-act="tr-run" title="Lanza la transición elegida sin cambiar de escena">▶ <kbd data-kbd="tr-run"></kbd></button>
+      </div>
+      <div class="tr-pop" id="tr-pop" hidden>
+        <div class="tr-pop-h">TRANSICIÓN AL CAMBIAR DE ESCENA <span class="hint">doble clic = probarla sola</span></div>
+        <div class="tr-tiles" id="tr-tiles" role="radiogroup" aria-label="Transición al cambiar de escena"></div>
+      </div>
     </div>
     <div class="sm sm--custom" id="sm-custom">
       <div class="sm-k">6 · PERSONALIZADOS
@@ -236,6 +258,8 @@
         <button class="btn--sm btn--danger" id="ev-bank-clear">VACIAR BANCO</button>
       </div>
     </section>
+</div>
+
 </div>
 
 <main class="deck">

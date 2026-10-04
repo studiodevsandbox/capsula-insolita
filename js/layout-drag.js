@@ -134,7 +134,7 @@
     document.querySelectorAll('.lci-drag-handle').forEach(h => h.setAttribute('draggable', on ? 'true' : 'false'));
     const btn = document.getElementById('layout-toggle');
     if (btn) {
-      btn.textContent = on ? '🔓 EDITANDO · CLIC PARA BLOQUEAR' : '⠿ MOVER CAJAS';
+      btn.textContent = on ? '🔓 EDITANDO · BLOQUEAR' : '⠿ CAJAS';
       btn.classList.toggle('layout-toggle--on', on);
     }
   }

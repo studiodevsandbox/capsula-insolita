@@ -150,18 +150,27 @@ Base única de **expedientes** (Historia · Evidencia · Pista · Testimonio). L
 - **Leer sin modal**: al hacer clic en un expediente, su contenido se muestra *dentro del propio módulo* (número, tipo, título, historia completa con scroll interno, evidencias relacionadas). Cámaras, Evidence Control, el banco y el Control Deck siguen visibles y operables.
 - **▶ MOSTRAR**: vuelve a preparar las evidencias del expediente en §04 (útil tras haber mandado algunas). **✎ EDITAR** abre el editor (modal de dos zonas): a la izquierda título, tipo (botones) y texto con contador de palabras; a la derecha las evidencias relacionadas en su orden de salida (1.ª = SIGUIENTE, con ↑ y ✕) y, debajo, las miniaturas del archivo: un clic relaciona o quita (el número indica el orden). Se guarda solo; `Ctrl+Enter` o `Esc` cierran. **🗄 ARCHIVAR**, **✕ BORRAR** y **← →** (navegar dentro de la pestaña actual) están en el lector.
 - **Relación con Evidence Control**: seleccionar un expediente **prepara, nunca emite**. La 1.ª evidencia relacionada pasa a **SIGUIENTE** y las demás a la **COLA** (visible en §05). Con **MANDAR AL AIRE** (`E` / `Enter`) la 1.ª pasa a AL AIRE, la 2.ª pasa sola a SIGUIENTE y la cola avanza. La cola solo guarda ids del banco maestro (no copia ni mueve nada); al cambiar de expediente se reconstruye. En la cola puedes subir (▲) o quitar (✕) una evidencia; `Esc` / `VACIAR COLA` la suelta.
+- **Contar la historia**: el lector parte el texto en párrafos; un clic (o ↑ ↓ con el lector enfocado) deja el **marcador de lectura** («voy por aquí») y atenúa el resto. **○ MARCAR CONTADO** deja una ✓ en la lista; filtros **SIN CONTAR** y **CON EVIDENCIA** y buscador (número, título, texto). **→ LOWER THIRD** prepara el lower third con el texto seleccionado (o el título) sin sacarlo al aire. **⇪ IMPORTAR** crea expedientes desde `.txt` / `.md` (cada archivo uno; si trae líneas `# Título`, cada una abre uno nuevo; ≤ 500 KB).
 - Contadores en vivo y **🗄 VER ARCHIVADOS**. Se guarda en este navegador (`lci-casefiles-v1`); las notas del sistema viejo se migran solas. Código en `js/control.js` (`CF_KEY`, `cfPrepare`, `evQueue`).
+
+### Lectura de colores, candado, vistas y tamaño de texto
+
+- **Colores con un solo significado**: 🔴 **rojo = al aire** (escena ON AIR, evidencia y lower third visibles, botones que sacan algo al aire como MANDAR AL AIRE) · 🟡 **amarillo = seleccionado / preparado** (SIGUIENTE, pestaña, transición elegida) · ⚪ **blanco = modo activo** (clean / investigation).
+- **🔓 BLOQUEAR** (`Ctrl+Shift+L`, cambiable en ⌨ ATAJOS): desactiva botones y atajos del Deck, Evidence Control, Cámaras, Lower Third y los OUTRO, para no tocar nada sin querer mientras hablas. **OCULTAR TODO** sigue funcionando y Case Files se puede seguir leyendo.
+- **VISTA** (barra superior): NORMAL (50/50) · LECTURA (Case Files más grande) · OPERACIÓN (Evidence Control + Archivo suben sobre Case Files y el Deck) · COMPACTO (menos aire entre cajas). Se recuerda.
+- **A− / A+**: tamaño de todo el panel (90 % a 130 %). Dentro de Case Files, el lector tiene además su propio A− / A+ para leer a distancia.
+- Los avisos salen abajo a la derecha y ya no tapan "Now playing".
 
 ### Distribución: CASE FILES + CONTROL DECK (zona superior 50 % / 50 %)
 
 Bajo "Now playing" hay dos áreas de igual peso, fijas (no se arrastran ni se redimensionan):
 
 - **Izquierda · CASE FILES** — "¿qué estoy contando?": pestañas, lista única de expedientes (a la izquierda) y lector con scroll interno (a la derecha). Debajo del lector: evidencias relacionadas y los botones MOSTRAR / EDITAR / ARCHIVAR / BORRAR / ← →.
-- **Derecha · CONTROL DECK** — "¿qué necesito pulsar?": **1 Quick Actions · 2 Alertas (+ sellos) · 3 Scene Switcher · 4 Transición · 5 Modo · 6 Personalizados**. Se puede **▾ CONTRAER / ▸ EXPANDIR** (queda una línea con lo esencial; el estado se recuerda).
+- **Derecha · CONTROL DECK** — "¿qué necesito pulsar?": **1 Quick Actions · 2 Scene Switcher · 3 Alertas (+ sellos) · 4 Modo · 5 Transición · 6 Personalizados**. Se puede **▾ CONTRAER / ▸ EXPANDIR** (queda una línea con lo esencial; el estado se recuerda).
 - Arriba de todo, justo bajo "Now playing": **EMERGENCY (§01)** como barra delgada siempre visible (OCULTAR TODO · OUTRO caso cerrado / continuará · QUITAR INTRO/OUTRO; ■ OCULTAR TODO también está en la barra superior en pantallas angostas). Debajo de Case Files y Control Deck: **EVIDENCE CONTROL y ARCHIVO DE EVIDENCIAS lado a lado** (fila fija, a mano), y debajo Cámaras · Activity Log + Lower Third · Ajustes (Efectos, Audio, OBS, Debug). Las 3 columnas de abajo sí se reordenan con ⠿ MOVER CAJAS.
 - En pantallas ≤ 1100 px (dock de OBS) Case Files y Control Deck se apilan.
 
-**Transición**: baldosas con pictograma (el cajón TRANSICIONES de Ajustes ya no existe; **doble clic** en una baldosa la prueba sola) (corte, tape, flash, paper, file, cctv, stamp, redflash, document, glitch, evidence). La elegida es la que se usa al cambiar de escena (se recuerda); **▶ PROBAR** (`T`) la lanza sola sin cambiar de escena. Una transición nueva en `config.js → transitionTimings` aparece sola con un icono genérico (el pictograma propio se agrega en `TR_ICON`, `js/control.js`).
+**Transición**: lo frecuente está a la vista y el ajuste se esconde: una barra `◂ [TAPE ▾] ▸ ▶` (◂ ▸ cambian de transición, ▾ abre la rejilla de baldosas con pictograma, ▶ la prueba). (el cajón TRANSICIONES de Ajustes ya no existe; **doble clic** en una baldosa la prueba sola) (corte, tape, flash, paper, file, cctv, stamp, redflash, document, glitch, evidence). La elegida es la que se usa al cambiar de escena (se recuerda); **▶ PROBAR** (`T`) la lanza sola sin cambiar de escena. Una transición nueva en `config.js → transitionTimings` aparece sola con un icono genérico (el pictograma propio se agrega en `TR_ICON`, `js/control.js`).
 
 **Transcripción**: el proyecto no incluye ningún sistema de transcripción, por eso no hay módulo en el Deck.
 
