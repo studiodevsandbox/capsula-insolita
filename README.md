@@ -145,27 +145,27 @@ El panel entero se puede reordenar a gusto:
 
 ### CASE FILES (§01)
 
-Reemplaza a las notas sueltas de antes: es una base de **expedientes**, cada uno con:
+Base única de **expedientes** (Historia · Evidencia · Pista · Testimonio). Las pestañas **TODOS · HISTORIAS · EVIDENCIAS · PISTAS · TESTIMONIOS** son filtros de esa misma lista, no bancos separados.
 
-- **Tipo principal**: Historia · Evidencia · Pista · Testimonio.
-- **Título y cuerpo** (la historia completa, para leer en vivo).
-- **Evidencia relacionada** (opcional): uno o más ítems del banco de evidencias (§06). Al presionar **👁 MOSTRAR** en un expediente, el primero de sus relacionados se **prepara solo** en §05 (pasa a "SIGUIENTE", listo para mandar al aire con `E`) — el resto queda solo como referencia, no se preparan todos.
-- **Archivar / reactivar**: un expediente archivado desaparece de la lista; el botón **🗄 VER ARCHIVADOS** (abajo de la lista) los vuelve a mostrar (atenuados, en itálica) para poder reactivarlos.
+- **Leer sin modal**: al hacer clic en un expediente, su contenido se muestra *dentro del propio módulo* (número, tipo, título, historia completa con scroll interno, evidencias relacionadas). Cámaras, Evidence Control, el banco y el Control Strip siguen visibles y operables.
+- **▶ MOSTRAR**: vuelve a preparar las evidencias del expediente en §05 (útil tras haber mandado algunas). **✎ EDITAR** abre el editor (modal): título, tipo, texto, y relacionar / quitar / reordenar evidencias del banco. **🗄 ARCHIVAR**, **✕ BORRAR** y **← →** (navegar dentro de la pestaña actual) están en el lector.
+- **Relación con Evidence Control**: seleccionar un expediente **prepara, nunca emite**. La 1.ª evidencia relacionada pasa a **SIGUIENTE** y las demás a la **COLA** (visible en §05). Con **MANDAR AL AIRE** (`E` / `Enter`) la 1.ª pasa a AL AIRE, la 2.ª pasa sola a SIGUIENTE y la cola avanza. La cola solo guarda ids del banco maestro (no copia ni mueve nada); al cambiar de expediente se reconstruye. En la cola puedes subir (▲) o quitar (✕) una evidencia; `Esc` / `VACIAR COLA` la suelta.
+- Contadores en vivo y **🗄 VER ARCHIVADOS**. Se guarda en este navegador (`lci-casefiles-v1`); las notas del sistema viejo se migran solas. Código en `js/control.js` (`CF_KEY`, `cfPrepare`, `evQueue`).
 
-Encabezado con contadores en vivo (expedientes totales · activos · "en emisión" = si hay un expediente abierto ahora mismo) y pestañas para filtrar por tipo (se generan solas según los tipos que existan, no hay que tocar código para agregar uno nuevo). Dentro del detalle, **← ANTERIOR / SIGUIENTE →** navegan dentro de la pestaña filtrada actual (del más viejo al más nuevo).
+### CONTROL STRIP (barra horizontal fija)
 
-> **Importante:** "MOSTRAR" un expediente es solo para vos — **no manda nada al overlay de OBS** (a diferencia de evidencia o lower third, que sí viajan al overlay). Es una chuleta de lectura con preparación automática de evidencia, nada más.
+Barra fija bajo "Now playing" (no se arrastra ni se redimensiona; solo **▾ CONTRAER / ▸ EXPANDIR**, recordado en el navegador). Contraída queda una línea compacta que se queda a la vista bajo la barra superior. Orden: **1 Quick Actions · 2 Alertas (+ sellos) · 3 Transcripción · 4 Modo · 5 Scene Switcher (+ transición) · 6 Personalizados**. Son los mismos botones, ids y atajos de antes (solo cambiaron de lugar); ya no hay tarjetas duplicadas en el dashboard.
 
-Se guarda en este navegador bajo `lci-casefiles-v1`. Si existían notas del sistema viejo (`lci-notes-v2` / `lci-notes-v1`), se migran solas como expedientes tipo "historia" la primera vez que cargás el panel nuevo — no se pierde nada. Código en `js/control.js`, buscá `CF_KEY` / `cf.items`.
+- **Transcripción**: el proyecto no tiene ningún módulo de transcripción, así que el espacio muestra un aviso en lugar de botones sin acción. Cuando exista, se conecta ahí.
+- **Personalizados**: **+ NUEVO BOTÓN** → nombre, tipo de acción, acción y atajo (clic en el campo y pulsa la tecla, p. ej. `F8`). Solo ofrece acciones reales del registro del panel (las mismas de Ctrl+K: escenas, alertas, sellos, transiciones, cámaras, modo, evidencia…). **✎ EDITAR** permite renombrar, cambiar acción/atajo o borrar. Rechaza teclas reservadas o ya usadas. Se guardan en `lci-custom-buttons-v1` y vuelven al reabrir el panel.
 
 ### Organización ("control room")
 
 - **Barra superior**: estado real de OBS (`OBS CONNECTED` / `CONNECTING` / `OBS OFFLINE` / `CONNECTION LOST` / `AUTH FAILED`), si alguna de las 4 fuentes del overlay (`LCI Broadcast V1`…`V4`) está en el programa (`OVERLAY`), modo, buscador (Ctrl+K) y `?` (atajos). Si se pierde OBS aparece una franja roja con **RECONNECT**; además reintenta solo (2 s, 4 s, 8 s… hasta 15 s) sin abrir conexiones duplicadas. Con contraseña incorrecta no reintenta.
 - **Now playing**: escena al aire (lo que dice OBS, en tiempo real), CAM 01, CAM 02, evidencia, lower third y modo. Todo salvo la escena es **lo último que el panel envió con éxito** (el overlay no responde estado); lo desconocido se muestra como "—".
-- **§01 CASE FILES** (ver sección propia más abajo) · **§02 Scene switcher** (la escena al aire marcada ON AIR; transición elegida abajo) · **§03 Cámaras**.
-- **§04 Quick actions**: evidencia siguiente, investigation, clean, lower third, alerta (repite la última usada), transición (la elegida en §02), intro, outro (dos toques).
+- **CONTROL STRIP** (ver sección propia): quick actions, alertas, modo y scene switcher (la escena al aire marcada ON AIR) · **§01 CASE FILES** · **§03 Cámaras**.
 - **§05 Evidence control** + **§06 Archivo de evidencias** (ver sección 4).
-- **§07 Modo** (investigation = amarillo, clean = blanco) · **§08 Lower third** (vista previa del texto en vivo) · **§09 Alertas** (▲ rojas = críticas: ATENCIÓN, CASO ABIERTO, ÚLTIMA HORA) y sellos.
+- **§08 Lower third** (vista previa del texto en vivo). Modo (investigation = amarillo, clean = blanco) y alertas (▲ rojas = críticas) están en el Control Strip.
 - **§10 Emergency**: OCULTAR TODO (1 toque), outro caso cerrado / continuará (**2 toques en 3 s**, el botón parpadea en rojo al armarse), quitar intro/outro. En el dock (≤900 px) sube al 3.er lugar y además hay un botón **■ OCULTAR TODO** fijo en la barra superior.
 - Avisos (toasts): salen arriba, bajo la barra, sin tapar el pánico; en el dock se ven máximo 2.
 - NOW PLAYING: **SIN DATO** = ese estado aún no se envió desde este panel (no es lo mismo que OFFLINE).

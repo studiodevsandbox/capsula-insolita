@@ -51,6 +51,62 @@
 </section>
 <div class="nowbar-note">ESCENA = LO QUE DICE OBS · EL RESTO = ÚLTIMO ENVIADO DESDE ESTE PANEL · "SIN DATO" = AÚN NO ENVIADO DESDE ESTE PANEL</div>
 
+<!-- ============ CONTROL STRIP (fijo, no se mueve; solo se contrae) ============ -->
+<section class="strip" id="strip" aria-label="Control Strip">
+  <header class="strip-h">
+    <span class="card-id">CONTROL</span><h2>CONTROL STRIP</h2>
+    <span class="strip-sum" id="strip-sum">—</span>
+    <button class="btn--sm btn--ghost" id="strip-toggle" aria-expanded="true" title="Contraer / expandir la barra">▾ CONTRAER</button>
+  </header>
+  <div class="strip-body" id="strip-body">
+    <div class="sm sm--qa" id="sm-qa">
+      <div class="sm-k">1 · QUICK ACTIONS</div>
+      <div class="qa-grid">
+        <button class="qa qa--ev" data-act="ev-next"><kbd>E</kbd><span class="qa-t">Evidencia</span><span class="qa-s" id="qa-ev-s">siguiente del banco</span></button>
+        <button class="qa qa--inv" data-act="mode-investigation" id="qa-inv"><kbd>I</kbd><span class="qa-t">Investigation</span><span class="qa-s">modo completo</span></button>
+        <button class="qa qa--clean" data-act="mode-clean" id="qa-clean"><kbd>C</kbd><span class="qa-t">Clean</span><span class="qa-s">modo limpio</span></button>
+        <button class="qa" data-act="lt-toggle" id="qa-lt"><kbd>L</kbd><span class="qa-t">Lower third</span><span class="qa-s" id="qa-lt-s">mostrar</span></button>
+        <button class="qa qa--alert" data-act="alert-last"><kbd>A</kbd><span class="qa-t">Alerta</span><span class="qa-s" id="qa-alert-s">NUEVA EVIDENCIA</span></button>
+        <button class="qa" data-act="tr-run"><kbd>T</kbd><span class="qa-t">Transición</span><span class="qa-s" id="qa-tr-s">tape</span></button>
+        <button class="qa" data-act="intro" id="intro"><span class="qa-t">Intro</span><span class="qa-s">abrir el caso · ~6 s</span></button>
+        <button class="qa" data-act="outro-arm" id="qa-outro"><kbd>O</kbd><span class="qa-t">Outro</span><span class="qa-s" id="qa-outro-s">2 toques · caso cerrado</span></button>
+      </div>
+    </div>
+    <div class="sm sm--alerts" id="sm-alerts">
+      <div class="sm-k">2 · ALERTAS <span class="sm-m">▲ = CRÍTICA</span></div>
+      <div class="alerts" id="alerts"></div>
+      <details class="strip-stamps"><summary>SELLOS · caen sobre la evidencia si está visible</summary><div class="stamps" id="stamps"></div></details>
+    </div>
+    <div class="sm sm--tx" id="sm-tx">
+      <div class="sm-k">3 · TRANSCRIPCIÓN</div>
+      <div class="sm-empty" id="tx-state">Sin módulo de transcripción en este proyecto todavía. Cuando exista, START / PAUSE / STOP y su estado se conectan aquí.</div>
+    </div>
+    <div class="sm sm--mode" id="sm-mode">
+      <div class="sm-k">4 · MODO <span class="sm-m" id="mode-meta">—</span></div>
+      <div class="modes">
+        <button class="mode-btn" data-mode="clean"><kbd>C</kbd><span class="m-t">CLEAN</span><span class="m-s">SOLO INFORMACIÓN</span></button>
+        <button class="mode-btn" data-mode="investigation"><kbd>I</kbd><span class="m-t">INVESTIGATION</span><span class="m-s">TODOS LOS EFECTOS</span></button>
+      </div>
+    </div>
+    <div class="sm sm--scenes" id="sm-scenes">
+      <div class="sm-k">5 · SCENE SWITCHER <span class="sm-m">TECLAS 1–4</span></div>
+      <div class="scenes">
+        <button class="scene-btn" data-scene="SCENE_01_CAMERA"><span class="sc-n">SCN 01<kbd>1</kbd></span><span class="sc-t">Una cámara</span></button>
+        <button class="scene-btn" data-scene="SCENE_02_DUAL_CAMERA"><span class="sc-n">SCN 02<kbd>2</kbd></span><span class="sc-t">Dos cámaras</span></button>
+        <button class="scene-btn" data-scene="SCENE_03_CAMERA_EVIDENCE"><span class="sc-n">SCN 03<kbd>3</kbd></span><span class="sc-t">Cámara + evidencia</span></button>
+        <button class="scene-btn" data-scene="SCENE_04_DUAL_CAMERA_EVIDENCE"><span class="sc-n">SCN 04<kbd>4</kbd></span><span class="sc-t">Dos cám. + evidencia</span></button>
+      </div>
+      <div class="scene-tr"><span class="mlabel">TRANSICIÓN</span><select id="tr" data-keep="tr"></select></div>
+    </div>
+    <div class="sm sm--custom" id="sm-custom">
+      <div class="sm-k">6 · PERSONALIZADOS
+        <span class="sm-tools"><button class="btn--sm btn--ghost" id="cb-edit-toggle" title="Mostrar editar / borrar en cada botón">✎ EDITAR</button><button class="btn--sm btn--primary" id="cb-new">+ NUEVO BOTÓN</button></span>
+      </div>
+      <div class="cb-grid" id="cb-grid"></div>
+    </div>
+  </div>
+</section>
+
 <main class="deck">
 
   <!-- ============ COLUMNA A: programa ============ -->
@@ -60,23 +116,37 @@
       <header class="card-h"><span class="card-id">§01</span><h2>CASE FILES</h2><span class="card-meta" id="cf-counters">00 EXPEDIENTES · 00 ACTIVOS · 00 EN EMISIÓN</span></header>
       <div class="cf-tabs" id="cf-tabs"></div>
       <div class="cf-list" id="cf-list"></div>
+      <article class="cf-reader" id="cf-reader" aria-live="polite">
+        <div class="cf-reader-empty" id="cf-reader-empty">Elige un expediente de la lista para leerlo aquí. Sus evidencias se preparan solas en §05 (nada sale al aire hasta que lo mandes).</div>
+        <div class="cf-reader-main" id="cf-reader-main" hidden>
+          <div class="cf-reader-h">
+            <span class="card-id" id="cf-r-num">#000</span>
+            <span class="cf-r-type" id="cf-r-type">HISTORIA</span>
+            <h3 class="cf-r-title" id="cf-r-title"></h3>
+          </div>
+          <div class="cf-r-body" id="cf-r-body" tabindex="0"></div>
+          <div class="cf-r-ev">
+            <span class="field-label">EVIDENCIAS RELACIONADAS</span>
+            <div id="cf-r-evlist" class="cf-evidence-list"></div>
+          </div>
+          <div class="cf-r-btns">
+            <button class="btn--sm btn--primary" id="cf-r-show" title="Prepara las evidencias relacionadas en §05 (1.ª = SIGUIENTE, resto = COLA). No manda nada al aire.">▶ MOSTRAR</button>
+            <button class="btn--sm" id="cf-r-edit" title="Abrir el editor del expediente">✎ EDITAR</button>
+            <button class="btn--sm btn--ghost" id="cf-r-archive" title="Archivar / reactivar este expediente">🗄 ARCHIVAR</button>
+            <button class="btn--sm btn--ghost" id="cf-r-delete" title="Borrar este expediente">✕ BORRAR</button>
+            <span class="cf-nav">
+              <button class="btn--sm btn--ghost" id="cf-r-prev" title="Expediente anterior en esta pestaña">←</button>
+              <button class="btn--sm btn--ghost" id="cf-r-next" title="Expediente siguiente en esta pestaña">→</button>
+            </span>
+          </div>
+        </div>
+      </article>
       <div class="pv-foot">
-        <span class="hint">clic en un expediente para abrirlo</span>
+        <span class="hint">clic en un expediente para leerlo aquí mismo</span>
         <button class="btn--sm btn--ghost" id="cf-show-archived" title="Mostrar también los expedientes archivados en la lista">🗄 VER ARCHIVADOS</button>
         <button class="btn--sm btn--ghost" id="notes-clear-all" title="Borrar todos los expedientes">VACIAR TODOS</button>
         <button class="btn--sm btn--primary" id="notes-add" title="Crear un expediente nuevo">+ NUEVO</button>
       </div>
-    </section>
-
-    <section class="card" id="card-scenes">
-      <header class="card-h"><span class="card-id">§02</span><h2>SCENE SWITCHER</h2><span class="card-meta">TECLAS 1–4</span></header>
-      <div class="scenes">
-        <button class="scene-btn" data-scene="SCENE_01_CAMERA"><span class="sc-n">SCN 01<kbd>1</kbd></span><span class="sc-t">Una cámara</span></button>
-        <button class="scene-btn" data-scene="SCENE_02_DUAL_CAMERA"><span class="sc-n">SCN 02<kbd>2</kbd></span><span class="sc-t">Dos cámaras</span></button>
-        <button class="scene-btn" data-scene="SCENE_03_CAMERA_EVIDENCE"><span class="sc-n">SCN 03<kbd>3</kbd></span><span class="sc-t">Cámara + evidencia</span></button>
-        <button class="scene-btn" data-scene="SCENE_04_DUAL_CAMERA_EVIDENCE"><span class="sc-n">SCN 04<kbd>4</kbd></span><span class="sc-t">Dos cám. + evidencia</span></button>
-      </div>
-      <div class="scene-tr"><span class="mlabel">TRANSICIÓN</span><select id="tr" data-keep="tr"></select></div>
     </section>
 
     <section class="card" id="card-cams">
@@ -143,23 +213,6 @@
   <!-- ============ COLUMNA B: operación ============ -->
   <div class="col col-b">
 
-    <section class="card" id="card-qa">
-      <header class="card-h"><span class="card-id">§04</span><h2>QUICK ACTIONS</h2><span class="card-meta">UN CLIC O UNA TECLA</span></header>
-      <div class="qa-grid">
-        <button class="qa qa--ev" data-act="ev-next"><kbd>E</kbd><span class="qa-t">Evidencia</span><span class="qa-s" id="qa-ev-s">siguiente del banco</span></button>
-        <button class="qa qa--inv" data-act="mode-investigation" id="qa-inv"><kbd>I</kbd><span class="qa-t">Investigation</span><span class="qa-s">modo completo</span></button>
-        <button class="qa qa--clean" data-act="mode-clean" id="qa-clean"><kbd>C</kbd><span class="qa-t">Clean</span><span class="qa-s">modo limpio</span></button>
-        <button class="qa" data-act="lt-toggle" id="qa-lt"><kbd>L</kbd><span class="qa-t">Lower third</span><span class="qa-s" id="qa-lt-s">mostrar</span></button>
-        <button class="qa qa--alert" data-act="alert-last"><kbd>A</kbd><span class="qa-t">Alerta</span><span class="qa-s" id="qa-alert-s">NUEVA EVIDENCIA</span></button>
-        <button class="qa" data-act="tr-run"><kbd>T</kbd><span class="qa-t">Transición</span><span class="qa-s" id="qa-tr-s">tape</span></button>
-        <button class="qa" data-act="intro" id="intro"><span class="qa-t">Intro</span><span class="qa-s">abrir el caso · ~6 s</span></button>
-        <button class="qa" data-act="outro-arm" id="qa-outro"><kbd>O</kbd><span class="qa-t">Outro</span><span class="qa-s" id="qa-outro-s">2 toques · caso cerrado</span></button>
-      </div>
-      <div class="keys-legend">
-        <span><kbd>1</kbd>–<kbd>4</kbd> escena</span><span><kbd>E</kbd> evidencia</span><span><kbd>I</kbd>/<kbd>C</kbd> modo</span><span><kbd>L</kbd> lower third</span><span><kbd>A</kbd> alerta</span><span><kbd>T</kbd> transición</span><span><kbd>O</kbd><kbd>O</kbd> outro</span><span><kbd>ESC</kbd> cancelar</span><span><kbd>CTRL K</kbd> buscar</span>
-      </div>
-    </section>
-
     <section class="card" id="card-ev">
       <header class="card-h"><span class="card-id">§05</span><h2>EVIDENCE CONTROL</h2><span class="card-meta" id="ev-meta">—</span></header>
       <div class="ev-station">
@@ -188,10 +241,14 @@
             <label class="field"><span>DESCRIPCIÓN</span><input id="ev-desc" placeholder="opcional" data-keep="ev-desc"></label>
           </div>
           <div class="ev-go">
-            <button class="btn--primary" id="ev-next" data-act="ev-next">MOSTRAR <kbd>E</kbd></button>
+            <button class="btn--primary" id="ev-next" data-act="ev-next">MANDAR AL AIRE <kbd>E</kbd></button>
             <button id="ev-uncue" hidden title="Quitar la selección (Esc)">✕</button>
           </div>
         </div>
+      </div>
+      <div class="ev-queue" id="ev-queue" hidden>
+        <div class="ev-queue-h"><span class="slot-k">COLA · <b id="ev-queue-case">—</b></span><button class="btn--sm btn--ghost" id="ev-queue-clear" title="Vaciar la cola (no toca el banco)">VACIAR COLA</button></div>
+        <ol class="ev-queue-list" id="ev-queue-list"></ol>
       </div>
       <details class="adv manual"><summary>FUENTE MANUAL · ARCHIVO SUELTO O RUTA (VIDEOS)</summary>
         <div class="row"><input id="ev-file" type="file" accept="image/*"></div>
@@ -233,14 +290,6 @@
   <!-- ============ COLUMNA C: gráficos, emergencia, bitácora, ajustes ============ -->
   <div class="col col-c">
 
-    <section class="card" id="card-modes">
-      <header class="card-h"><span class="card-id">§07</span><h2>MODO</h2><span class="card-meta" id="mode-meta">—</span></header>
-      <div class="modes">
-        <button class="mode-btn" data-mode="clean"><kbd>C</kbd><span class="m-t">CLEAN</span><span class="m-s">SOLO INFORMACIÓN</span></button>
-        <button class="mode-btn" data-mode="investigation"><kbd>I</kbd><span class="m-t">INVESTIGATION</span><span class="m-s">TODOS LOS EFECTOS</span></button>
-      </div>
-    </section>
-
     <section class="card" id="card-lt">
       <header class="card-h"><span class="card-id">§08</span><h2>LOWER THIRD</h2><span class="card-meta" id="lt-meta">—</span></header>
       <div class="lt-fields">
@@ -255,13 +304,6 @@
         <div class="ltp-role" id="ltp-role">Rol o descripción</div>
       </div>
       <div class="lt-btns"><button class="btn--primary" id="lt-show">MOSTRAR <kbd>L</kbd></button><button id="lt-hide">OCULTAR</button></div>
-    </section>
-
-    <section class="card" id="card-alerts">
-      <header class="card-h"><span class="card-id">§09</span><h2>ALERTAS</h2><span class="card-meta">▲ = CRÍTICA</span></header>
-      <div class="alerts" id="alerts"></div>
-      <div class="sub-k">SELLOS · caen sobre la evidencia si está visible</div>
-      <div class="stamps" id="stamps"></div>
     </section>
 
     <section class="card card--danger" id="card-emergency">
@@ -359,7 +401,7 @@
 </div>
 
 <div class="modal" id="cf-modal" hidden>
-  <div class="modal-box cf-modal-box" role="dialog" aria-label="Expediente">
+  <div class="modal-box cf-modal-box" role="dialog" aria-label="Editar expediente">
     <div class="modal-h">
       <span class="card-id" id="cf-num">#000</span>
       <select id="cf-type" title="Tipo principal del expediente">
@@ -383,11 +425,28 @@
     </div>
     <div class="modal-f cf-modal-f">
       <span id="cf-meta">GUARDADO</span>
-      <button class="btn--sm" id="cf-show" title="Solo para leer en el panel: no manda nada al overlay de OBS">👁 MOSTRAR</button>
-      <span class="cf-nav">
-        <button class="btn--sm btn--ghost" id="cf-prev" title="Expediente anterior en esta pestaña">← ANTERIOR</button>
-        <button class="btn--sm btn--ghost" id="cf-next" title="Expediente siguiente en esta pestaña">SIGUIENTE →</button>
-      </span>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="cb-modal" hidden>
+  <div class="modal-box" role="dialog" aria-label="Botón personalizado">
+    <div class="modal-h"><span class="card-id">BTN</span><span class="dr-t" id="cb-title">NUEVO BOTÓN</span></div>
+    <div class="cb-form">
+      <label class="field"><span>NOMBRE</span><input id="cb-name" maxlength="28" placeholder="PRESENTAR PISTA" autocomplete="off"></label>
+      <div class="grid2">
+        <label class="field"><span>TIPO DE ACCIÓN</span><select id="cb-group"></select></label>
+        <label class="field"><span>ACCIÓN</span><select id="cb-action"></select></label>
+      </div>
+      <label class="field"><span>ATAJO (clic y pulsa una tecla · F1–F12, letras…)</span>
+        <div class="row"><input id="cb-key" readonly placeholder="sin atajo" style="flex:1"><button class="btn--sm btn--ghost" id="cb-key-clear" type="button">QUITAR</button></div>
+      </label>
+      <div class="hint" id="cb-err" style="color:#ff5a6a"></div>
+    </div>
+    <div class="modal-f cf-modal-f">
+      <button class="btn--sm btn--primary" id="cb-save">GUARDAR</button>
+      <button class="btn--sm" id="cb-cancel">CANCELAR</button>
+      <button class="btn--sm btn--danger" id="cb-delete" hidden style="margin-left:auto">✕ BORRAR</button>
     </div>
   </div>
 </div>

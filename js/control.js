@@ -463,7 +463,7 @@
     if (!el) return;
     const total = cf.items.length;
     const active = cf.items.filter(i => i.status === 'activo').length;
-    const live = (cfOpenId && !$('#cf-modal').hidden) ? 1 : 0;
+    const live = cfOpenId ? 1 : 0;
     el.textContent = `${pad2(total)} EXPEDIENTE${total === 1 ? '' : 'S'} · ${pad2(active)} ACTIVO${active === 1 ? '' : 'S'} · ${pad2(live)} EN EMISIÓN`;
   }
 
@@ -471,34 +471,73 @@
     renderCfTabs();
     const box = $('#cf-list');
     const list = cfFilteredList();
-    if (!list.length) { box.innerHTML = '<div class="empty">Sin expedientes en esta vista.</div>'; renderCfCounters(); return; }
+    if (!list.length) { box.innerHTML = '<div class="empty">Sin expedientes en esta vista.</div>'; renderCfCounters(); renderCfReader(); return; }
     box.innerHTML = '';
     list.forEach(item => {
       const row = document.createElement('button');
       row.type = 'button';
-      row.className = 'cf-item' + (item.status === 'archivado' ? ' cf-item--archived' : '');
-      row.innerHTML = `<span class="cf-dot cf-dot--${cfDotClass(item)}"></span><span class="cf-num">#${pad3(item.num)}</span><span class="cf-t"></span><span class="cf-del" title="Borrar este expediente">✕</span>`;
+      row.className = 'cf-item' + (item.status === 'archivado' ? ' cf-item--archived' : '') + (item.id === cfOpenId ? ' cf-item--sel' : '');
+      row.innerHTML = `<span class="cf-dot cf-dot--${cfDotClass(item)}"></span><span class="cf-num">#${pad3(item.num)}</span><span class="cf-t"></span><span class="cf-ty">${esc(cfTypeLabel(item.type))}</span>`;
       row.querySelector('.cf-t').textContent = (item.title || '(sin título)') + (item.status === 'archivado' ? ' · ARCHIVADO' : '');
-      row.addEventListener('click', e => { if (e.target.closest('.cf-del')) return; openCaseFile(item.id); });
-      row.querySelector('.cf-del').addEventListener('click', e => {
-        e.stopPropagation();
-        if (!confirm(`¿Borrar el expediente "${item.title || '(sin título)'}"? No se puede deshacer.`)) return;
-        cf.items = cf.items.filter(x => x.id !== item.id);
-        saveCaseFiles();
-        if (cfOpenId === item.id) closeCaseFile(); else renderCaseFiles();
-      });
+      row.addEventListener('click', () => openCaseFile(item.id));
       box.appendChild(row);
     });
     renderCfCounters();
+    renderCfReader();
   }
 
-  // ---------- relación con el banco de evidencias (§05/§06): reusa bank/cuedId/cue() ----------
+  // ---------- lector integrado: el expediente se LEE dentro del propio módulo (sin modal) ----------
+  const cfItem = () => cf.items.find(x => x.id === cfOpenId) || null;
+  function renderCfReader() {
+    const item = cfItem();
+    $('#cf-reader-empty').hidden = !!item;
+    $('#cf-reader-main').hidden = !item;
+    if (!item) return;
+    $('#cf-r-num').textContent = '#' + pad3(item.num);
+    $('#cf-r-type').textContent = cfTypeLabel(item.type);
+    $('#cf-r-title').textContent = item.title || '(sin título)';
+    const body = $('#cf-r-body');
+    const text = item.body || '(sin contenido todavía: usa EDITAR para escribir la historia)';
+    if (body._cfSig !== item.id + '|' + text) {
+      const sameItem = body._cfId === item.id;
+      body.textContent = text;
+      if (!sameItem) body.scrollTop = 0; // otro expediente: arranca arriba; el mismo conserva su scroll
+      body._cfSig = item.id + '|' + text; body._cfId = item.id;
+    }
+    body.classList.toggle('is-empty', !item.body);
+    $('#cf-r-archive').textContent = item.status === 'archivado' ? '↺ REACTIVAR' : '🗄 ARCHIVAR';
+    renderCfRelated();
+    const list = cfFilteredList(), idx = list.findIndex(x => x.id === item.id);
+    $('#cf-r-prev').disabled = !(idx >= 0 && idx < list.length - 1);
+    $('#cf-r-next').disabled = !(idx > 0);
+  }
+
+  // ---------- relación con el banco de evidencias (§05/§06): reusa bank / cue / cola de §05 ----------
   function cfEvidenceStateLabel(bankItem) {
     if (!bankItem) return { text: '○ YA NO ESTÁ EN EL BANCO', cls: 'gone' };
-    if (bankItem.id === cuedId) return { text: '● PREPARADA', cls: 'live' };
+    if (live.ev && live.ev.visible && live.ev.bankId === bankItem.id) return { text: '● AL AIRE', cls: 'live' };
+    if (bankItem.id === cuedId) return { text: '◇ SIGUIENTE', cls: 'live' };
+    const q = evQueue.indexOf(bankItem.id);
+    if (q >= 0) return { text: `○ EN COLA · ${q + (evQueue[0] === cuedId ? 0 : 1)}`, cls: 'queue' };
     if (bankItem.used) return { text: `● YA ENVIADA · #${pad3(bankItem.num || 0)}`, cls: 'used' };
     return { text: '○ EN BANCO, SIN PREPARAR', cls: 'off' };
   }
+  function renderCfRelated() {
+    const item = cfItem(), list = $('#cf-r-evlist');
+    if (!item || !list) return;
+    const related = item.relatedEvidenceIds || [];
+    list.innerHTML = '';
+    if (!related.length) { list.innerHTML = '<div class="cf-evidence-empty">Sin evidencia relacionada (se relaciona desde EDITAR).</div>'; return; }
+    related.forEach(id => {
+      const bankItem = bank.find(b => b.id === id);
+      const st = cfEvidenceStateLabel(bankItem);
+      const row = document.createElement('div');
+      row.className = 'cf-evidence-row';
+      row.innerHTML = `${bankItem ? `<img class="cf-ev-img" src="${esc(bankItem.dataURL)}" alt="">` : ''}<span class="cf-ev-name">${esc((bankItem && bankItem.name) || 'EVIDENCIA')}</span><span class="cf-ev-st cf-ev-st--${st.cls}">${st.text}</span>`;
+      list.appendChild(row);
+    });
+  }
+  // el editor sí es modal: editar es distinto de leer
   function renderCfEvidenceSection(item) {
     const addSel = $('#cf-evidence-add'), list = $('#cf-evidence-list');
     if (!addSel || !list) return;
@@ -507,37 +546,47 @@
     bank.filter(b => !related.includes(b.id)).forEach(b => addSel.appendChild(new Option(b.name || 'imagen', b.id)));
     list.innerHTML = '';
     if (!related.length) { list.innerHTML = '<div class="cf-evidence-empty">Sin evidencia relacionada.</div>'; return; }
+    const changed = () => { saveCaseFiles(); if (evQueueCase === item.id) cfPrepare(item, true); renderCfEvidenceSection(item); renderCfReader(); };
     related.forEach((id, idx) => {
       const bankItem = bank.find(b => b.id === id);
       const st = cfEvidenceStateLabel(bankItem);
       const row = document.createElement('div');
       row.className = 'cf-evidence-row';
       row.innerHTML = `<span class="cf-ev-name">${esc((bankItem && bankItem.name) || 'EVIDENCIA')}</span><span class="cf-ev-st cf-ev-st--${st.cls}">${st.text}</span>` +
-        (idx > 0 ? '<span class="cf-ev-note">no se prepara automáticamente, solo el primero</span>' : '') +
+        `<span class="cf-ev-note">${idx === 0 ? '1.ª · SIGUIENTE' : 'cola'}</span>` +
+        `<button type="button" class="btn--sm btn--ghost cf-ev-up" title="Subir en el orden" ${idx === 0 ? 'disabled' : ''}>↑</button>` +
         `<button type="button" class="btn--sm btn--ghost cf-ev-unlink" title="Quitar relación">✕</button>`;
-      row.querySelector('.cf-ev-unlink').addEventListener('click', () => {
-        item.relatedEvidenceIds = related.filter(x => x !== id);
-        saveCaseFiles();
-        renderCfEvidenceSection(item);
+      row.querySelector('.cf-ev-up').addEventListener('click', () => {
+        const r = related.slice(); [r[idx - 1], r[idx]] = [r[idx], r[idx - 1]];
+        item.relatedEvidenceIds = r; changed();
       });
+      row.querySelector('.cf-ev-unlink').addEventListener('click', () => { item.relatedEvidenceIds = related.filter(x => x !== id); changed(); });
       list.appendChild(row);
     });
   }
   $('#cf-evidence-add').addEventListener('change', () => {
-    if (!cfOpenId) return;
+    const item = cfItem();
     const id = $('#cf-evidence-add').value;
-    if (!id) return;
-    const item = cf.items.find(x => x.id === cfOpenId);
-    if (!item) return;
+    if (!item || !id) return;
     item.relatedEvidenceIds = (item.relatedEvidenceIds || []).concat(id);
     saveCaseFiles();
+    if (evQueueCase === item.id) cfPrepare(item, true);
     renderCfEvidenceSection(item);
+    renderCfReader();
   });
 
+  // seleccionar = leer aquí + PREPARAR (nunca emitir) sus evidencias en §05
   function openCaseFile(id) {
     const item = cf.items.find(x => x.id === id);
     if (!item) return;
+    const changedItem = cfOpenId !== id;
     cfOpenId = id;
+    renderCaseFiles();
+    if (changedItem) cfPrepare(item);
+  }
+  function cfEdit() {
+    const item = cfItem();
+    if (!item) return;
     $('#cf-num').textContent = '#' + pad3(item.num);
     $('#cf-type').value = item.type;
     $('#cf-title').value = item.title || '';
@@ -545,19 +594,40 @@
     $('#cf-meta').textContent = 'GUARDADO';
     $('#cf-archive').textContent = item.status === 'archivado' ? '↺ REACTIVAR' : '🗄 ARCHIVAR';
     renderCfEvidenceSection(item);
-    renderCfNav(item);
     $('#cf-modal').hidden = false;
     $('#cf-title').focus();
+  }
+  function cfCloseEditor() {
+    clearTimeout(cfTimer);
+    saveCurrentCaseFile();
+    $('#cf-modal').hidden = true;
     renderCaseFiles();
   }
-  function closeCaseFile() {
+  function cfRemove(id) {
+    cf.items = cf.items.filter(x => x.id !== id);
+    saveCaseFiles();
+    if (evQueueCase === id) cfDropQueue();
+    if (cfOpenId === id) cfOpenId = null;
     $('#cf-modal').hidden = true;
-    cfOpenId = null;
     renderCaseFiles();
+  }
+  function cfToggleArchive() {
+    const item = cfItem();
+    if (!item) return;
+    item.status = item.status === 'archivado' ? 'activo' : 'archivado';
+    saveCaseFiles();
+    $('#cf-archive').textContent = item.status === 'archivado' ? '↺ REACTIVAR' : '🗄 ARCHIVAR';
+    renderCaseFiles();
+  }
+  function cfConfirmDelete() {
+    const item = cfItem();
+    if (!item) return;
+    if (!confirm(`¿Borrar el expediente "${item.title || '(sin título)'}"? No se puede deshacer.`)) return;
+    cfRemove(item.id);
   }
   function saveCurrentCaseFile() {
-    if (!cfOpenId) return;
-    const item = cf.items.find(x => x.id === cfOpenId);
+    if ($('#cf-modal').hidden) return; // solo el editor escribe; el lector no toca los datos
+    const item = cfItem();
     if (!item) return;
     item.type = $('#cf-type').value;
     item.title = $('#cf-title').value;
@@ -565,70 +635,38 @@
     saveCaseFiles();
     $('#cf-meta').textContent = 'GUARDADO';
   }
-  function renderCfNav(item) {
-    const list = cfFilteredList(); // navega dentro de la pestaña filtrada actual
-    const idx = list.findIndex(x => x.id === item.id);
-    $('#cf-prev').disabled = !(idx >= 0 && idx < list.length - 1);
-    $('#cf-next').disabled = !(idx > 0);
-  }
   function cfNavigate(dir) {
     // La lista está ordenada del más nuevo al más viejo (cfFilteredList ordena por num descendente),
     // así que ir al índice +1 es "anterior" (más viejo) e ir al índice -1 es "siguiente" (más nuevo).
-    if (!cfOpenId) return;
-    const current = cf.items.find(x => x.id === cfOpenId);
+    const current = cfItem();
     if (!current) return;
     const list = cfFilteredList();
     const idx = list.findIndex(x => x.id === current.id);
-    if (idx < 0) return;
-    const target = list[idx + dir];
-    if (!target) return;
-    clearTimeout(cfTimer); saveCurrentCaseFile();
-    openCaseFile(target.id);
+    const target = idx < 0 ? null : list[idx + dir];
+    if (target) openCaseFile(target.id);
   }
 
-  $('#cf-title').addEventListener('input', () => {
+  // autoguardado del editor (el lector se refresca al guardar)
+  const cfTyping = () => {
     $('#cf-meta').textContent = 'ESCRIBIENDO…';
     clearTimeout(cfTimer);
-    cfTimer = setTimeout(saveCurrentCaseFile, 400);
-  });
-  $('#cf-body').addEventListener('input', () => {
-    $('#cf-meta').textContent = 'ESCRIBIENDO…';
-    clearTimeout(cfTimer);
-    cfTimer = setTimeout(saveCurrentCaseFile, 400);
-  });
+    cfTimer = setTimeout(() => { saveCurrentCaseFile(); renderCaseFiles(); }, 400);
+  };
+  $('#cf-title').addEventListener('input', cfTyping);
+  $('#cf-body').addEventListener('input', cfTyping);
   $('#cf-type').addEventListener('change', () => { saveCurrentCaseFile(); renderCaseFiles(); });
-  $('#cf-close').addEventListener('click', () => { clearTimeout(cfTimer); saveCurrentCaseFile(); closeCaseFile(); });
-  $('#cf-modal').addEventListener('click', e => { if (e.target.id === 'cf-modal') { clearTimeout(cfTimer); saveCurrentCaseFile(); closeCaseFile(); } });
-  $('#cf-delete').addEventListener('click', () => {
-    if (!cfOpenId) return;
-    const item = cf.items.find(x => x.id === cfOpenId);
-    if (!confirm(`¿Borrar el expediente "${(item && item.title) || '(sin título)'}"? No se puede deshacer.`)) return;
-    cf.items = cf.items.filter(x => x.id !== cfOpenId);
-    saveCaseFiles();
-    closeCaseFile();
-  });
-  $('#cf-archive').addEventListener('click', () => {
-    if (!cfOpenId) return;
-    const item = cf.items.find(x => x.id === cfOpenId);
-    if (!item) return;
-    item.status = item.status === 'archivado' ? 'activo' : 'archivado';
-    saveCaseFiles();
-    $('#cf-archive').textContent = item.status === 'archivado' ? '↺ REACTIVAR' : '🗄 ARCHIVAR';
-    renderCaseFiles();
-  });
-  $('#cf-prev').addEventListener('click', () => cfNavigate(1));
-  $('#cf-next').addEventListener('click', () => cfNavigate(-1));
-  // MOSTRAR: solo lectura para el operador; no manda nada al overlay. Si hay evidencia
-  // relacionada, PREPARA (cue) automáticamente la primera (si todavía existe en el banco).
-  $('#cf-show').addEventListener('click', () => {
-    if (!cfOpenId) return;
-    const item = cf.items.find(x => x.id === cfOpenId);
-    if (!item) return;
-    const firstId = (item.relatedEvidenceIds || [])[0];
-    const bankItem = firstId && bank.find(b => b.id === firstId);
-    if (bankItem) { cue(bankItem); renderCfEvidenceSection(item); }
-    else toast('👁 LEÍDO · SIN EVIDENCIA PARA PREPARAR', 'info');
-  });
+  $('#cf-close').addEventListener('click', cfCloseEditor);
+  $('#cf-modal').addEventListener('click', e => { if (e.target.id === 'cf-modal') cfCloseEditor(); });
+  $('#cf-delete').addEventListener('click', cfConfirmDelete);
+  $('#cf-archive').addEventListener('click', cfToggleArchive);
+  $('#cf-r-edit').addEventListener('click', cfEdit);
+  $('#cf-r-archive').addEventListener('click', cfToggleArchive);
+  $('#cf-r-delete').addEventListener('click', cfConfirmDelete);
+  $('#cf-r-prev').addEventListener('click', () => cfNavigate(1));
+  $('#cf-r-next').addEventListener('click', () => cfNavigate(-1));
+  // MOSTRAR: vuelve a PREPARAR las evidencias del expediente (1.ª = SIGUIENTE, resto = COLA).
+  // No manda nada al overlay: el operador decide cuándo pulsar MANDAR AL AIRE.
+  $('#cf-r-show').addEventListener('click', () => { const item = cfItem(); if (item) cfPrepare(item, false, true); });
 
   $('#notes-add').addEventListener('click', () => {
     const item = {
@@ -643,8 +681,8 @@
     };
     cf.items.push(item);
     saveCaseFiles();
-    renderCaseFiles();
     openCaseFile(item.id);
+    cfEdit(); // un expediente nuevo nace en el editor para escribirlo
   });
 
   $('#notes-clear-all').addEventListener('click', () => {
@@ -652,7 +690,10 @@
     if (!confirm('¿Vaciar todos los expedientes? No se puede deshacer.')) return;
     cf.items = [];
     saveCaseFiles();
-    closeCaseFile();
+    cfDropQueue();
+    cfOpenId = null;
+    $('#cf-modal').hidden = true;
+    renderCaseFiles();
   });
 
   const cfArchivedBtn = $('#cf-show-archived');
@@ -1084,7 +1125,11 @@
   let bank = loadBank();
   const bankBox = $('#ev-bank'), bankWrap = $('#ev-bank-wrap');
   let dragId = null; // id de la miniatura que se está arrastrando (orden manual)
-  let cuedId = null; // miniatura preparada (modo PREPARAR)
+  let cuedId = null; // miniatura preparada = "SIGUIENTE" (modo PREPARAR o 1.ª evidencia de un expediente)
+  // COLA temporal derivada de las relaciones del expediente abierto: solo ids del banco maestro
+  // (nunca copias). evQueue[0] coincide con cuedId mientras el SIGUIENTE viene de la cola.
+  let evQueue = [];
+  let evQueueCase = null; // id del expediente que originó la cola
   // filtro: migra el viejo checkbox "solo sin usar"
   let bankFilter = ['all', 'available', 'used'].includes(saved['ev-bank-filter']) ? saved['ev-bank-filter'] : (saved['ev-bank-onlyunused'] ? 'available' : 'all');
   let clickMode = saved['ev-clickmode'] === 'cue' ? 'cue' : 'direct';
@@ -1095,11 +1140,22 @@
   function sendBankItem(item) {
     if (inFlight.has(item.id)) return Promise.resolve(false);
     inFlight.add(item.id);
-    if (cuedId === item.id) cuedId = null;
+    // al mandar: sale de la cola y el siguiente de la cola pasa a SIGUIENTE
+    const wasCued = cuedId === item.id, qIdx = evQueue.indexOf(item.id);
+    evQueue = evQueue.filter(x => x !== item.id);
+    if (wasCued) cuedId = evQueue[0] || null;
     return sendEvidence(item.dataURL, {
       state: { bankId: item.id, src: null },
       apply: number => { item.used = true; item.num = number; saveBank(bank); }
-    }).then(ok => { inFlight.delete(item.id); renderBank(); return ok; });
+    }).then(ok => {
+      inFlight.delete(item.id);
+      if (!ok && qIdx >= 0 && !evQueue.includes(item.id)) { // falló el envío: vuelve a su lugar
+        evQueue.splice(Math.min(qIdx, evQueue.length), 0, item.id);
+        if (wasCued) cuedId = item.id;
+      }
+      renderBank();
+      return ok;
+    });
   }
   function evNext() {
     // E / Enter repetido mientras la anterior viaja a OBS: se ignora (una pulsación = una evidencia)
@@ -1110,8 +1166,37 @@
     toast(bank.length ? '✕ NO QUEDAN EVIDENCIAS DISPONIBLES' : '✕ BANCO VACÍO · SUBE IMÁGENES', 'err');
     return Promise.resolve(false);
   }
-  function cue(item) { cuedId = item ? item.id : null; renderBank(); if (item) toast(`◇ PREPARADA · ${item.name || 'imagen'}`, 'info'); }
+  function cue(item) {
+    cuedId = item ? item.id : null;
+    if (!item) { evQueue = []; evQueueCase = null; } // cancelar = soltar también la cola
+    else if (evQueue.includes(item.id)) evQueue = [item.id].concat(evQueue.filter(x => x !== item.id)); // subir de la cola a SIGUIENTE
+    renderBank();
+    if (item) toast(`◇ PREPARADA · ${item.name || 'imagen'}`, 'info');
+  }
+  function cfDropQueue() {
+    if (evQueue.includes(cuedId)) cuedId = null;
+    evQueue = []; evQueueCase = null;
+    renderBank();
+  }
+  // Prepara (NUNCA emite) las evidencias relacionadas de un expediente: la 1.ª pasa a SIGUIENTE y
+  // el resto a la COLA. El banco maestro no se toca.
+  function cfPrepare(item, quiet, explicit) {
+    const hadQueued = evQueue.includes(cuedId);
+    const onAir = id => !!(live.ev && live.ev.visible && live.ev.bankId === id);
+    evQueueCase = item.id;
+    evQueue = (item.relatedEvidenceIds || []).filter((id, i, a) => a.indexOf(id) === i && bank.some(b => b.id === id) && !inFlight.has(id) && !onAir(id));
+    if (evQueue.length) cuedId = evQueue[0];
+    else if (hadQueued) cuedId = null;
+    renderBank();
+    if (quiet) return;
+    if (evQueue.length) {
+      const first = bank.find(b => b.id === evQueue[0]);
+      toast(`◇ EXP #${pad3(item.num)} · SIGUIENTE: ${(first && first.name) || 'imagen'}${evQueue.length > 1 ? ` · COLA ${evQueue.length - 1}` : ''}`, 'info');
+      activity(`EXP #${pad3(item.num)} → ${evQueue.length} evidencia(s) preparada(s)`, 'info');
+    } else if (explicit) toast('👁 LEÍDO · SIN EVIDENCIA PARA PREPARAR', 'info');
+  }
   $('#ev-uncue').addEventListener('click', () => cue(null));
+  $('#ev-queue-clear').addEventListener('click', () => cue(null));
 
   let lastThumbClick = { id: null, at: 0 };
   // renderBank reconstruye las miniaturas: devuelve el foco a la misma (navegación por teclado)
@@ -1123,7 +1208,8 @@
     $('#ev-f-all').textContent = bank.length; $('#ev-f-available').textContent = avail; $('#ev-f-used').textContent = used;
     $$('#ev-filter [data-filter]').forEach(b => b.classList.toggle('on', b.dataset.filter === bankFilter));
     $$('#ev-clickmode [data-clickmode]').forEach(b => b.classList.toggle('on', b.dataset.clickmode === clickMode));
-    if (cuedId && !bank.some(b => b.id === cuedId)) cuedId = null;
+    evQueue = evQueue.filter(id => bank.some(b => b.id === id)); // borrada del banco: sale de la cola
+    if (cuedId && !bank.some(b => b.id === cuedId)) cuedId = evQueue[0] || null;
     const q = norm($('#ev-bank-search').value);
     const next = nextBankItem();
     // el orden es el que tú armes arrastrando; el filtro solo esconde, no reordena.
@@ -1199,7 +1285,7 @@
   $$('#ev-filter [data-filter]').forEach(b => b.addEventListener('click', () => { bankFilter = b.dataset.filter; keep('ev-bank-filter', bankFilter); renderBank(); }));
   $$('#ev-clickmode [data-clickmode]').forEach(b => b.addEventListener('click', () => {
     clickMode = b.dataset.clickmode; keep('ev-clickmode', clickMode);
-    if (clickMode === 'direct') cuedId = null;
+    if (clickMode === 'direct') { cuedId = null; evQueue = []; evQueueCase = null; }
     renderBank();
   }));
   $('#ev-bank-search').addEventListener('input', renderBank);
@@ -1237,7 +1323,7 @@
   $('#ev-bank-add').addEventListener('change', e => { addFilesToBank(e.target.files); e.target.value = ''; });
   $('#ev-bank-clear').addEventListener('click', () => {
     if (!bank.length) return;
-    if (confirm(`¿Vaciar todo el banco de imágenes? (${bank.length} imágenes, no se puede deshacer)`)) { bank = []; cuedId = null; saveBank(bank); renderBank(); toast('✓ BANCO VACIADO', 'info'); activity('Banco vaciado', 'info'); }
+    if (confirm(`¿Vaciar todo el banco de imágenes? (${bank.length} imágenes, no se puede deshacer)`)) { bank = []; cuedId = null; evQueue = []; evQueueCase = null; saveBank(bank); renderBank(); toast('✓ BANCO VACIADO', 'info'); activity('Banco vaciado', 'info'); }
   });
   $('#ev-bank-reset').addEventListener('click', () => {
     const n = bank.filter(b => b.used).length;
@@ -1440,8 +1526,9 @@
     if ((e.ctrlKey || e.metaKey) && !e.altKey && k.toLowerCase() === 'k') { e.preventDefault(); palOpen() ? palClose() : palShow(); return; }
     if (k === 'Escape') {
       if (palOpen()) { palClose(); return; }
+      if (!$('#cb-modal').hidden) { $('#cb-modal').hidden = true; return; }
       if (!$('#keys').hidden) { $('#keys').hidden = true; return; }
-      if (!$('#cf-modal').hidden) { clearTimeout(cfTimer); saveCurrentCaseFile(); closeCaseFile(); return; }
+      if (!$('#cf-modal').hidden) { cfCloseEditor(); return; }
       if (armed) { disarm(); toast('CANCELADO', 'info'); return; }
       if (isTyping(document.activeElement)) { document.activeElement.blur(); return; }
       if (cuedId) { cue(null); return; }
@@ -1451,6 +1538,8 @@
     if (isTyping(document.activeElement) || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
     if (k === '?') { e.preventDefault(); showKeys(); return; }
     if (k === 'Enter' && cuedId && document.activeElement === document.body) { e.preventDefault(); runAction('ev-next'); return; }
+    const cb = cbByKey(k);
+    if (cb) { e.preventDefault(); runCustom(cb); return; }
     const id = KEYMAP[k.toLowerCase()];
     if (!id) return;
     e.preventDefault();
@@ -1460,7 +1549,8 @@
   });
   function showKeys() {
     const rows = ACTIONS.filter(a => a.key).map(a => `<kbd>${esc(a.key)}</kbd><span>${esc(a.label)}</span>`).join('') +
-      '<kbd>ENTER</kbd><span>Mandar la evidencia preparada (modo PREPARAR)</span>' +
+      cbList.filter(b => b.key).map(b => `<kbd>${esc(keyLabel(b.key))}</kbd><span>Personalizado: ${esc(b.name)}</span>`).join('') +
+      '<kbd>ENTER</kbd><span>Mandar la evidencia preparada (SIGUIENTE)</span>' +
       '<kbd>ESC</kbd><span>Cerrar / cancelar (paleta, outro armado, selección, salir de un campo)</span>' +
       '<kbd>CTRL K</kbd><span>Paleta de comandos: buscar y ejecutar cualquier acción</span><kbd>?</kbd><span>Esta ayuda</span>';
     $('#keys-table').innerHTML = rows;
@@ -1501,6 +1591,127 @@
   palList.addEventListener('click', e => { const li = e.target.closest('li[data-i]'); if (li) palRun(Number(li.dataset.i)); });
   pal.addEventListener('click', e => { if (e.target === pal) palClose(); });
   $('#open-palette').addEventListener('click', palShow);
+
+  /* =====================================================================================
+     CONTROL STRIP: barra fija (no se arrastra ni se redimensiona); solo se contrae / expande.
+     Reusa los mismos botones y ids de siempre (QA, alertas, modo, escenas), solo cambió dónde viven.
+     ===================================================================================== */
+  const strip = $('#strip');
+  function setStripCollapsed(c) {
+    strip.classList.toggle('strip--collapsed', c);
+    $('#strip-toggle').textContent = c ? '▸ EXPANDIR' : '▾ CONTRAER';
+    $('#strip-toggle').setAttribute('aria-expanded', String(!c));
+    keep('strip-collapsed', c);
+  }
+  setStripCollapsed(!!saved['strip-collapsed']);
+  $('#strip-toggle').addEventListener('click', () => setStripCollapsed(!strip.classList.contains('strip--collapsed')));
+
+  /* ---------- PERSONALIZADOS: botones propios que ejecutan acciones REALES del registro ACTIONS ---------- */
+  const CB_KEY = 'lci-custom-buttons-v1';
+  const CB_RESERVED = new Set(['f5', 'f11', 'f12', 'escape', 'enter', 'tab', 'backspace', ' ', '?']);
+  let cbList = (() => {
+    const v = readJSON(CB_KEY);
+    return Array.isArray(v) ? v.filter(x => isObj(x) && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.action === 'string')
+      .map(x => ({ id: x.id, name: x.name.slice(0, 28), action: x.action, key: typeof x.key === 'string' ? x.key : '' })) : [];
+  })();
+  const saveCb = () => { try { localStorage.setItem(CB_KEY, JSON.stringify(cbList)); } catch (e) { toast('✕ NO PUDE GUARDAR LOS BOTONES', 'err'); } };
+  const keyNorm = k => (k && k.length === 1 ? k.toLowerCase() : (k || '').toLowerCase());
+  const keyLabel = k => (k && k.length === 1 ? k.toUpperCase() : k || '');
+  const cbByKey = k => cbList.find(b => b.key && keyNorm(b.key) === keyNorm(k));
+  function cbKeyConflict(key, exceptId) {
+    if (!key) return '';
+    const n = keyNorm(key);
+    if (CB_RESERVED.has(n)) return 'Esa tecla está reservada.';
+    if (KEYMAP[n]) return `Esa tecla ya es de: ${ACT[KEYMAP[n]].label}.`;
+    const other = cbList.find(b => b.id !== exceptId && b.key && keyNorm(b.key) === n);
+    return other ? `Esa tecla ya es del botón "${other.name}".` : '';
+  }
+  function runCustom(b) {
+    const a = ACT[b.action];
+    if (!a) { toast(`✕ "${b.name}": LA ACCIÓN YA NO EXISTE`, 'err'); return; }
+    a.run();
+    const el = document.querySelector(`[data-cb="${b.id}"]`);
+    if (el) { el.classList.add('fired'); setTimeout(() => el.classList.remove('fired'), 220); }
+  }
+  let cbEditMode = false, cbEditingId = null;
+  function renderCustom() {
+    const box = $('#cb-grid');
+    box.innerHTML = '';
+    box.classList.toggle('editing', cbEditMode);
+    $('#cb-edit-toggle').classList.toggle('on', cbEditMode);
+    if (!cbList.length) { box.innerHTML = '<div class="sm-empty">Sin botones todavía. «+ NUEVO BOTÓN»: nombre, acción y atajo.</div>'; return; }
+    cbList.forEach(b => {
+      const a = ACT[b.action];
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'cb' + (a ? '' : ' cb--bad');
+      el.dataset.cb = b.id;
+      el.title = a ? `${a.group} · ${a.label}${cbEditMode ? ' — clic para editar' : ''}` : 'La acción ya no existe: edítalo y elige otra';
+      el.innerHTML = '<span class="cb-n"></span><kbd></kbd>';
+      el.querySelector('.cb-n').textContent = b.name;
+      const kbd = el.querySelector('kbd');
+      if (b.key) kbd.textContent = keyLabel(b.key); else kbd.remove();
+      if (cbEditMode) el.insertAdjacentHTML('beforeend', '<span class="cb-pen">✎</span>');
+      el.addEventListener('click', () => (cbEditMode ? cbOpen(b.id) : runCustom(b)));
+      box.appendChild(el);
+    });
+  }
+  const cbGroup = $('#cb-group'), cbAction = $('#cb-action'), cbName = $('#cb-name'), cbKey = $('#cb-key'), cbErr = $('#cb-err');
+  const cbGroups = [...new Set(ACTIONS.map(a => a.group))];
+  cbGroup.innerHTML = cbGroups.map(g => `<option>${esc(g)}</option>`).join('');
+  function cbFillActions(sel) {
+    cbAction.innerHTML = '';
+    ACTIONS.filter(a => a.group === cbGroup.value).forEach(a => cbAction.appendChild(new Option(a.label, a.id)));
+    if (sel && ACT[sel]) cbAction.value = sel;
+  }
+  cbGroup.addEventListener('change', () => cbFillActions());
+  function cbOpen(id) {
+    cbEditingId = id || null;
+    const b = id && cbList.find(x => x.id === id);
+    $('#cb-title').textContent = b ? 'EDITAR BOTÓN' : 'NUEVO BOTÓN';
+    cbName.value = b ? b.name : '';
+    cbGroup.value = (b && ACT[b.action] && ACT[b.action].group) || cbGroups[0];
+    cbFillActions(b && b.action);
+    cbKey.value = b ? keyLabel(b.key) : '';
+    cbKey.dataset.raw = b ? b.key : '';
+    cbErr.textContent = '';
+    $('#cb-delete').hidden = !b;
+    $('#cb-modal').hidden = false;
+    cbName.focus();
+  }
+  // captura de atajo: clic en el campo y pulsa la tecla (sin modificadores); no dispara los atajos del panel
+  cbKey.addEventListener('keydown', e => {
+    if (e.key === 'Escape' || e.key === 'Tab') return;
+    e.preventDefault(); e.stopPropagation();
+    if (/^(Shift|Control|Alt|Meta|AltGraph|CapsLock)$/.test(e.key) || e.ctrlKey || e.metaKey || e.altKey) return;
+    cbKey.dataset.raw = e.key; cbKey.value = keyLabel(e.key);
+    cbErr.textContent = cbKeyConflict(e.key, cbEditingId);
+  });
+  $('#cb-key-clear').addEventListener('click', () => { cbKey.value = ''; cbKey.dataset.raw = ''; cbErr.textContent = ''; });
+  $('#cb-new').addEventListener('click', () => cbOpen(null));
+  $('#cb-edit-toggle').addEventListener('click', () => { cbEditMode = !cbEditMode; renderCustom(); });
+  $('#cb-cancel').addEventListener('click', () => { $('#cb-modal').hidden = true; });
+  $('#cb-modal').addEventListener('click', e => { if (e.target.id === 'cb-modal') $('#cb-modal').hidden = true; });
+  $('#cb-save').addEventListener('click', () => {
+    const action = cbAction.value, key = cbKey.dataset.raw || '';
+    if (!action || !ACT[action]) { cbErr.textContent = 'Elige una acción.'; return; }
+    const conflict = cbKeyConflict(key, cbEditingId);
+    if (conflict) { cbErr.textContent = conflict; return; }
+    const name = cbName.value.trim().slice(0, 28) || ACT[action].label.slice(0, 28);
+    if (cbEditingId) Object.assign(cbList.find(x => x.id === cbEditingId) || {}, { name, action, key });
+    else cbList.push({ id: 'cb' + Date.now() + Math.random().toString(36).slice(2, 6), name, action, key });
+    saveCb(); renderCustom();
+    $('#cb-modal').hidden = true;
+    toast(`✓ BOTÓN "${name}" GUARDADO`, 'ok');
+  });
+  $('#cb-delete').addEventListener('click', () => {
+    const b = cbList.find(x => x.id === cbEditingId);
+    if (!b || !confirm(`¿Borrar el botón "${b.name}"?`)) return;
+    cbList = cbList.filter(x => x.id !== cbEditingId);
+    saveCb(); renderCustom();
+    $('#cb-modal').hidden = true;
+  });
+  renderCustom();
 
   /* =====================================================================================
      RENDER: pinta el estado conocido en todos los módulos
@@ -1544,6 +1755,7 @@
     else setNp('#np-lt-box', '#np-lt', lt.visible ? `ON<small>${esc(lt.name || lt.label || '')}</small>` : 'OFF', lt.visible ? 'ON' : null);
     // modo
     setNp('#np-mode-box', '#np-mode', live.mode ? esc(live.mode.toUpperCase()) : NODATA, live.mode === 'investigation' ? 'INV' : null);
+    $('#strip-sum').innerHTML = `ESCENA <b>${live.scene ? esc(sceneLabel(live.scene).toUpperCase()) : '—'}</b> · MODO <b>${live.mode ? esc(live.mode.toUpperCase()) : '—'}</b>`;
     $('#top-mode').innerHTML = `MODE <b>${live.mode ? esc(live.mode.toUpperCase()) : 'SIN DATO'}</b>`;
     $('#top-mode').classList.toggle('chip--inv', live.mode === 'investigation');
   }
@@ -1626,7 +1838,8 @@
     let srcLabel = 'BANCO', srcTitle = '';
     if (item) {
       // posición en el banco (no el nombre del archivo, que suele ser un hash): el nombre va en title
-      srcLabel = (cuedId === item.id ? 'PREPARADA · #' : 'BANCO · #') + pad3(bank.indexOf(item) + 1);
+      const fromCase = cuedId === item.id && evQueueCase && cf.items.find(x => x.id === evQueueCase);
+      srcLabel = (fromCase ? `EXP #${pad3(fromCase.num)} · ` : '') + (cuedId === item.id ? 'PREPARADA · #' : 'BANCO · #') + pad3(bank.indexOf(item) + 1);
       srcTitle = item.name || '';
       nextThumb.innerHTML = thumbHTML(item.dataURL, '#' + pad3(num));
     } else if (manual) {
@@ -1643,8 +1856,30 @@
     $('#ev-uncue').hidden = !(item && cuedId === item.id);
     const can = !!(item || manual);
     $('#ev-next').classList.toggle('is-empty', !can);
-    $('#ev-next').innerHTML = can ? `MOSTRAR #${pad3(num)} <kbd>E</kbd>` : 'SIN EVIDENCIA <kbd>E</kbd>';
+    $('#ev-next').innerHTML = can ? `MANDAR AL AIRE #${pad3(num)} <kbd>E</kbd>` : 'SIN EVIDENCIA <kbd>E</kbd>';
+    renderEvQueue();
+    renderCfRelated();
     $('#qa-ev-s').textContent = can ? `siguiente · #${pad3(num)}` : (bank.length ? 'no quedan disponibles' : 'banco vacío');
+  }
+  function renderEvQueue() {
+    const box = $('#ev-queue'), list = $('#ev-queue-list');
+    const ids = evQueue.filter(id => id !== cuedId);
+    const owner = evQueueCase && cf.items.find(x => x.id === evQueueCase);
+    box.hidden = !(owner || ids.length);
+    if (box.hidden) return;
+    $('#ev-queue-case').textContent = owner ? `EXP #${pad3(owner.num)}` : 'MANUAL';
+    list.innerHTML = '';
+    if (!ids.length) { list.innerHTML = '<li class="empty">Cola vacía.</li>'; return; }
+    ids.forEach(id => {
+      const b = bank.find(x => x.id === id);
+      if (!b) return;
+      const li = document.createElement('li');
+      li.innerHTML = `<img src="${esc(b.dataURL)}" alt=""><span class="q-name"></span><button type="button" class="btn--sm btn--ghost q-up" title="Pasar a SIGUIENTE">▲</button><button type="button" class="btn--sm btn--ghost q-x" title="Quitar de la cola (no toca el banco)">✕</button>`;
+      li.querySelector('.q-name').textContent = b.name || 'imagen';
+      li.querySelector('.q-up').addEventListener('click', () => cue(b));
+      li.querySelector('.q-x').addEventListener('click', () => { evQueue = evQueue.filter(x => x !== id); renderBank(); });
+      list.appendChild(li);
+    });
   }
   function renderLtPreview() {
     const d = ltData();
@@ -1683,21 +1918,11 @@
 
   /* ---------- layout ----------
      --topbar-h = alto real de la barra (cambia con el aviso de conexión perdida): lo usan los
-     toasts, la paleta y el scroll. Entre 901 y 1280 px, MODO y EMERGENCY suben a la primera
-     columna bajo las escenas (si no, quedan muy abajo); fuera de ese rango vuelven a su sitio. */
+     toasts, la paleta y el scroll. */
   const topbar = $('.topbar');
   const setTopbarH = () => document.documentElement.style.setProperty('--topbar-h', topbar.offsetHeight + 'px');
   setTopbarH();
   if (window.ResizeObserver) new ResizeObserver(setTopbarH).observe(topbar); else window.addEventListener('resize', setTopbarH);
-  const midMQ = window.matchMedia('(min-width: 901px) and (max-width: 1280px)');
-  const colC = $('.col-c'), modesCard = $('#card-modes'), emergCard = $('#card-emergency'), scenesCard = $('#card-scenes');
-  const placeCards = () => {
-    if (midMQ.matches) { scenesCard.after(modesCard); modesCard.after(emergCard); }
-    else if (modesCard.parentNode !== colC) { colC.prepend(modesCard); $('#card-alerts').after(emergCard); }
-  };
-  placeCards();
-  if (midMQ.addEventListener) midMQ.addEventListener('change', placeCards); else midMQ.addListener(placeCards);
-
   renderBank();
   renderAll();
   connect(true);
