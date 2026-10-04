@@ -22,6 +22,7 @@
     <span id="conn" class="conn conn--wait">CONNECTING</span>
     <span class="chip" id="top-live" title="Estado de la transmisión / grabación en OBS">AIRE <b>—</b></span>
     <span class="chip" id="top-scene">ESCENA <b>—</b></span>
+    <span class="chip" id="top-rd" hidden title="Avance de la escaleta">ESCALETA <b>—</b></span>
     <span class="chip" id="top-mode">MODE <b>—</b></span>
     <span class="chip" id="top-overlay">OVERLAY <b>—</b></span>
   </div>
@@ -86,20 +87,46 @@
       <div class="cf-tabs" id="cf-tabs"></div>
       <div class="cf-split">
       <div class="cf-left">
-      <div class="cf-tools">
-        <input id="cf-search" type="search" placeholder="buscar en expedientes…" autocomplete="off" spellcheck="false">
-        <button type="button" class="cf-chip" id="cf-f-untold" title="Solo los que todavía no has contado en el programa">SIN CONTAR</button>
-        <button type="button" class="cf-chip" id="cf-f-ev" title="Solo los que tienen evidencia relacionada">CON EVIDENCIA</button>
+      <div class="cf-mode" id="cf-mode" role="tablist">
+        <button type="button" role="tab" data-cfmode="list" class="on">EXPEDIENTES</button>
+        <button type="button" role="tab" data-cfmode="rundown">ESCALETA <span class="n" id="rd-count">0</span></button>
       </div>
-      <div class="cf-list" id="cf-list"></div>
-      <div class="pv-foot">
-        
-        <button class="btn--sm btn--ghost" id="cf-show-archived" title="Mostrar también los expedientes archivados en la lista">🗄 VER ARCHIVADOS</button>
-        <button class="btn--sm btn--ghost" id="notes-clear-all" title="Borrar todos los expedientes">VACIAR TODOS</button>
-        <label class="btn upload btn--sm btn--ghost" title="Importar .txt o .md: cada archivo (o cada línea que empiece con «# ») es un expediente">⇪ IMPORTAR<input id="cf-import" type="file" accept=".txt,.md,text/plain,text/markdown" multiple></label>
-        <button class="btn--sm btn--primary" id="notes-add" title="Crear un expediente nuevo">+ NUEVO</button>
+      <div class="cf-pane" id="cf-listpane">
+        <div class="cf-tools">
+          <input id="cf-search" type="search" placeholder="buscar en expedientes…" autocomplete="off" spellcheck="false">
+          <button type="button" class="cf-chip" id="cf-f-untold" title="Solo los que todavía no has contado en el programa">SIN CONTAR</button>
+          <button type="button" class="cf-chip" id="cf-f-ev" title="Solo los que tienen evidencia relacionada">CON EVIDENCIA</button>
+        </div>
+        <div class="cf-list" id="cf-list"></div>
+        <div class="pv-foot">
+          <button class="btn--sm btn--ghost" id="cf-show-archived" title="Mostrar también los expedientes archivados en la lista">🗄 VER ARCHIVADOS</button>
+          <button class="btn--sm btn--ghost" id="notes-clear-all" title="Borrar todos los expedientes">VACIAR TODOS</button>
+          <label class="btn upload btn--sm btn--ghost" title="Importar .txt o .md: cada archivo (o cada línea que empiece con «# ») es un expediente">⇪ IMPORTAR<input id="cf-import" type="file" accept=".txt,.md,text/plain,text/markdown" multiple></label>
+          <button class="btn--sm btn--primary" id="notes-add" title="Crear un expediente nuevo">+ NUEVO</button>
+        </div>
       </div>
-          </div>
+      <div class="cf-pane" id="cf-rundown" hidden>
+        <div class="rd-sum">
+          <div><span class="mlabel">PLAN</span><b id="rd-plan">00:00</b></div>
+          <div><span class="mlabel">SHOW MIN</span><input id="rd-target" type="number" min="1" max="600" step="5" title="Duración total del programa en minutos"></div>
+          <div><span class="mlabel">MARGEN</span><b id="rd-diff">—</b></div>
+          <div><span class="mlabel">VAS</span><b id="rd-late">—</b></div>
+        </div>
+        <div class="rd-bar" id="rd-bar" aria-hidden="true"></div>
+        <div class="rd-ctl">
+          <button type="button" class="btn--sm" id="rd-prev" title="Volver al tema anterior">◂ ANT.</button>
+          <button type="button" class="rd-next" id="rd-next" title="Termina este tema, abre el siguiente (y deja sus evidencias preparadas; nada sale al aire)">SIGUIENTE TEMA ▸▸ <kbd data-kbd="rd-next"></kbd></button>
+          <button type="button" class="btn--sm btn--ghost" id="rd-reset" title="Reiniciar el avance de la escaleta (no borra los temas)">↺</button>
+        </div>
+        <div class="rd-list" id="rd-list"></div>
+        <div class="rd-add">
+          <select id="rd-add-cf" title="Añadir un expediente a la escaleta"><option value="">+ añadir expediente…</option></select>
+          <input id="rd-free-name" type="text" maxlength="28" placeholder="bloque libre: PUBLICIDAD, CIERRE…" autocomplete="off">
+          <input id="rd-free-min" type="number" min="1" max="120" value="5" title="Minutos">
+          <button type="button" class="btn--sm btn--primary" id="rd-free-add" title="Añadir bloque libre">+</button>
+        </div>
+      </div>
+      </div>
       <article class="cf-reader" id="cf-reader" aria-live="polite">
         <div class="cf-reader-empty" id="cf-reader-empty">Elige un expediente de la lista para leerlo aquí. Sus evidencias se preparan solas en §04 (nada sale al aire hasta que lo mandes).</div>
         <div class="cf-reader-main" id="cf-reader-main" hidden>
@@ -116,6 +143,7 @@
           </div>
           <div class="cf-r-btns">
             <button class="btn--sm btn--primary" id="cf-r-show" title="Prepara las evidencias relacionadas en §04 (1.ª = SIGUIENTE, resto = COLA). No manda nada al aire.">▶ MOSTRAR</button>
+            <button class="btn--sm" id="cf-r-rd" title="Añadir este expediente a la escaleta del programa">＋ ESCALETA</button>
             <button class="btn--sm" id="cf-r-told" title="Marcar como ya contado en el programa">✓ CONTADO</button>
             <button class="btn--sm" id="cf-r-lt" title="Prepara el lower third con el texto seleccionado (o el título). No sale al aire.">→ LT</button>
             <button class="btn--sm" id="cf-r-edit" title="Abrir el editor del expediente">✎ EDITAR</button>

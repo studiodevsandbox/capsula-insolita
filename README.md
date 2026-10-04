@@ -182,6 +182,16 @@ Ajustes → **AUDIO**:
 - **A− / A+**: tamaño de todo el panel (90 % a 130 %). Con letra grande el diseño se reordena solo (Case Files arriba y el Deck debajo, a todo el ancho) para que nada se aplaste. Dentro de Case Files, el lector tiene además su propio A− / A+ para leer a distancia.
 - Los avisos salen abajo a la derecha y ya no tapan "Now playing".
 
+### ESCALETA (rundown) en Case Files
+
+Pestaña **ESCALETA** (al lado de EXPEDIENTES, en Case Files): los temas del programa en orden, como en una producción de TV.
+
+- **Armarla**: botón **＋ ESCALETA** en el lector, o el selector «+ añadir expediente…», o un **bloque libre** (PUBLICIDAD, CIERRE…). Los minutos de cada expediente se estiman por la longitud del texto (~130 palabras por minuto) y se corrigen a mano. Reordena con ↑ ↓ o arrastrando; ✕ quita.
+- **Resumen**: PLAN (suma de minutos), SHOW MIN (la duración del programa que tú fijas), MARGEN (+ te sobran / − te pasas) y VAS (ATRASADO / ADELANTADO / A TIEMPO frente al plan). Una barra muestra el avance de cada tema.
+- **En directo**: **▶ INICIAR ESCALETA** abre el primer tema; **SIGUIENTE TEMA ▸▸** cierra el actual con su tiempo real (verde si cumples, ámbar/rojo si te pasas), lo marca como CONTADO, abre el siguiente en el lector y **prepara sus evidencias** en §04 (nada sale al aire). ◂ ANT. vuelve atrás; ▶ en una fila salta a ese tema; ↺ reinicia el avance. Arriba aparece un chip `ESCALETA 3/7 · 04:12 / 5:00`.
+- **Teclas**: «Escaleta · siguiente tema / anterior / iniciar» están en ⌨ ATAJOS (sin tecla de fábrica; ponles la que quieras) y se pueden usar en macros. El candado las bloquea.
+- Se guarda en este navegador (`lci-rundown-v1`) y entra en el respaldo.
+
 ### Distribución: CASE FILES + CONTROL DECK (zona superior 50 % / 50 %)
 
 Bajo "Now playing" hay dos áreas de igual peso, fijas (no se arrastran ni se redimensionan):

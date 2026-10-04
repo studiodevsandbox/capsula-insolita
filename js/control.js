@@ -489,7 +489,7 @@
       const row = document.createElement('button');
       row.type = 'button';
       row.className = 'cf-item' + (item.status === 'archivado' ? ' cf-item--archived' : '') + (item.id === cfOpenId ? ' cf-item--sel' : '');
-      row.innerHTML = `<span class="cf-dot cf-dot--${cfDotClass(item)}"></span><span class="cf-num">#${pad3(item.num)}</span><span class="cf-t"></span>${item.told ? '<span class="cf-told" title="Ya contado en el programa">✓</span>' : ''}<span class="cf-ty">${esc(cfTypeLabel(item.type))}</span>`;
+      row.innerHTML = `<span class="cf-dot cf-dot--${cfDotClass(item)}"></span><span class="cf-num">#${pad3(item.num)}</span><span class="cf-t"></span>${item.told ? '<span class="cf-told" title="Ya contado en el programa">✓</span>' : ''}${(rdReady && rdPosOfCf(item.id) >= 0) ? `<span class="cf-rd" title="Tema ${rdPosOfCf(item.id) + 1} de la escaleta">E${rdPosOfCf(item.id) + 1}</span>` : ''}<span class="cf-ty">${esc(cfTypeLabel(item.type))}</span>`;
       row.querySelector('.cf-t').textContent = (item.title || '(sin título)') + (item.status === 'archivado' ? ' · ARCHIVADO' : '');
       row.addEventListener('click', () => openCaseFile(item.id));
       box.appendChild(row);
@@ -528,6 +528,7 @@
     body.style.setProperty('--cf-fs', CF_FS[cfFs] + 'px');
     cfPaintMark(item);
     $('#cf-r-told').classList.toggle('on', !!item.told);
+    if (rdReady) { const p = rdPosOfCf(item.id); $('#cf-r-rd').textContent = p >= 0 ? `✓ EN ESCALETA · TEMA ${p + 1}` : '＋ ESCALETA'; $('#cf-r-rd').classList.toggle('on', p >= 0); $('#cf-r-rd').disabled = p >= 0; }
     $('#cf-r-told').textContent = item.told ? '✓ CONTADO' : '○ CONTADO';
     $('#cf-fs-m').disabled = cfFs === 0; $('#cf-fs-p').disabled = cfFs === CF_FS.length - 1;
     body.classList.toggle('is-empty', !item.body);
@@ -1933,6 +1934,221 @@
   $('#cdeck-toggle').addEventListener('click', () => setDeckCollapsed(!cdeck.classList.contains('cdeck--collapsed')));
 
   /* =====================================================================================
+     ESCALETA (rundown): los temas del programa en orden, con minutos, tema actual, atraso y
+     "SIGUIENTE TEMA". Cada tema es un expediente (o un bloque libre). Pasar de tema abre el
+     expediente (lo lee y PREPARA sus evidencias; nada sale al aire) y marca el anterior como contado.
+     ===================================================================================== */
+  var rdReady = false; // las primeras pintadas de Case Files ocurren antes de cargar la escaleta
+  const RD_KEY = 'lci-rundown-v1';
+  let rd = (() => {
+    const v = readJSON(RD_KEY) || {};
+    const items = Array.isArray(v.items) ? v.items.filter(x => isObj(x) && typeof x.id === 'string' && (x.kind === 'cf' || x.kind === 'free')).map(x => ({
+      id: x.id, kind: x.kind, cfId: typeof x.cfId === 'string' ? x.cfId : '', label: String(x.label || '').slice(0, 28),
+      min: Math.max(1, Math.min(240, Number(x.min) || 5)), spentMs: Number.isFinite(x.spentMs) ? x.spentMs : null })) : [];
+    return { items, targetMin: Math.max(1, Math.min(600, Number(v.targetMin) || 90)), startedAt: Number.isFinite(v.startedAt) ? v.startedAt : null,
+      curId: typeof v.curId === 'string' && items.some(i => i.id === v.curId) ? v.curId : null, curStartedAt: Number.isFinite(v.curStartedAt) ? v.curStartedAt : null };
+  })();
+  rdReady = true;
+  const saveRd = () => { try { localStorage.setItem(RD_KEY, JSON.stringify(rd)); } catch (e) { /* sin almacenamiento */ } };
+  const rdRunning = () => !!(rd.startedAt && rd.curId);
+  const fmtMS = ms => { const e = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(e / 3600), m = Math.floor(e / 60) % 60, s2 = e % 60; return (h ? h + ':' + String(m).padStart(2, '0') : String(m).padStart(2, '0')) + ':' + String(s2).padStart(2, '0'); };
+  const fmtSigned = ms => (ms < 0 ? '−' : '+') + fmtMS(Math.abs(ms));
+  const rdItemCf = it => it.kind === 'cf' && cf.items.find(x => x.id === it.cfId);
+  const rdTitle = it => it.kind === 'free' ? it.label : (rdItemCf(it) ? `#${pad3(rdItemCf(it).num)} ${rdItemCf(it).title || '(sin título)'}` : '(expediente borrado)');
+  const rdEst = c => Math.max(2, Math.round(((c.body || '').match(/\S+/g) || []).length / 130)); // ~130 palabras por minuto hablando
+  const rdIdx = id => rd.items.findIndex(i => i.id === id);
+  const rdPlanned = () => rd.items.reduce((t, i) => t + i.min, 0);
+  const rdPosOfCf = cfId => rd.items.findIndex(i => i.kind === 'cf' && i.cfId === cfId);
+  const rdNewId = () => 'rd' + Date.now() + Math.random().toString(36).slice(2, 5);
+
+  function rdAddCf(cfId) {
+    const c = cf.items.find(x => x.id === cfId);
+    if (!c) return;
+    if (rdPosOfCf(cfId) >= 0) { toast(`#${pad3(c.num)} YA ESTÁ EN LA ESCALETA`, 'info'); return; }
+    rd.items.push({ id: rdNewId(), kind: 'cf', cfId, label: '', min: rdEst(c), spentMs: null });
+    saveRd(); renderRd(); renderCaseFiles();
+    toast(`＋ ESCALETA · #${pad3(c.num)} ${c.title || ''} (${rdEst(c)} min estimados)`, 'ok');
+  }
+  function rdAddFree(label, min) {
+    const name = String(label || '').trim().slice(0, 28);
+    if (!name) { toast('PON UN NOMBRE AL BLOQUE', 'err'); return; }
+    rd.items.push({ id: rdNewId(), kind: 'free', cfId: '', label: name.toUpperCase(), min: Math.max(1, Math.min(120, Number(min) || 5)), spentMs: null });
+    saveRd(); renderRd();
+  }
+  function rdRemove(id) {
+    const i = rdIdx(id);
+    if (i < 0) return;
+    if (rd.curId === id) { rd.curId = null; rd.curStartedAt = null; }
+    rd.items.splice(i, 1);
+    saveRd(); renderRd(); renderCaseFiles();
+  }
+  function rdMove(id, d) {
+    const i = rdIdx(id), j = i + d;
+    if (i < 0 || j < 0 || j >= rd.items.length) return;
+    [rd.items[i], rd.items[j]] = [rd.items[j], rd.items[i]];
+    saveRd(); renderRd(); renderCaseFiles();
+  }
+  function rdOpenCf(it) { if (it && it.kind === 'cf' && rdItemCf(it)) openCaseFile(it.cfId); }
+  // empieza un tema (el actual, si lo había, se cierra con su tiempo real)
+  function rdGoto(id, fromBtn) {
+    if (panelLocked && fromBtn !== false) return;
+    const now = Date.now(), i = rdIdx(id);
+    if (i < 0) return;
+    const cur = rd.items.find(x => x.id === rd.curId);
+    if (cur && cur.id !== id) {
+      cur.spentMs = now - (rd.curStartedAt || now);
+      const c = rdItemCf(cur); if (c) c.told = true;
+      saveCaseFiles();
+    }
+    if (!rd.startedAt) rd.startedAt = now;
+    const t = rd.items[i];
+    t.spentMs = null; rd.curId = id; rd.curStartedAt = now;
+    saveRd(); rdOpenCf(t); renderRd(); renderCaseFiles();
+    activity(`▶ ESCALETA · tema ${i + 1}/${rd.items.length}: ${rdTitle(t)}`, 'info');
+  }
+  function rdStart() {
+    if (panelLocked) return;
+    if (!rd.items.length) { toast('LA ESCALETA ESTÁ VACÍA · AÑADE EXPEDIENTES O BLOQUES', 'err'); return; }
+    if (rdRunning()) { toast('LA ESCALETA YA ESTÁ EN MARCHA', 'info'); return; }
+    if (!rd.items.some(i => i.spentMs == null)) rd.items.forEach(i => { i.spentMs = null; }); // ya estaba terminada: empieza de cero
+    const first = rd.items.find(i => i.spentMs == null) || rd.items[0];
+    rd.startedAt = Date.now();
+    rdGoto(first.id);
+    toast('▶ ESCALETA INICIADA', 'ok');
+  }
+  function rdNext() {
+    if (panelLocked) return;
+    if (!rdRunning()) { rdStart(); return; }
+    const i = rdIdx(rd.curId), nxt = rd.items.slice(i + 1).find(x => x.spentMs == null);
+    if (nxt) { rdGoto(nxt.id); return; }
+    // era el último: se cierra
+    const cur = rd.items[i];
+    cur.spentMs = Date.now() - (rd.curStartedAt || Date.now());
+    const c = rdItemCf(cur); if (c) { c.told = true; saveCaseFiles(); }
+    rd.curId = null; rd.curStartedAt = null;
+    saveRd(); renderRd(); renderCaseFiles();
+    toast('■ ESCALETA TERMINADA · ' + fmtMS(Date.now() - rd.startedAt), 'ok'); activity('■ Escaleta terminada', 'info');
+  }
+  function rdPrev() {
+    if (panelLocked) return;
+    const i = rdIdx(rd.curId);
+    if (i <= 0) { toast('ESTÁS EN EL PRIMER TEMA', 'info'); return; }
+    const prev = rd.items[i - 1];
+    rd.items[i].spentMs = null;
+    rdGoto(prev.id);
+  }
+  function rdReset() {
+    if (!rd.items.length) return;
+    if (!confirm('¿Reiniciar el avance de la escaleta? (los temas se quedan)')) return;
+    rd.items.forEach(i => { i.spentMs = null; }); rd.startedAt = null; rd.curId = null; rd.curStartedAt = null;
+    saveRd(); renderRd();
+  }
+
+  // cuánto vas de adelantado / atrasado: inicio real del tema actual frente a su inicio planeado (+ lo que te pasas del tema)
+  function rdLateMs(now) {
+    if (!rdRunning()) return null;
+    const i = rdIdx(rd.curId);
+    const plannedStart = rd.items.slice(0, i).reduce((t, x) => t + x.min, 0) * 60000;
+    const realStart = rd.curStartedAt - rd.startedAt;
+    const over = Math.max(0, (now - rd.curStartedAt) - rd.items[i].min * 60000);
+    return (realStart - plannedStart) + over;
+  }
+  const rdTimeCls = (spent, min) => spent > min * 60000 * 1.2 ? 'bad' : spent > min * 60000 ? 'warn' : 'ok';
+  function renderRd() {
+    $('#rd-count').textContent = rd.items.length;
+    $('#rd-target').value = rd.targetMin;
+    const list = $('#rd-list');
+    list.innerHTML = '';
+    if (!rd.items.length) list.innerHTML = '<div class="rd-empty">Escaleta vacía. Añade expedientes (botón <b>＋ ESCALETA</b> del lector o el selector de abajo) y bloques libres como PUBLICIDAD o CIERRE. Los minutos se estiman por la longitud del texto.</div>';
+    rd.items.forEach((it, i) => {
+      const row = document.createElement('div');
+      const cur = it.id === rd.curId, done = it.spentMs != null && !cur;
+      row.className = 'rd-row' + (cur ? ' rd-row--cur' : '') + (done ? ' rd-row--done' : '') + (it.kind === 'free' ? ' rd-row--free' : '');
+      row.draggable = true; row.dataset.id = it.id;
+      row.innerHTML = '<span class="rd-grip" title="Arrastra para reordenar">⠿</span><span class="rd-n"></span><div class="rd-t"><b></b><small></small></div>' +
+        '<label class="rd-min" title="Minutos planeados"><input type="number" min="1" max="240"><i>min</i></label><span class="rd-time"></span>' +
+        '<div class="rd-btns"><button type="button" class="rd-go" title="Empezar este tema ahora">▶</button><button type="button" class="rd-up" title="Subir">↑</button><button type="button" class="rd-dn" title="Bajar">↓</button><button type="button" class="rd-x" title="Quitar de la escaleta">✕</button></div>';
+      row.querySelector('.rd-n').textContent = done ? '✓' : String(i + 1);
+      row.querySelector('b').textContent = rdTitle(it);
+      row.querySelector('small').textContent = it.kind === 'free' ? 'BLOQUE LIBRE' : (rdItemCf(it) ? cfTypeLabel(rdItemCf(it).type) + (rdItemCf(it).told ? ' · CONTADO' : '') : 'YA NO EXISTE');
+      const inp = row.querySelector('input'); inp.value = it.min;
+      inp.addEventListener('change', () => { it.min = Math.max(1, Math.min(240, Number(inp.value) || 1)); saveRd(); renderRd(); });
+      inp.addEventListener('click', e => e.stopPropagation());
+      const tm = row.querySelector('.rd-time'); tm.dataset.id = it.id;
+      if (done) { tm.textContent = fmtMS(it.spentMs); tm.className = 'rd-time rd-time--' + rdTimeCls(it.spentMs, it.min); tm.title = `Real ${fmtMS(it.spentMs)} · plan ${it.min} min`; }
+      row.querySelector('.rd-go').addEventListener('click', e => { e.stopPropagation(); rdGoto(it.id); });
+      row.querySelector('.rd-up').addEventListener('click', e => { e.stopPropagation(); rdMove(it.id, -1); });
+      row.querySelector('.rd-dn').addEventListener('click', e => { e.stopPropagation(); rdMove(it.id, 1); });
+      row.querySelector('.rd-x').addEventListener('click', e => { e.stopPropagation(); rdRemove(it.id); });
+      row.addEventListener('click', () => rdOpenCf(it));
+      row.addEventListener('dragstart', e => { rdDragId = it.id; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', it.id); } catch (err) { /* algunos navegadores lo exigen */ } });
+      row.addEventListener('dragend', () => { rdDragId = null; row.classList.remove('dragging'); });
+      row.addEventListener('dragover', e => { if (rdDragId && rdDragId !== it.id) { e.preventDefault(); row.classList.add('drag-over'); } });
+      row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+      row.addEventListener('drop', e => {
+        row.classList.remove('drag-over');
+        if (!rdDragId || rdDragId === it.id) return;
+        e.preventDefault();
+        const from = rdIdx(rdDragId), [m] = rd.items.splice(from, 1);
+        rd.items.splice(rdIdx(it.id) + (from < rdIdx(it.id) ? 1 : 0), 0, m);
+        rdDragId = null; saveRd(); renderRd(); renderCaseFiles();
+      });
+      list.appendChild(row);
+    });
+    // selector de expedientes que aún no están
+    const sel = $('#rd-add-cf');
+    sel.innerHTML = '<option value="">+ añadir expediente…</option>';
+    cf.items.filter(c => c.status !== 'archivado' && rdPosOfCf(c.id) < 0).sort((a, b) => b.num - a.num)
+      .forEach(c => sel.appendChild(new Option(`#${pad3(c.num)} ${c.title || '(sin título)'}`, c.id)));
+    // barra de avance proporcional
+    const bar = $('#rd-bar'); bar.innerHTML = '';
+    const tot = rdPlanned() || 1;
+    rd.items.forEach(it => { const s2 = document.createElement('i'); s2.style.flex = String(it.min); s2.className = it.id === rd.curId ? 'cur' : (it.spentMs != null ? 'done' : ''); s2.title = rdTitle(it); bar.appendChild(s2); });
+    $('#rd-plan').textContent = fmtMS(rdPlanned() * 60000);
+    const diff = (rd.targetMin - rdPlanned()) * 60000, d = $('#rd-diff');
+    d.textContent = rd.items.length ? (diff >= 0 ? '+' : '−') + Math.abs(Math.round(diff / 60000)) + ' min' : '—'; d.className = diff < 0 ? 'bad' : 'good';
+    d.title = diff >= 0 ? 'Te sobran minutos respecto a la duración del show' : 'La escaleta dura más que el show: recorta o acorta temas';
+    $('#rd-next').classList.toggle('rd-next--start', !rdRunning());
+    $('#rd-next').firstChild.textContent = rdRunning() ? 'SIGUIENTE TEMA ▸▸ ' : (rd.items.some(i => i.spentMs != null) && !rd.curId && rd.startedAt ? 'REINICIAR ▸▸ ' : '▶ INICIAR ESCALETA ');
+    $('#rd-prev').disabled = !rdRunning() || rdIdx(rd.curId) <= 0;
+    renderRdTimers();
+    syncKbd($('#rd-next'));
+  }
+  let rdDragId = null;
+  // se llama cada segundo: solo toca textos (cronómetro del tema actual, atraso y chip de la barra superior)
+  function renderRdTimers() {
+    const now = Date.now(), chip = $('#top-rd'), late = $('#rd-late');
+    if (!rdRunning()) { chip.hidden = true; late.textContent = '—'; late.className = ''; return; }
+    const i = rdIdx(rd.curId), it = rd.items[i], spent = now - rd.curStartedAt, cls = rdTimeCls(spent, it.min);
+    const tm = document.querySelector(`.rd-time[data-id="${it.id}"]`);
+    if (tm) { tm.textContent = fmtMS(spent) + ' / ' + it.min + ':00'; tm.className = 'rd-time rd-time--' + cls; }
+    const lm = rdLateMs(now);
+    late.textContent = Math.abs(lm) < 5000 ? 'A TIEMPO' : (lm > 0 ? 'ATRASADO ' : 'ADELANTADO ') + fmtMS(Math.abs(lm));
+    late.className = lm > 5000 ? 'bad' : lm < -5000 ? 'good' : '';
+    chip.hidden = false;
+    chip.innerHTML = `ESCALETA <b>${i + 1}/${rd.items.length} · ${fmtMS(spent)} / ${it.min}:00</b>`;
+    chip.className = 'chip' + (cls === 'bad' ? ' chip--bad' : cls === 'warn' ? ' chip--warn' : '');
+  }
+  $$('#cf-mode [data-cfmode]').forEach(b => b.addEventListener('click', () => {
+    const m = b.dataset.cfmode; keep('cf-mode', m);
+    $$('#cf-mode [data-cfmode]').forEach(x => x.classList.toggle('on', x === b));
+    $('#cf-listpane').hidden = m !== 'list'; $('#cf-rundown').hidden = m !== 'rundown'; $('#card-notes').classList.toggle('is-rd', m === 'rundown');
+    if (m === 'rundown') renderRd();
+  }));
+  if (saved['cf-mode'] === 'rundown') $('#cf-mode [data-cfmode="rundown"]').click();
+  $('#rd-next').addEventListener('click', rdNext);
+  $('#rd-prev').addEventListener('click', rdPrev);
+  $('#rd-reset').addEventListener('click', rdReset);
+  $('#rd-target').addEventListener('change', () => { rd.targetMin = Math.max(1, Math.min(600, Number($('#rd-target').value) || 90)); saveRd(); renderRd(); });
+  $('#rd-add-cf').addEventListener('change', e => { const v = e.target.value; e.target.value = ''; if (v) rdAddCf(v); });
+  $('#rd-free-add').addEventListener('click', () => { rdAddFree($('#rd-free-name').value, $('#rd-free-min').value); $('#rd-free-name').value = ''; });
+  $('#rd-free-name').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#rd-free-add').click(); } });
+  $('#cf-r-rd').addEventListener('click', () => { const it = cfItem(); if (it) rdAddCf(it.id); });
+  act('rd-next', 'ESCALETA', 'Escaleta · siguiente tema', rdNext);
+  act('rd-prev', 'ESCALETA', 'Escaleta · tema anterior', rdPrev);
+  act('rd-start', 'ESCALETA', 'Escaleta · iniciar', rdStart);
+
+  /* =====================================================================================
      SONIDOS: (1) enlace/archivo de cada efecto del programa, (2) soundboard propio con atajos.
      Los efectos nunca necesitan archivos (se sintetizan); esto solo sirve para reemplazarlos.
      ===================================================================================== */
@@ -2633,7 +2849,7 @@
 
   /* ---------- cabecera: marca y reloj ---------- */
   if (C.brand) { $('#brand-title').textContent = C.brand.title || 'LA CÁPSULA INSÓLITA'; $('#case-no').textContent = C.brand.caseNumber || '—'; }
-  (function tick() { $('#clock').textContent = hhmmss(); renderOnAir(); setTimeout(tick, 1000 - (Date.now() % 1000)); })();
+  (function tick() { $('#clock').textContent = hhmmss(); renderOnAir(); renderRdTimers(); setTimeout(tick, 1000 - (Date.now() % 1000)); })();
   ['#host', '#port'].forEach(s => $(s).addEventListener('change', renderObs));
   $('#ev-num').addEventListener('input', renderEvidence);
 
@@ -2670,5 +2886,6 @@
   renderAll();
   syncKbd();
   renderBackup();
+  renderRd();
   connect(true);
 })();
