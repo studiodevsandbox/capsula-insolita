@@ -1761,7 +1761,7 @@
       if (!$('#cf-modal').hidden) { cfCloseEditor(); return; }
       if (macroRun) { macroRun.cancelled = true; toast('MACRO CANCELADA', 'info'); return; }
       if (!$('#vf-modal').hidden) { $('#vf-modal').hidden = true; return; }
-      if (tpReady && tp.on) { tpClose(); return; }
+      if (tpReady && tp.on) { if (tpIsFull()) { tpFull(false); return; } tpClose(); return; }
       if (trPopOpen()) { trPopSet(false); return; }
       if (panelLocked) return;
       if (armed) { disarm(); toast('CANCELADO', 'info'); return; }
@@ -1973,6 +1973,7 @@
     const st = vfOf(item), sel = $('#cf-r-vf');
     sel.value = st.id; sel.style.setProperty('--c', st.color);
     $('#cf-r-stamp').disabled = !st.stamp;
+    const ps = $('#cf-paper-stamp'); ps.textContent = st.stamp || 'ARCHIVO ABIERTO'; ps.style.setProperty('--c', st.color); ps.classList.toggle('is-plain', !st.stamp);
     $('#cf-r-stamp').title = st.stamp ? `Sella en pantalla «${st.stamp}». Solo sale cuando lo pulsas.` : `El estado «${st.label}» no tiene sello (⚙ para configurarlo)`;
   }
   $('#cf-r-vf').addEventListener('change', e => { const it = cfItem(); if (!it) return; it.verif = e.target.value; saveCaseFiles(); renderCaseFiles(); });
@@ -2088,14 +2089,42 @@
     const m = Number.isInteger(item.mark) && tpText.children[item.mark] ? tpText.children[item.mark] : null;
     tpSetPos(m ? m.offsetTop - tpMarkerPx() : 0); // si dejaste un marcador, el prompter arranca ahí
   }
+  // Nivel 1: al abrir el prompter la lista se esconde y Case Files crece. Nivel 2: ancho 50/66/100. Nivel 3: pantalla completa.
+  let tpWidthBefore = null;
   function tpOpen() {
     const it = cfItem();
     if (!it) { toast('ELIGE UN EXPEDIENTE PARA LEERLO EN EL PROMPTER', 'info'); return false; }
-    tp.on = true; $('#cf-reader').classList.add('tp-on'); $('#tp').hidden = false;
-    tpLoad(it);
+    tp.on = true; $('#cf-reader').classList.add('tp-on'); $('#tp').hidden = false; document.body.classList.add('tp-open');
+    if (tpWidthBefore === null) tpWidthBefore = cfw;
+    tpLoad(it); tpTopicBtn();
     return true;
   }
-  function tpClose() { tpPause(); tp.on = false; $('#tp').hidden = true; $('#cf-reader').classList.remove('tp-on'); }
+  function tpClose() {
+    tpFull(false); tpPause(); tp.on = false; $('#tp').hidden = true; $('#cf-reader').classList.remove('tp-on'); document.body.classList.remove('tp-open');
+    if (tpWidthBefore !== null) { setCfw(tpWidthBefore, true); tpWidthBefore = null; } // el ancho vuelve a como estaba antes de leer
+  }
+  function tpFull(on) {
+    const r = $('#cf-reader');
+    if (on === undefined) on = !r.classList.contains('tp-full');
+    if (on && !tp.on) return;
+    r.classList.toggle('tp-full', on); document.body.classList.toggle('tp-full-on', on);
+    $('#tp-full').textContent = on ? '⤡ REDUCIR' : '⛶'; $('#tp-full').title = on ? 'Volver a la ventana del panel (Esc)' : 'Pantalla completa solo para el prompter (Esc vuelve)';
+    if (tp.on) { tpStyle(); tpSetPos(tp.pos); }
+  }
+  const tpIsFull = () => $('#cf-reader').classList.contains('tp-full');
+  // ancho de Case Files: 50 / 66 / 100 % (el Control Deck se compacta o baja)
+  var cfw = 50;
+  function setCfw(v, quiet) {
+    v = [50, 66, 100].includes(Number(v)) ? Number(v) : 50; cfw = v; document.body.dataset.cfw = String(v);
+    $('#cfw-select').value = String(v); $('#tp-width').textContent = '⤢ ' + v + '%'; if (!quiet) keep('cfw', v);
+    if (tp.on) requestAnimationFrame(() => { tpStyle(); tpSetPos(tp.pos); });
+  }
+  $('#cfw-select').addEventListener('change', e => { tpWidthBefore = null; setCfw(e.target.value); });
+  $('#tp-width').addEventListener('click', () => { const order = [50, 66, 100]; setCfw(order[(order.indexOf(cfw) + 1) % 3], true); });
+  $('#tp-full').addEventListener('click', () => tpFull());
+  $('#tp-topic').addEventListener('click', () => { if (typeof rdNext === 'function') rdNext(); });
+  const tpTopicBtn = () => { $('#tp-topic').hidden = !(typeof rdRunning === 'function' && rdRunning()); };
+  setCfw(saved.cfw, true);
   // el lector llama aquí al cambiar de expediente: el prompter carga el nuevo texto y espera en pausa
   function tpSync(item) { if (tp.on && item && tp.itemId !== item.id) tpLoad(item); }
   $('#cf-r-tp').addEventListener('click', () => (tp.on ? tpClose() : tpOpen()));
@@ -2113,6 +2142,8 @@
   act('tp-slower', 'PROMPTER', 'Teleprompter · más lento', () => tpSpeed(-10), '[');
   act('tp-faster', 'PROMPTER', 'Teleprompter · más rápido', () => tpSpeed(10), ']');
   act('tp-restart', 'PROMPTER', 'Teleprompter · volver al principio', () => { if (tp.on) { tpPause(); tpSetPos(0); } });
+  act('tp-full', 'PROMPTER', 'Teleprompter · pantalla completa', () => { if (!tp.on && !tpOpen()) return; tpFull(); });
+  act('tp-width', 'PROMPTER', 'Case Files · cambiar ancho (50 / 66 / 100 %)', () => { const order = [50, 66, 100]; setCfw(order[(order.indexOf(cfw) + 1) % 3]); });
   window.addEventListener('resize', () => { if (tp.on) { tpStyle(); tpSetPos(tp.pos); } });
 
   /* ASPECTO de Case Files: DOSSIER (expediente físico) o LIMPIO (consola). Solo el panel, no el overlay. */
@@ -2299,6 +2330,7 @@
     $('#rd-next').firstChild.textContent = rdRunning() ? 'SIGUIENTE TEMA ▸▸ ' : (rd.items.some(i => i.spentMs != null) && !rd.curId && rd.startedAt ? 'REINICIAR ▸▸ ' : '▶ INICIAR ESCALETA ');
     $('#rd-prev').disabled = !rdRunning() || rdIdx(rd.curId) <= 0;
     renderRdTimers();
+    if (typeof tpTopicBtn === 'function' && tpReady) tpTopicBtn();
     syncKbd($('#rd-next'));
   }
   let rdDragId = null;

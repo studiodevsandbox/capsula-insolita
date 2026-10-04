@@ -36,6 +36,8 @@
       <div class="view-pop" id="view-pop" hidden>
         <div class="vp-row"><span class="mlabel">VISTA</span>
           <select id="view-select" title="NORMAL 50/50 · LECTURA (Case Files grande) · OPERACIÓN (evidencia arriba) · COMPACTO"><option value="normal">NORMAL · 50/50</option><option value="lectura">LECTURA</option><option value="operacion">OPERACIÓN</option><option value="compacto">COMPACTO</option></select></div>
+        <div class="vp-row"><span class="mlabel">CASE FILES</span>
+          <select id="cfw-select" title="Cuánto ancho ocupa Case Files frente al Control Deck"><option value="50">50 % · mitad</option><option value="66">66 % · más ancho</option><option value="100">100 % · todo el ancho</option></select></div>
         <div class="vp-row"><span class="mlabel">ASPECTO</span>
           <select id="aspect-select" title="Aspecto de Case Files: DOSSIER (expediente físico) o LIMPIO (consola)"><option value="dossier">DOSSIER · expediente</option><option value="limpio">LIMPIO · consola</option></select></div>
         <div class="vp-row"><span class="mlabel">TEXTO</span>
@@ -136,6 +138,9 @@
           <div class="tp-head">
             <span class="card-id">PROMPTER</span><b class="tp-title" id="tp-title"></b>
             <span class="tp-time" id="tp-time" title="Tiempo que falta de lectura">--:--</span>
+            <button type="button" class="btn--sm tp-topic" id="tp-topic" hidden title="Termina este tema y abre el siguiente de la escaleta">SIGUIENTE TEMA ▸▸</button>
+            <button type="button" class="btn--sm" id="tp-width" title="Ancho de Case Files: 50 % · 66 % · 100 % del ancho (el Control Deck se hace más estrecho)">⤢ 50%</button>
+            <button type="button" class="btn--sm" id="tp-full" title="Pantalla completa solo para el prompter (Esc vuelve)">⛶</button>
             <button type="button" class="btn--sm" id="tp-exit" title="Salir del teleprompter (Esc)">✕ SALIR</button>
           </div>
           <div class="tp-view" id="tp-view"><div class="tp-marker" id="tp-marker"></div><div class="tp-text" id="tp-text"></div><div class="tp-count" id="tp-count" hidden></div></div>
@@ -168,23 +173,30 @@
           </div>
           <div class="cf-r-body" id="cf-r-body" tabindex="0"></div>
           <div class="cf-r-ev">
+            <span class="cf-paper-stamp" id="cf-paper-stamp" aria-hidden="true"></span>
             <span class="field-label">EVIDENCIAS RELACIONADAS</span>
             <div id="cf-r-evlist" class="cf-evidence-list"></div>
           </div>
           <div class="cf-r-btns">
-            <button class="btn--sm btn--primary" id="cf-r-show" title="Prepara las evidencias relacionadas en §04 (1.ª = SIGUIENTE, resto = COLA). No manda nada al aire.">▶ MOSTRAR</button>
-            <button class="btn--sm" id="cf-r-tp" title="Leer este expediente como teleprompter, aquí mismo">📜 PROMPTER</button>
-            <button class="btn--sm" id="cf-r-stamp" title="Sella en pantalla el estado de verificación (VERIFICADO, DESMENTIDO…). Solo sale cuando lo pulsas.">▣ SELLO</button>
-            <button class="btn--sm" id="cf-r-rd" title="Añadir este expediente a la escaleta del programa">＋ ESCALETA</button>
-            <button class="btn--sm" id="cf-r-told" title="Marcar como ya contado en el programa">✓ CONTADO</button>
-            <button class="btn--sm" id="cf-r-lt" title="Prepara el lower third con el texto seleccionado (o el título). No sale al aire.">→ LT</button>
-            <button class="btn--sm" id="cf-r-edit" title="Abrir el editor del expediente">✎ EDITAR</button>
-            <button class="btn--sm btn--ghost" id="cf-r-archive" title="Archivar / reactivar este expediente">🗄</button>
-            <button class="btn--sm btn--ghost" id="cf-r-delete" title="Borrar este expediente">✕</button>
-            <span class="cf-nav">
+            <div class="btn-grp btn-grp--main">
+              <button class="btn--sm btn--primary" id="cf-r-show" title="Prepara las evidencias relacionadas en §04 (1.ª = SIGUIENTE, resto = COLA). No manda nada al aire.">▶ MOSTRAR</button>
+              <button class="btn--sm" id="cf-r-tp" title="Leer este expediente como teleprompter, aquí mismo">📜 PROMPTER</button>
+              <button class="btn--sm" id="cf-r-stamp" title="Sella en pantalla el estado de verificación (VERIFICADO, DESMENTIDO…). Solo sale cuando lo pulsas.">▣ SELLO</button>
+            </div>
+            <div class="btn-grp">
+              <button class="btn--sm" id="cf-r-rd" title="Añadir este expediente a la escaleta del programa">＋ ESCALETA</button>
+              <button class="btn--sm" id="cf-r-told" title="Marcar como ya contado en el programa">✓ CONTADO</button>
+              <button class="btn--sm" id="cf-r-lt" title="Prepara el lower third con el texto seleccionado (o el título). No sale al aire.">→ LT</button>
+              <button class="btn--sm" id="cf-r-edit" title="Abrir el editor del expediente">✎ EDITAR</button>
+            </div>
+            <div class="btn-grp btn-grp--end">
+              <button class="btn--sm btn--ghost" id="cf-r-archive" title="Archivar / reactivar este expediente">🗄</button>
+              <button class="btn--sm btn--ghost" id="cf-r-delete" title="Borrar este expediente">✕</button>
+              <span class="cf-nav">
               <button class="btn--sm btn--ghost" id="cf-r-prev" title="Expediente anterior en esta pestaña">←</button>
               <button class="btn--sm btn--ghost" id="cf-r-next" title="Expediente siguiente en esta pestaña">→</button>
             </span>
+            </div>
           </div>
         </div>
       </article>

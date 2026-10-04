@@ -1586,3 +1586,80 @@ body[data-aspect=dossier] .cf-mode > button:not(.on) { background: linear-gradie
 .cf-reader-h .cf-vfbox { margin-left: 0; }
 .cf-reader-h .cf-fs { margin-left: auto; }
 body[data-aspect=dossier] .cf-reader-main::after { opacity: .5; border-color: rgba(138, 26, 34, .12); color: rgba(138, 26, 34, .12); font-size: 20px; top: 92px; }
+
+/* =====================================================================================
+   TELEPROMPTER AMPLIO: (1) lista oculta + Case Files más alto · (2) ancho 50/66/100 · (3) pantalla completa
+   ===================================================================================== */
+body.tp-open .cf-left { display: none; }
+body.tp-open .cf-split { grid-template-columns: minmax(0, 1fr); margin-top: 0; }
+body.tp-open #card-notes .cf-tabs { display: none; }
+body.tp-open .top-zone > #card-notes { min-height: 740px; }
+body[data-eff=wide][data-cfw="66"] .top-zone { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+body[data-eff=wide][data-cfw="100"] .top-zone { grid-template-columns: minmax(0, 1fr); }
+body[data-eff=wide][data-cfw="100"] .top-zone > #card-notes { contain: none; min-height: 0; height: 760px; }
+body[data-eff=wide][data-cfw="100"].tp-open .top-zone > #card-notes { height: 820px; }
+/* con Case Files al 66 %, el Control Deck pasa a 2 columnas y se compacta */
+body[data-eff=wide][data-cfw="66"] .cdeck .qa-grid, body[data-eff=wide][data-cfw="66"] .cdeck .scenes, body[data-eff=wide][data-cfw="66"] .cdeck .alerts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body[data-eff=wide][data-cfw="66"] .cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "mode mode" "trans trans" "custom custom"; }
+body[data-eff=wide][data-cfw="66"] .cdeck .qa { min-height: 62px; }
+body[data-eff=wide][data-cfw="66"] .tr-pop { width: min(440px, 92vw); } body[data-eff=wide][data-cfw="66"] .tr-pop .tr-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+body[data-eff=wide][data-cfw="66"] .cdeck-h .cdeck-sum { display: none; }
+/* pantalla completa del prompter */
+.cf-reader.tp-full { position: fixed; inset: 0; z-index: 45; margin: 0; border: 0; border-radius: 0; background: #000; }
+.cf-reader.tp-full .tp-head { padding: 6px 14px; }
+body.tp-full-on { overflow: hidden; }
+.tp-topic { background: linear-gradient(180deg, #e8112d, #b30018); border-color: #ff5a6a; color: #fff; }
+.tp-head .btn--sm { flex: none; white-space: nowrap; }
+
+/* =====================================================================================
+   LECTOR (DOSSIER) renovado: hoja con renglones alineados, margen rojo, estado legible y botones agrupados
+   ===================================================================================== */
+.cf-r-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.btn-grp { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.btn-grp--end { margin-left: auto; }
+.btn-grp--main .btn--sm { min-height: 34px; padding: 0 12px; font-weight: 600; }
+.btn-grp--main #cf-r-tp { background: linear-gradient(180deg, #2a2a2a, #181818); }
+.cf-r-btns .cf-nav { margin-left: 4px; display: inline-flex; gap: 4px; }
+.cf-r-btns button:disabled { opacity: .5; }
+body[data-aspect=dossier] .cf-r-btns { background: #cfc6ad; }
+body[data-aspect=dossier] .cf-r-btns button { color: #efe9da; }
+body[data-aspect=dossier] .cf-r-btns .btn--primary { color: #0a0a0a; }
+body[data-aspect=dossier] #cf-r-rd.on { color: #8fe0ad; border-color: rgba(95, 208, 138, .6); background: linear-gradient(180deg, #14301f, #0c1d13); }
+body[data-aspect=dossier] #cf-r-told.on { color: #8fe0ad; }
+/* hoja: renglones alineados con el texto (el interlineado manda), margen rojo y papel con grano */
+body[data-aspect=dossier] .cf-r-body {
+  --step: calc(var(--cf-fs, 16px) * 1.75);
+  padding: 0 22px 0 52px; line-height: var(--step);
+  background:
+    linear-gradient(90deg, transparent 0 40px, rgba(176, 40, 48, .42) 40px 41.5px, transparent 41.5px),
+    repeating-linear-gradient(180deg, transparent 0 calc(var(--step) - 1px), rgba(70, 98, 140, .20) calc(var(--step) - 1px) var(--step)),
+    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, .5), transparent 60%), #ebe5d6;
+  background-attachment: local, local, scroll, scroll;
+  box-shadow: inset 0 6px 10px -6px rgba(60, 46, 20, .35);
+}
+body[data-aspect=dossier] .cf-r-body p { line-height: var(--step); margin: 0 0 var(--step); padding: 0 4px 0 0; border-left: 0; font-family: var(--mono); }
+body[data-aspect=dossier] .cf-r-body p:first-child { margin-top: 0; padding-top: 0; }
+body[data-aspect=dossier] .cf-r-body.has-mark p { opacity: .5; }
+body[data-aspect=dossier] .cf-r-body.has-mark p.is-mark { opacity: 1; background: linear-gradient(180deg, transparent 8%, rgba(255, 212, 0, .6) 8% 92%, transparent 92%); box-shadow: -6px 0 0 #b08a00; }
+body[data-aspect=dossier] .cf-reader-main::after { content: none; }
+/* sello del estado sobre el papel (en la franja de evidencias) */
+.cf-paper-stamp { display: none; }
+body[data-aspect=dossier] .cf-paper-stamp { display: inline-block; float: right; margin: -2px 0 6px 10px; padding: 1px 10px 0; transform: rotate(-5deg); border: 2.5px solid var(--c, #8a1a22); color: var(--c, #8a1a22); font: 700 16px/1.25 var(--disp); letter-spacing: .2em; opacity: .85; filter: brightness(.62) saturate(1.4); border-radius: 2px; }
+body[data-aspect=dossier] .cf-paper-stamp.is-plain { filter: none; --c: rgba(90, 80, 60, .55); opacity: .75; }
+/* estado de verificación legible sobre papel: texto oscuro y barra de color */
+body[data-aspect=dossier] .vf-select { color: #1d1a17; background-color: rgba(255, 255, 255, .55); border: 1px solid #a89f86; box-shadow: inset 5px 0 0 var(--c); padding-left: 14px; }
+body[data-aspect=dossier] .vf-cfg { background: #1d1a17; color: #e8e2d5; border-color: #1d1a17; }
+body[data-aspect=dossier] .cf-fs button { min-width: 34px; }
+body[data-aspect=dossier] .cf-fs button:disabled { opacity: .45; }
+body[data-aspect=dossier] .cf-reader-h { padding: 12px 14px 10px; gap: 8px 10px; }
+body[data-aspect=dossier] .cf-r-title { font-size: 26px; text-shadow: 0 1px 0 rgba(255, 255, 255, .6); }
+body[data-aspect=dossier] .cf-r-ev { padding: 12px 14px 8px; }
+body[data-aspect=dossier] .cf-r-ev .field-label { font-weight: 700; letter-spacing: .2em; }
+
+/* la pantalla completa gana a cualquier regla de aspecto */
+body .cf-reader.tp-full { position: fixed !important; inset: 0 !important; z-index: 45; width: auto; height: auto; margin: 0 !important; border: 0 !important; border-radius: 0 !important; background: #000 !important; box-shadow: none !important; }
+body.tp-full-on .zones { z-index: 46; }
+body.tp-full-on .topbar { z-index: 20; }
+.cf-reader.tp-full #tp-width { display: none; }
+body[data-aspect=dossier] .cf-r-btns .btn--ghost { background: linear-gradient(180deg, #2a2a2a, #181818); color: #efe9da; border-color: #000; }
+body[data-aspect=dossier] .cf-r-btns .btn--ghost:hover { background: linear-gradient(180deg, #3a3a3a, #202020); }
