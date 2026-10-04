@@ -1092,3 +1092,6 @@ body[data-view=compacto] .nowbar-note, body[data-view=compacto] .cdeck-stamps { 
 #layout-preset-select { min-width: 96px; max-width: 130px; }
 #view-select { min-width: 132px; }
 .lock-btn kbd { display: none; }
+
+.tr-cur .tr-ms, .tr-cur .tr-n { white-space: nowrap; }
+.tr-cur { gap: 8px; padding-right: 8px; }

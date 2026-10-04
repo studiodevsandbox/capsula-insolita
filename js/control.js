@@ -1082,6 +1082,8 @@
   };
   $('#tr-prev').addEventListener('click', () => trStep(-1));
   $('#tr-next').addEventListener('click', () => trStep(1));
+  // con la barra enfocada (Tab o clic), ← → cambian de transición
+  $('.tr-bar').addEventListener('keydown', e => { if (e.key === 'ArrowLeft') { e.preventDefault(); trStep(-1); } else if (e.key === 'ArrowRight') { e.preventDefault(); trStep(1); } });
   trTiles.addEventListener('click', () => trPopSet(false));
   function renderTrCur() {
     const t = trSel.value, tm = C.transitionTimings[t];
@@ -1676,6 +1678,8 @@
   act('outro-arm', 'SHOW', 'Outro · caso cerrado (2 toques)', () => arm('outro', '¿CERRAR EL CASO? PULSA OTRA VEZ', () => outro('CASO CERRADO')), 'O');
   act('outro-cont', 'SHOW', 'Outro · continuará (2 toques)', () => arm('outro2', '¿OUTRO · CONTINUARÁ? PULSA OTRA VEZ', () => outro('CONTINUARÁ...')));
   act('reset', 'SHOW', 'Quitar intro / outro', () => $('#reset').click());
+  act('tr-prev', 'TRANSICIÓN', 'Transición anterior (la de cambio de escena)', () => trStep(-1));
+  act('tr-next', 'TRANSICIÓN', 'Transición siguiente (la de cambio de escena)', () => trStep(1));
   act('panel-lock', 'PANEL', 'Bloquear / desbloquear el panel', () => setLocked(!panelLocked), 'Ctrl+Shift+L');
   act('hideall', 'EMERGENCIA', 'Ocultar todo (pánico)', hideAll);
   act('sound-toggle', 'AUDIO', 'Sonidos on / off', () => { sndEnabled.checked = !sndEnabled.checked; sndEnabled.dispatchEvent(new Event('change')); });
