@@ -143,12 +143,12 @@ El panel entero se puede reordenar a gusto:
 - Todo se guarda en este navegador (localStorage), no viaja a OBS ni a otra PC — cada PC/perfil de navegador tiene su propio acomodo.
 - Código: `js/layout-drag.js` (independiente de `js/control.js`).
 
-### CASE FILES (§01)
+### CASE FILES (§02)
 
 Base única de **expedientes** (Historia · Evidencia · Pista · Testimonio). Las pestañas **TODOS · HISTORIAS · EVIDENCIAS · PISTAS · TESTIMONIOS** son filtros de esa misma lista, no bancos separados.
 
 - **Leer sin modal**: al hacer clic en un expediente, su contenido se muestra *dentro del propio módulo* (número, tipo, título, historia completa con scroll interno, evidencias relacionadas). Cámaras, Evidence Control, el banco y el Control Deck siguen visibles y operables.
-- **▶ MOSTRAR**: vuelve a preparar las evidencias del expediente en §05 (útil tras haber mandado algunas). **✎ EDITAR** abre el editor (modal de dos zonas): a la izquierda título, tipo (botones) y texto con contador de palabras; a la derecha las evidencias relacionadas en su orden de salida (1.ª = SIGUIENTE, con ↑ y ✕) y, debajo, las miniaturas del archivo: un clic relaciona o quita (el número indica el orden). Se guarda solo; `Ctrl+Enter` o `Esc` cierran. **🗄 ARCHIVAR**, **✕ BORRAR** y **← →** (navegar dentro de la pestaña actual) están en el lector.
+- **▶ MOSTRAR**: vuelve a preparar las evidencias del expediente en §04 (útil tras haber mandado algunas). **✎ EDITAR** abre el editor (modal de dos zonas): a la izquierda título, tipo (botones) y texto con contador de palabras; a la derecha las evidencias relacionadas en su orden de salida (1.ª = SIGUIENTE, con ↑ y ✕) y, debajo, las miniaturas del archivo: un clic relaciona o quita (el número indica el orden). Se guarda solo; `Ctrl+Enter` o `Esc` cierran. **🗄 ARCHIVAR**, **✕ BORRAR** y **← →** (navegar dentro de la pestaña actual) están en el lector.
 - **Relación con Evidence Control**: seleccionar un expediente **prepara, nunca emite**. La 1.ª evidencia relacionada pasa a **SIGUIENTE** y las demás a la **COLA** (visible en §05). Con **MANDAR AL AIRE** (`E` / `Enter`) la 1.ª pasa a AL AIRE, la 2.ª pasa sola a SIGUIENTE y la cola avanza. La cola solo guarda ids del banco maestro (no copia ni mueve nada); al cambiar de expediente se reconstruye. En la cola puedes subir (▲) o quitar (✕) una evidencia; `Esc` / `VACIAR COLA` la suelta.
 - Contadores en vivo y **🗄 VER ARCHIVADOS**. Se guarda en este navegador (`lci-casefiles-v1`); las notas del sistema viejo se migran solas. Código en `js/control.js` (`CF_KEY`, `cfPrepare`, `evQueue`).
 
@@ -158,7 +158,7 @@ Bajo "Now playing" hay dos áreas de igual peso, fijas (no se arrastran ni se re
 
 - **Izquierda · CASE FILES** — "¿qué estoy contando?": pestañas, lista única de expedientes (a la izquierda) y lector con scroll interno (a la derecha). Debajo del lector: evidencias relacionadas y los botones MOSTRAR / EDITAR / ARCHIVAR / BORRAR / ← →.
 - **Derecha · CONTROL DECK** — "¿qué necesito pulsar?": **1 Quick Actions · 2 Alertas (+ sellos) · 3 Scene Switcher · 4 Transición · 5 Modo · 6 Personalizados**. Se puede **▾ CONTRAER / ▸ EXPANDIR** (queda una línea con lo esencial; el estado se recuerda).
-- Arriba de todo, justo bajo "Now playing": **EMERGENCY (§10)** como barra delgada siempre visible (OCULTAR TODO · OUTRO caso cerrado / continuará · QUITAR INTRO/OUTRO; ■ OCULTAR TODO también está en la barra superior en pantallas angostas). Debajo de Case Files y Control Deck: **EVIDENCE CONTROL y ARCHIVO DE EVIDENCIAS lado a lado** (fila fija, a mano), y debajo Cámaras · Activity Log + Lower Third · Ajustes (Efectos, Audio, OBS, Debug). Las 3 columnas de abajo sí se reordenan con ⠿ MOVER CAJAS.
+- Arriba de todo, justo bajo "Now playing": **EMERGENCY (§01)** como barra delgada siempre visible (OCULTAR TODO · OUTRO caso cerrado / continuará · QUITAR INTRO/OUTRO; ■ OCULTAR TODO también está en la barra superior en pantallas angostas). Debajo de Case Files y Control Deck: **EVIDENCE CONTROL y ARCHIVO DE EVIDENCIAS lado a lado** (fila fija, a mano), y debajo Cámaras · Activity Log + Lower Third · Ajustes (Efectos, Audio, OBS, Debug). Las 3 columnas de abajo sí se reordenan con ⠿ MOVER CAJAS.
 - En pantallas ≤ 1100 px (dock de OBS) Case Files y Control Deck se apilan.
 
 **Transición**: baldosas con pictograma (el cajón TRANSICIONES de Ajustes ya no existe; **doble clic** en una baldosa la prueba sola) (corte, tape, flash, paper, file, cctv, stamp, redflash, document, glitch, evidence). La elegida es la que se usa al cambiar de escena (se recuerda); **▶ PROBAR** (`T`) la lanza sola sin cambiar de escena. Una transición nueva en `config.js → transitionTimings` aparece sola con un icono genérico (el pictograma propio se agrega en `TR_ICON`, `js/control.js`).
@@ -171,14 +171,14 @@ Bajo "Now playing" hay dos áreas de igual peso, fijas (no se arrastran ni se re
 
 - **Barra superior**: estado real de OBS (`OBS CONNECTED` / `CONNECTING` / `OBS OFFLINE` / `CONNECTION LOST` / `AUTH FAILED`), si alguna de las 4 fuentes del overlay (`LCI Broadcast V1`…`V4`) está en el programa (`OVERLAY`), modo, buscador (Ctrl+K) y `?` (atajos). Si se pierde OBS aparece una franja roja con **RECONNECT**; además reintenta solo (2 s, 4 s, 8 s… hasta 15 s) sin abrir conexiones duplicadas. Con contraseña incorrecta no reintenta.
 - **Now playing**: escena al aire (lo que dice OBS, en tiempo real), CAM 01, CAM 02, evidencia, lower third y modo. Todo salvo la escena es **lo último que el panel envió con éxito** (el overlay no responde estado); lo desconocido se muestra como "—".
-- **CONTROL DECK** (ver sección propia): quick actions, alertas, modo y scene switcher (la escena al aire marcada ON AIR) · **§01 CASE FILES** · **§03 Cámaras**.
-- **§05 Evidence control** + **§06 Archivo de evidencias** (ver sección 4).
+- **CONTROL DECK** (ver sección propia): quick actions, alertas, modo y scene switcher (la escena al aire marcada ON AIR) · **§02 CASE FILES** · **§06 Cámaras**.
+- **§04 Evidence control** + **§05 Archivo de evidencias** (ver sección 4).
 - **§08 Lower third** (vista previa del texto en vivo). Modo (investigation = amarillo, clean = blanco) y alertas (▲ rojas = críticas) están en el Control Deck.
-- **§10 Emergency**: OCULTAR TODO (1 toque), outro caso cerrado / continuará (**2 toques en 3 s**, el botón parpadea en rojo al armarse), quitar intro/outro. En el dock (≤900 px) sube al 3.er lugar y además hay un botón **■ OCULTAR TODO** fijo en la barra superior.
+- **§01 Emergency**: OCULTAR TODO (1 toque), outro caso cerrado / continuará (**2 toques en 3 s**, el botón parpadea en rojo al armarse), quitar intro/outro. En el dock (≤900 px) sube al 3.er lugar y además hay un botón **■ OCULTAR TODO** fijo en la barra superior.
 - Avisos (toasts): salen arriba, bajo la barra, sin tapar el pánico; en el dock se ven máximo 2.
 - NOW PLAYING: **SIN DATO** = ese estado aún no se envió desde este panel (no es lo mismo que OFFLINE).
 - Tras clicar un botón con el mouse, Enter/Espacio ya no lo repiten. Las miniaturas del banco se usan también con Tab + Enter/Espacio.
-- **§11 Activity log**: últimas 20 acciones con hora (errores en rojo).
+- **§07 Activity log**: últimas 20 acciones con hora (errores en rojo).
 - Cajones cerrados con resumen: **Efectos** (N ACTIVE), **Transiciones** (agrupadas: físicas, digitales, cinematográficas, alerta), **Audio** (SFX, volumen, ambiente, ducking, pruebas), **OBS** (host/puerto/contraseña en "avanzado"), **Debug** (bitácora técnica, recargar overlay).
 - Cada acción muestra un aviso breve abajo a la derecha (verde = enviado, rojo = no se envió, p. ej. "OBS OFFLINE · NO SE ENVIÓ"). El estado solo cambia si OBS aceptó el comando.
 - Se adapta a pantalla grande (3 columnas), laptop (2) y dock angosto de OBS (1 columna, ~400-500 px).

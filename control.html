@@ -52,7 +52,7 @@
 <div class="nowbar-note">ESCENA = LO QUE DICE OBS · EL RESTO = ÚLTIMO ENVIADO DESDE ESTE PANEL · "SIN DATO" = AÚN NO ENVIADO DESDE ESTE PANEL</div>
 
     <section class="card card--danger emerg-bar" id="card-emergency">
-      <header class="card-h"><span class="card-id">§10</span><h2>EMERGENCY</h2><span class="card-meta">PÁNICO 1 TOQUE · OUTRO 2 TOQUES</span></header>
+      <header class="card-h"><span class="card-id">§01</span><h2>EMERGENCY</h2><span class="card-meta">PÁNICO 1 TOQUE · OUTRO 2 TOQUES</span></header>
       <button class="panic" id="hideall"><span class="p-t">■ OCULTAR TODO</span><span class="p-s">EVIDENCIA · LOWER THIRD · ALERTAS</span></button>
       <div class="emerg-row">
         <button class="btn--danger" id="outro1" title="2 toques en 3 s">OUTRO · CASO CERRADO</button>
@@ -63,7 +63,7 @@
 
 <div class="top-zone">
     <section class="card" id="card-notes">
-      <header class="card-h"><span class="card-id">§01</span><h2>CASE FILES</h2><span class="card-meta" id="cf-counters">00 EXPEDIENTES · 00 ACTIVOS · 00 EN EMISIÓN</span></header>
+      <header class="card-h"><span class="card-id">§02</span><h2>CASE FILES</h2><span class="card-meta" id="cf-counters">00 EXPEDIENTES · 00 ACTIVOS · 00 EN EMISIÓN</span></header>
       <div class="cf-tabs" id="cf-tabs"></div>
       <div class="cf-split">
       <div class="cf-left">
@@ -76,7 +76,7 @@
       </div>
           </div>
       <article class="cf-reader" id="cf-reader" aria-live="polite">
-        <div class="cf-reader-empty" id="cf-reader-empty">Elige un expediente de la lista para leerlo aquí. Sus evidencias se preparan solas en §05 (nada sale al aire hasta que lo mandes).</div>
+        <div class="cf-reader-empty" id="cf-reader-empty">Elige un expediente de la lista para leerlo aquí. Sus evidencias se preparan solas en §04 (nada sale al aire hasta que lo mandes).</div>
         <div class="cf-reader-main" id="cf-reader-main" hidden>
           <div class="cf-reader-h">
             <span class="card-id" id="cf-r-num">#000</span>
@@ -89,7 +89,7 @@
             <div id="cf-r-evlist" class="cf-evidence-list"></div>
           </div>
           <div class="cf-r-btns">
-            <button class="btn--sm btn--primary" id="cf-r-show" title="Prepara las evidencias relacionadas en §05 (1.ª = SIGUIENTE, resto = COLA). No manda nada al aire.">▶ MOSTRAR</button>
+            <button class="btn--sm btn--primary" id="cf-r-show" title="Prepara las evidencias relacionadas en §04 (1.ª = SIGUIENTE, resto = COLA). No manda nada al aire.">▶ MOSTRAR</button>
             <button class="btn--sm" id="cf-r-edit" title="Abrir el editor del expediente">✎ EDITAR</button>
             <button class="btn--sm btn--ghost" id="cf-r-archive" title="Archivar / reactivar este expediente">🗄 ARCHIVAR</button>
             <button class="btn--sm btn--ghost" id="cf-r-delete" title="Borrar este expediente">✕ BORRAR</button>
@@ -106,7 +106,7 @@
 <!-- ============ CONTROL DECK (fijo, ~50 % de la zona superior; no se mueve, solo se contrae) ============ -->
 <section class="cdeck" id="cdeck" aria-label="Control Deck">
   <header class="cdeck-h">
-    <span class="card-id">DECK</span><h2>CONTROL DECK</h2>
+    <span class="card-id">§03</span><h2>CONTROL DECK</h2>
     <span class="cdeck-sum" id="cdeck-sum">—</span>
     <button class="btn--sm btn--ghost" id="cdeck-keys" title="Editar atajos de teclado (?)">⌨ ATAJOS</button><button class="btn--sm btn--ghost" id="cdeck-toggle" aria-expanded="true" title="Contraer / expandir la barra">▾ CONTRAER</button>
   </header>
@@ -165,7 +165,7 @@
 
 <div class="ev-row">
     <section class="card" id="card-ev">
-      <header class="card-h"><span class="card-id">§05</span><h2>EVIDENCE CONTROL</h2><span class="card-meta" id="ev-meta">—</span></header>
+      <header class="card-h"><span class="card-id">§04</span><h2>EVIDENCE CONTROL</h2><span class="card-meta" id="ev-meta">—</span></header>
       <div class="ev-station">
         <div class="slot slot--air" id="ev-air">
           <span class="slot-k">AL AIRE</span>
@@ -209,7 +209,7 @@
     </section>
 
     <section class="card" id="card-bank">
-      <header class="card-h"><span class="card-id">§06</span><h2>ARCHIVO DE EVIDENCIAS</h2><span class="card-meta" id="ev-bank-count"></span></header>
+      <header class="card-h"><span class="card-id">§05</span><h2>ARCHIVO DE EVIDENCIAS</h2><span class="card-meta" id="ev-bank-count"></span></header>
       <div class="bank-tools">
         <div class="seg" id="ev-filter">
           <button data-filter="all">TODAS<span class="n" id="ev-f-all">0</span></button>
@@ -244,7 +244,7 @@
   <div class="col col-a">
 
     <section class="card" id="card-cams">
-      <header class="card-h"><span class="card-id">§03</span><h2>CÁMARAS</h2><span class="card-meta">1 CLIC = CAMBIO CON INTERFERENCIA</span></header>
+      <header class="card-h"><span class="card-id">§06</span><h2>CÁMARAS</h2><span class="card-meta">1 CLIC = CAMBIO CON INTERFERENCIA</span></header>
       <div class="cam" id="cam1-box">
         <div class="cam-h"><span class="dot" id="cam1-dot"></span><span class="cam-id" id="cam1-id">CAM 01</span><span class="cam-now" id="cam1-now">—</span><button class="btn--sm btn--ghost cam-focus" id="cam1-focus" title="Enfoca esta cámara durante 6 s">◎ ENFOCAR</button></div>
         <div class="seg camq">
@@ -308,7 +308,7 @@
   <div class="col col-b">
 
     <section class="card" id="card-activity">
-      <header class="card-h"><span class="card-id">§11</span><h2>ACTIVITY LOG</h2><span class="card-meta">ÚLTIMAS 20</span></header>
+      <header class="card-h"><span class="card-id">§07</span><h2>ACTIVITY LOG</h2><span class="card-meta">ÚLTIMAS 20</span></header>
       <ol class="activity" id="activity"><li class="empty">Sin actividad todavía.</li></ol>
     </section>
 

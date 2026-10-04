@@ -378,7 +378,7 @@
   }
 
   // ---------- CASE FILES: expedientes únicos (historia/evidencia/pista/testimonio), con
-  // relación opcional a evidencia del banco (§05/§06). Autoguardado en este navegador.
+  // relación opcional a evidencia del banco (§04/§05). Autoguardado en este navegador.
   // Migra las notas del sistema anterior (lci-notes-v2) la primera vez, sin borrar esa clave.
   const CF_KEY = 'lci-casefiles-v1';
   const NOTES_KEY_OLD2 = 'lci-notes-v1';
@@ -512,7 +512,7 @@
     $('#cf-r-next').disabled = !(idx > 0);
   }
 
-  // ---------- relación con el banco de evidencias (§05/§06): reusa bank / cue / cola de §05 ----------
+  // ---------- relación con el banco de evidencias (§04/§05): reusa bank / cue / cola de §04 ----------
   function cfEvidenceStateLabel(bankItem) {
     if (!bankItem) return { text: '○ YA NO ESTÁ EN EL BANCO', cls: 'gone' };
     if (live.ev && live.ev.visible && live.ev.bankId === bankItem.id) return { text: '● AL AIRE', cls: 'live' };
@@ -566,7 +566,7 @@
     });
     // archivo completo: clic = relacionar / quitar (el número indica su orden)
     pick.innerHTML = '';
-    if (!bank.length) pick.innerHTML = '<div class="cfe-empty">El archivo de evidencias está vacío. Sube imágenes en §06.</div>';
+    if (!bank.length) pick.innerHTML = '<div class="cfe-empty">El archivo de evidencias está vacío. Sube imágenes en §05.</div>';
     bank.forEach(b => {
       const pos = related.indexOf(b.id);
       const t = document.createElement('button');
@@ -585,7 +585,7 @@
   const cfSyncType = () => $$('#cf-type-seg [data-cftype]').forEach(b => b.classList.toggle('on', b.dataset.cftype === $('#cf-type').value));
   $$('#cf-type-seg [data-cftype]').forEach(b => b.addEventListener('click', () => { $('#cf-type').value = b.dataset.cftype; cfSyncType(); saveCurrentCaseFile(); renderCaseFiles(); }));
 
-  // seleccionar = leer aquí + PREPARAR (nunca emitir) sus evidencias en §05
+  // seleccionar = leer aquí + PREPARAR (nunca emitir) sus evidencias en §04
   function openCaseFile(id) {
     const item = cf.items.find(x => x.id === id);
     if (!item) return;
