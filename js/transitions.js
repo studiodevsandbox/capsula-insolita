@@ -240,7 +240,8 @@
       u.anim(q('.intro__red'), [{ opacity: 0 }, { opacity: 1 }], { duration: 1400, easing: 'ease-in-out' });
       await u.wait(450);
       const tape = LCI.Tape.make('PRECAUCIÓN · NO CRUZAR', { w: 2600, size: 'xl' });
-      Object.assign(tape.style, { left: '-340px', top: '620px', transform: 'rotate(-4deg)', transformOrigin: '50% 50%' });
+      const stageH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stage-h')) || 1080; // vertical 1920 / horizontal 1080
+      Object.assign(tape.style, { left: '-340px', top: Math.round(stageH * 0.574) + 'px', transform: 'rotate(-4deg)', transformOrigin: '50% 50%' });
       q('.intro__tapehost').appendChild(tape);
       LCI.sound.play('tape');
       await u.anim(tape, [{ transform: 'translateX(-2700px) rotate(-4deg)' }, { transform: 'translateX(0) rotate(-4deg)' }], { duration: 520, easing: 'cubic-bezier(.2,.8,.2,1)' });

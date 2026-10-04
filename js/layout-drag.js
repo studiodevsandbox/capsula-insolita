@@ -7,7 +7,7 @@
    (localStorage), no viaja a OBS ni a otra PC. */
 (function () {
   'use strict';
-  const KEY = 'lci.order.v1';
+  const KEY = 'lci.order.v2'; // v2: Evidence Control / Archivo salieron de las columnas (fila fija de 2) y Lower Third bajó
   const PRESETS_KEY = 'lci.order.presets.v1';
   let editing = false;
   let dragId = null;

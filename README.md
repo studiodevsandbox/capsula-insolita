@@ -158,10 +158,10 @@ Bajo "Now playing" hay dos áreas de igual peso, fijas (no se arrastran ni se re
 
 - **Izquierda · CASE FILES** — "¿qué estoy contando?": pestañas, lista única de expedientes (a la izquierda) y lector con scroll interno (a la derecha). Debajo del lector: evidencias relacionadas y los botones MOSTRAR / EDITAR / ARCHIVAR / BORRAR / ← →.
 - **Derecha · CONTROL DECK** — "¿qué necesito pulsar?": **1 Quick Actions · 2 Alertas (+ sellos) · 3 Scene Switcher · 4 Transición · 5 Modo · 6 Personalizados**. Se puede **▾ CONTRAER / ▸ EXPANDIR** (queda una línea con lo esencial; el estado se recuerda).
-- Debajo: **EMERGENCY (§10)** como barra secundaria siempre visible (OCULTAR TODO · OUTRO caso cerrado / continuará · QUITAR INTRO/OUTRO; el botón ■ OCULTAR TODO también está en la barra superior en pantallas angostas), y después Cámaras, Evidence Control, Archivo de Evidencias, Lower Third, Activity Log y Ajustes (estas columnas sí se pueden reordenar con ⠿ MOVER CAJAS).
+- Debajo: **EMERGENCY (§10)** como barra secundaria siempre visible (OCULTAR TODO · OUTRO caso cerrado / continuará · QUITAR INTRO/OUTRO; ■ OCULTAR TODO también está en la barra superior en pantallas angostas). Luego **EVIDENCE CONTROL y ARCHIVO DE EVIDENCIAS lado a lado** (fila fija, a mano), y debajo Cámaras · Activity Log + Lower Third · Ajustes (Efectos, Audio, OBS, Debug). Las 3 columnas de abajo sí se reordenan con ⠿ MOVER CAJAS.
 - En pantallas ≤ 1100 px (dock de OBS) Case Files y Control Deck se apilan.
 
-**Transición**: baldosas con pictograma (corte, tape, flash, paper, file, cctv, stamp, redflash, document, glitch, evidence). La elegida es la que se usa al cambiar de escena (se recuerda); **▶ PROBAR** (`T`) la lanza sola sin cambiar de escena. Una transición nueva en `config.js → transitionTimings` aparece sola con un icono genérico (el pictograma propio se agrega en `TR_ICON`, `js/control.js`).
+**Transición**: baldosas con pictograma (el cajón TRANSICIONES de Ajustes ya no existe; **doble clic** en una baldosa la prueba sola) (corte, tape, flash, paper, file, cctv, stamp, redflash, document, glitch, evidence). La elegida es la que se usa al cambiar de escena (se recuerda); **▶ PROBAR** (`T`) la lanza sola sin cambiar de escena. Una transición nueva en `config.js → transitionTimings` aparece sola con un icono genérico (el pictograma propio se agrega en `TR_ICON`, `js/control.js`).
 
 **Transcripción**: el proyecto no incluye ningún sistema de transcripción, por eso no hay módulo en el Deck.
 
@@ -183,23 +183,16 @@ Bajo "Now playing" hay dos áreas de igual peso, fijas (no se arrastran ni se re
 - Cada acción muestra un aviso breve abajo a la derecha (verde = enviado, rojo = no se envió, p. ej. "OBS OFFLINE · NO SE ENVIÓ"). El estado solo cambia si OBS aceptó el comando.
 - Se adapta a pantalla grande (3 columnas), laptop (2) y dock angosto de OBS (1 columna, ~400-500 px).
 
-### Atajos de teclado del panel
+### Atajos de teclado (personalizables)
 
-Funcionan con el foco en el panel (en OBS: clic en el acople primero). **No se disparan mientras escribes en un campo**; `Esc` sale del campo.
+Botón **⌨ ATAJOS** (barra superior o cabecera del Control Deck) o la tecla `?`: editor de atajos como el de un programa de video.
 
-| Tecla | Acción |
-|---|---|
-| `1`–`4` | Escena 01–04 (con la transición elegida) |
-| `E` | Mostrar la siguiente evidencia (la preparada o la primera disponible del archivo) |
-| `I` / `C` | Investigation / Clean |
-| `L` | Mostrar / ocultar lower third |
-| `A` | Repetir la última alerta usada |
-| `T` | Lanzar la transición elegida |
-| `O` `O` | Outro "caso cerrado" (hay que pulsarla dos veces en 3 s) |
-| `Enter` | Mandar la evidencia preparada (modo PREPARAR) |
-| `Esc` | Cerrar paleta/ayuda, cancelar outro armado, quitar selección, salir de un campo |
-| `Ctrl+K` | Paleta de comandos |
-| `?` | Ayuda de atajos |
+- Cada acción del panel (escenas, evidencia, modo, alertas, sellos, transiciones, cámaras, enfoque, audio, show…) y cada botón personalizado tiene su fila. Búscala, haz clic en su tecla y pulsa la nueva combinación: admite **Ctrl / Alt / Shift** (por ejemplo `Ctrl+Shift+X`, `F9`).
+- **⌫** quita el atajo, **Esc** cancela, **↺** vuelve al de fábrica, **RESTABLECER TODO** vuelve todo a fábrica.
+- Si la combinación ya era de otra acción, pregunta si quitársela. Las teclas del sistema o del navegador (Esc, Enter, F5, F12, Ctrl+K, Ctrl+R…) no se pueden asignar.
+- Las teclas que se ven en los botones (E, I, C, 1–4…) se actualizan solas. Se guarda en este navegador (`lci-keymap-v1`; solo las diferencias con la fábrica). No se disparan mientras escribes en un campo.
+- Fijas: `Enter` manda al aire la evidencia en SIGUIENTE · `Esc` cierra/cancela · `Ctrl+K` paleta de comandos.
+- De fábrica: `1`–`4` escena · `E` evidencia · `I`/`C` modo · `L` lower third · `A` alerta · `T` transición · `O` `O` outro.
 
 ### Paleta de comandos (Ctrl+K)
 

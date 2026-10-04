@@ -120,7 +120,7 @@
      INTERFAZ
      ===================================================================================== */
   const $ = s => document.querySelector(s);
-  const $$ = s => [...document.querySelectorAll(s)];
+  const $$ = (s, root) => [...(root || document).querySelectorAll(s)];
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pad3 = n => String(n).padStart(3, '0');
   const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
@@ -939,11 +939,12 @@
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'tr-tile'; b.dataset.trpick = n;
     b.setAttribute('role', 'radio');
-    b.title = n === 'none' ? 'Corte directo, sin efecto' : `${n} · ${tm ? tm.total : '?'} ms`;
+    b.title = n === 'none' ? 'Corte directo, sin efecto' : `${n} · ${tm ? tm.total : '?'} ms · doble clic = probarla sola`;
     b.innerHTML = `<svg viewBox="0 0 30 30" aria-hidden="true">${TR_ICON[n] || TR_ICON_DEFAULT}</svg><span class="tr-n"></span><span class="tr-ms"></span>`;
     b.querySelector('.tr-n').textContent = n === 'none' ? 'corte' : n;
     b.querySelector('.tr-ms').textContent = tm ? (tm.total / 1000).toFixed(1) + ' s' : '0 s';
     b.addEventListener('click', () => { trSel.value = n; trSel.dispatchEvent(new Event('change')); });
+    b.addEventListener('dblclick', () => fireTransition(n === 'none' ? currentTr() : n));
     trTiles.appendChild(b);
   });
   let cueScene = null;
@@ -1481,31 +1482,7 @@
     b.addEventListener('click', () => fireStamp(t));
     $('#stamps').appendChild(b);
   });
-  const TR_GROUPS = [
-    ['FÍSICAS', ['tape', 'paper', 'file', 'document']],
-    ['DIGITALES', ['cctv', 'glitch']],
-    ['CINEMATOGRÁFICAS', ['flash', 'evidence']],
-    ['ALERTA', ['stamp', 'redflash']]
-  ];
   const allTr = Object.keys(C.transitionTimings);
-  const grouped = new Set(TR_GROUPS.flatMap(g => g[1]));
-  const extraTr = allTr.filter(n => !grouped.has(n));
-  if (extraTr.length) TR_GROUPS.push(['OTRAS', extraTr]);
-  TR_GROUPS.forEach(([g, names]) => {
-    const list = names.filter(n => C.transitionTimings[n]);
-    if (!list.length) return;
-    const box = document.createElement('div');
-    box.className = 'trs-group';
-    box.innerHTML = `<div class="sub-k">${g}</div><div class="row"></div>`;
-    list.forEach(n => {
-      const b = document.createElement('button');
-      b.textContent = n; b.dataset.tr = n;
-      b.title = `${C.transitionTimings[n].total} ms`;
-      b.addEventListener('click', () => fireTransition(n));
-      box.lastChild.appendChild(b);
-    });
-    $('#trs').appendChild(box);
-  });
   const currentTr = () => (trSel.value && trSel.value !== 'none' ? trSel.value : 'tape');
 
   /* =====================================================================================
@@ -1550,49 +1527,178 @@
   act('reload', 'OBS', 'Recargar overlay', () => $('#reload').click());
   $$('[data-act]').forEach(b => b.addEventListener('click', () => runAction(b.dataset.act)));
 
-  /* ---------- atajos de teclado (solo en el panel; no se disparan escribiendo en un campo) ---------- */
-  const KEYMAP = {};
-  ACTIONS.forEach(a => { if (a.key) KEYMAP[a.key.toLowerCase()] = a.id; });
+  /* =====================================================================================
+     ATAJOS DE TECLADO: personalizables (como en un editor de video). Cada acción del registro
+     ACTIONS trae una tecla de fábrica; el operador la cambia, quita o restablece desde ⌨ ATAJOS.
+     Una tecla = una combinación canónica: "E", "F8", "Ctrl+Shift+A"… Se guardan solo las diferencias.
+     ===================================================================================== */
+  const KM_KEY = 'lci-keymap-v1';
+  let kmOver = (() => { const v = readJSON(KM_KEY); return isObj(v) ? v : {}; })(); // { idAcción: combo | '' }
+  const saveKm = () => { try { localStorage.setItem(KM_KEY, JSON.stringify(kmOver)); } catch (e) { toast('✕ NO PUDE GUARDAR LOS ATAJOS', 'err'); } };
+  const KEYMAP = {}; // combo → id de acción (se reconstruye al cambiar)
+  const keyOf = a => (a.id in kmOver ? kmOver[a.id] : (a.key || ''));
+  function rebuildKeymap() {
+    Object.keys(KEYMAP).forEach(k => delete KEYMAP[k]);
+    ACTIONS.forEach(a => { const k = keyOf(a); if (k) KEYMAP[k] = a.id; });
+  }
+  rebuildKeymap();
+  // teclas que el sistema o el navegador ya usan: no se pueden reasignar
+  const KEY_RESERVED = new Set(['Escape', 'Enter', 'Tab', 'Backspace', 'Delete', 'Space', '?', 'F5', 'F11', 'F12', 'Ctrl+K', 'Ctrl+R', 'Ctrl+W', 'Ctrl+T', 'Ctrl+N', 'Ctrl+L', 'Ctrl+F5', 'Ctrl+Shift+I', 'Ctrl+Shift+J', 'Ctrl+Shift+C', 'Ctrl+Shift+R', 'Alt+F4', 'Alt+Left', 'Alt+Right']);
+  const MODIFIER_ONLY = /^(Shift|Control|Alt|Meta|AltGraph|CapsLock|Dead|Unidentified)$/;
+  // combinación canónica de un evento; null si solo es un modificador
+  function comboFromEvent(e) {
+    const k = e.key;
+    if (!k || MODIFIER_ONLY.test(k)) return null;
+    const key = k === ' ' ? 'Space' : k.length === 1 ? k.toUpperCase() : k.replace(/^Arrow/, '');
+    const mods = [];
+    if (e.ctrlKey) mods.push('Ctrl');
+    if (e.altKey) mods.push('Alt');
+    if (e.shiftKey && !(k.length === 1 && !/[a-z]/i.test(k))) mods.push('Shift'); // en símbolos (?, !) el Shift ya va en la tecla
+    if (e.metaKey) mods.push('Meta');
+    return mods.concat(key).join('+');
+  }
+  const normCombo = k => (typeof k === 'string' && k.length === 1 ? k.toUpperCase() : (k || ''));
+  const comboLabel = c => String(c || '').replace('Left', '←').replace('Right', '→').replace('Up', '↑').replace('Down', '↓');
+  // ¿quién tiene esta combinación? self = { kind: 'act' | 'cb', id } para no chocar consigo mismo
+  function keyOwner(combo, self) {
+    if (!combo) return null;
+    if (KEY_RESERVED.has(combo)) return { reserved: true, label: 'reservada para el sistema' };
+    const aid = KEYMAP[combo];
+    if (aid && !(self && self.kind === 'act' && self.id === aid)) return { kind: 'act', id: aid, label: ACT[aid].label };
+    const cb = cbList.find(b => b.key === combo && !(self && self.kind === 'cb' && self.id === b.id));
+    return cb ? { kind: 'cb', id: cb.id, label: `botón "${cb.name}"` } : null;
+  }
+  const kbdText = id => { const a = ACT[id]; return a ? comboLabel(keyOf(a)) : ''; };
+  // todos los <kbd data-kbd="idAcción"> de la interfaz muestran la tecla vigente
+  function syncKbd(root) {
+    $$('kbd[data-kbd]', root).forEach(k => { const t = kbdText(k.dataset.kbd); k.textContent = t; k.hidden = !t; });
+  }
   const isTyping = el => !!el && (el.isContentEditable || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' ||
     (el.tagName === 'INPUT' && !/^(checkbox|radio|range|button|submit|file)$/i.test(el.type)));
+  const kmOpen = () => !$('#km-modal').hidden;
   document.addEventListener('keydown', e => {
     const k = e.key;
     if ((e.ctrlKey || e.metaKey) && !e.altKey && k.toLowerCase() === 'k') { e.preventDefault(); palOpen() ? palClose() : palShow(); return; }
     if (k === 'Escape') {
       if (palOpen()) { palClose(); return; }
       if (!$('#cb-modal').hidden) { $('#cb-modal').hidden = true; return; }
-      if (!$('#keys').hidden) { $('#keys').hidden = true; return; }
+      if (kmOpen()) { kmClose(); return; }
       if (!$('#cf-modal').hidden) { cfCloseEditor(); return; }
       if (armed) { disarm(); toast('CANCELADO', 'info'); return; }
       if (isTyping(document.activeElement)) { document.activeElement.blur(); return; }
       if (cuedId) { cue(null); return; }
       return;
     }
-    if (palOpen() || !$('#keys').hidden) return;
-    if (isTyping(document.activeElement) || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
-    if (k === '?') { e.preventDefault(); showKeys(); return; }
-    if (k === 'Enter' && cuedId && document.activeElement === document.body) { e.preventDefault(); runAction('ev-next'); return; }
-    const cb = cbByKey(k);
+    if (palOpen() || kmOpen() || !$('#cb-modal').hidden) return;
+    if (isTyping(document.activeElement) || e.repeat) return;
+    if (k === '?') { e.preventDefault(); kmShow(); return; }
+    if (k === 'Enter' && !e.ctrlKey && !e.metaKey && !e.altKey && cuedId && document.activeElement === document.body) { e.preventDefault(); runAction('ev-next'); return; }
+    const combo = comboFromEvent(e);
+    if (!combo) return;
+    const cb = cbList.find(b => b.key === combo);
     if (cb) { e.preventDefault(); runCustom(cb); return; }
-    const id = KEYMAP[k.toLowerCase()];
-    if (!id) return;
+    const id = KEYMAP[combo];
+    if (!id) return; // sin atajo: no se toca (los atajos del navegador siguen funcionando)
     e.preventDefault();
     runAction(id);
     const tile = document.querySelector(`[data-act="${id}"]`);
     if (tile) { tile.classList.add('fired'); setTimeout(() => tile.classList.remove('fired'), 220); }
   });
-  function showKeys() {
-    const rows = ACTIONS.filter(a => a.key).map(a => `<kbd>${esc(a.key)}</kbd><span>${esc(a.label)}</span>`).join('') +
-      cbList.filter(b => b.key).map(b => `<kbd>${esc(keyLabel(b.key))}</kbd><span>Personalizado: ${esc(b.name)}</span>`).join('') +
-      '<kbd>ENTER</kbd><span>Mandar la evidencia preparada (SIGUIENTE)</span>' +
-      '<kbd>ESC</kbd><span>Cerrar / cancelar (paleta, outro armado, selección, salir de un campo)</span>' +
-      '<kbd>CTRL K</kbd><span>Paleta de comandos: buscar y ejecutar cualquier acción</span><kbd>?</kbd><span>Esta ayuda</span>';
-    $('#keys-table').innerHTML = rows;
-    $('#keys').hidden = false;
+
+  /* ---------- editor de atajos (⌨ ATAJOS / tecla ?) ---------- */
+  const kmModal = $('#km-modal'), kmList = $('#km-list'), kmSearch = $('#km-search'), kmGroup = $('#km-group'), kmAssigned = $('#km-assigned');
+  let kmListening = null; // { row, btn } mientras se espera la nueva tecla
+  const kmRows = () => ACTIONS.map(a => ({ kind: 'act', id: a.id, group: a.group, label: a.label, key: keyOf(a), def: a.key || '' }))
+    .concat(cbList.map(b => ({ kind: 'cb', id: b.id, group: 'PERSONALIZADO', label: b.name, key: b.key, def: '' })));
+  function kmFillGroups() {
+    const groups = [...new Set(kmRows().map(r => r.group))];
+    const cur = kmGroup.value;
+    kmGroup.innerHTML = '<option value="">TODOS LOS TIPOS</option>' + groups.map(g => `<option>${esc(g)}</option>`).join('');
+    kmGroup.value = groups.includes(cur) ? cur : '';
   }
-  $('#open-keys').addEventListener('click', showKeys);
-  $('#keys-close').addEventListener('click', () => { $('#keys').hidden = true; });
-  $('#keys').addEventListener('click', e => { if (e.target.id === 'keys') $('#keys').hidden = true; });
+  function kmRender() {
+    const toks = norm(kmSearch.value).split(/\s+/).filter(Boolean);
+    const rows = kmRows().filter(r => (!kmGroup.value || r.group === kmGroup.value) && (!kmAssigned.checked || r.key) &&
+      toks.every(t => norm(r.group + ' ' + r.label + ' ' + r.key).includes(t)));
+    kmList.innerHTML = '';
+    if (!rows.length) { kmList.innerHTML = '<div class="bank-empty">Nada coincide.</div>'; }
+    let lastGroup = null;
+    rows.forEach(r => {
+      if (r.group !== lastGroup) { lastGroup = r.group; kmList.insertAdjacentHTML('beforeend', `<div class="km-g">${esc(r.group)}</div>`); }
+      const row = document.createElement('div');
+      row.className = 'km-row' + (r.key !== r.def && r.kind === 'act' ? ' km-row--custom' : '');
+      row.innerHTML = '<span class="km-l"></span><button type="button" class="km-key" title="Clic y pulsa la nueva combinación"></button>' +
+        '<button type="button" class="btn--sm btn--ghost km-x" title="Quitar el atajo">✕</button>' +
+        `<button type="button" class="btn--sm btn--ghost km-reset" title="Volver al de fábrica${r.def ? ' (' + esc(comboLabel(r.def)) + ')' : ' (ninguno)'}" ${r.kind === 'cb' || r.key === r.def ? 'disabled' : ''}>↺</button>`;
+      row.querySelector('.km-l').textContent = r.label;
+      const btn = row.querySelector('.km-key');
+      btn.textContent = r.key ? comboLabel(r.key) : 'sin atajo';
+      btn.classList.toggle('km-key--empty', !r.key);
+      btn.addEventListener('click', () => kmListen(r, btn));
+      row.querySelector('.km-x').disabled = !r.key;
+      row.querySelector('.km-x').addEventListener('click', () => kmAssign(r, ''));
+      row.querySelector('.km-reset').addEventListener('click', () => kmAssign(r, r.def));
+      kmList.appendChild(row);
+    });
+  }
+  function kmListen(row, btn) {
+    kmStopListen();
+    kmListening = { row, btn };
+    btn.classList.add('km-key--listen');
+    btn.textContent = 'PULSA UNA TECLA…';
+  }
+  function kmStopListen() {
+    if (!kmListening) return;
+    kmListening = null;
+    kmRender();
+  }
+  // asigna (o quita, con '') una combinación; si ya era de otra acción, pregunta antes de quitársela
+  function kmAssign(row, combo) {
+    if (combo) {
+      const owner = keyOwner(combo, row);
+      if (owner && owner.reserved) { toast(`✕ ${comboLabel(combo)} ESTÁ ${owner.label.toUpperCase()}`, 'err'); return false; }
+      if (owner) {
+        if (!confirm(`${comboLabel(combo)} ya es de: ${owner.label}.\n¿Quitársela y asignarla aquí?`)) return false;
+        if (owner.kind === 'act') kmOver[owner.id] = '';
+        else { const b = cbList.find(x => x.id === owner.id); if (b) b.key = ''; saveCb(); }
+      }
+    }
+    if (row.kind === 'cb') { const b = cbList.find(x => x.id === row.id); if (b) b.key = combo; saveCb(); renderCustom(); }
+    else if (combo === row.def) delete kmOver[row.id]; // vuelve al de fábrica: no hace falta guardar nada
+    else kmOver[row.id] = combo;
+    saveKm(); rebuildKeymap(); syncKbd(); kmListening = null; kmRender();
+    return true;
+  }
+  // captura global (fase de captura): mientras se escucha, la tecla pulsada NO dispara nada más
+  window.addEventListener('keydown', e => {
+    if (!kmListening) return;
+    e.preventDefault(); e.stopPropagation();
+    if (e.key === 'Escape') { kmStopListen(); return; }
+    if (e.key === 'Backspace' || e.key === 'Delete') { kmAssign(kmListening.row, ''); return; }
+    const combo = comboFromEvent(e);
+    if (!combo) return; // solo un modificador: sigue esperando
+    kmAssign(kmListening.row, combo);
+  }, true);
+  function kmShow() { kmFillGroups(); kmSearch.value = ''; kmAssigned.checked = false; kmRender(); kmFixed(); kmModal.hidden = false; kmSearch.focus(); }
+  function kmClose() { kmListening = null; kmModal.hidden = true; }
+  function kmFixed() {
+    $('#km-fixed').innerHTML = [['ENTER', 'Mandar al aire la evidencia en SIGUIENTE'], ['ESC', 'Cerrar / cancelar (paleta, outro armado, selección, salir de un campo)'], ['CTRL K', 'Paleta de comandos'], ['?', 'Abrir este editor']]
+      .map(([k, d]) => `<kbd>${k}</kbd><span>${d}</span>`).join('') + '<span class="km-fixed-t">FIJAS (no se pueden cambiar)</span>';
+  }
+  kmSearch.addEventListener('input', kmRender);
+  kmGroup.addEventListener('change', kmRender);
+  kmAssigned.addEventListener('change', kmRender);
+  $('#km-close').addEventListener('click', kmClose);
+  kmModal.addEventListener('click', e => { if (e.target === kmModal) kmClose(); });
+  $('#km-reset-all').addEventListener('click', () => {
+    if (!confirm('¿Restablecer TODOS los atajos a los de fábrica? (los botones personalizados conservan los suyos salvo que choquen)')) return;
+    kmOver = {}; rebuildKeymap();
+    cbList.forEach(b => { if (b.key && KEYMAP[b.key]) b.key = ''; }); // el de fábrica manda sobre un personalizado repetido
+    saveKm(); saveCb(); syncKbd(); renderCustom(); kmRender();
+    toast('✓ ATAJOS RESTABLECIDOS', 'ok');
+  });
+  $('#open-keys').addEventListener('click', kmShow);
+  $('#cdeck-keys').addEventListener('click', kmShow);
 
   /* ---------- paleta de comandos (Ctrl+K) ---------- */
   const pal = $('#palette'), palInput = $('#pal-input'), palList = $('#pal-list');
@@ -1602,7 +1708,7 @@
   function palClose() { pal.hidden = true; palInput.blur(); }
   function palFilter() {
     const toks = norm(palInput.value).split(/\s+/).filter(Boolean);
-    palItems = ACTIONS.filter(a => { const hay = norm(a.group + ' ' + a.label + ' ' + (a.key || '')); return toks.every(t => hay.includes(t)); });
+    palItems = ACTIONS.filter(a => { const hay = norm(a.group + ' ' + a.label + ' ' + keyOf(a)); return toks.every(t => hay.includes(t)); });
     palSel = 0;
     palRender();
   }
@@ -1610,7 +1716,7 @@
   const palPh = () => { palInput.placeholder = window.matchMedia('(max-width: 620px)').matches ? 'Buscar acción…' : 'Escribe una acción: evidencia, cam 02 rec, última hora, tape…'; };
   function palRender() {
     if (!palItems.length) { palList.innerHTML = '<li class="none">Nada coincide.</li>'; return; }
-    palList.innerHTML = palItems.map((a, i) => `<li data-i="${i}" class="${i === palSel ? 'sel' : ''}"><span class="g">${esc(a.group)}</span><span class="l">${esc(a.label)}</span>${a.key ? `<kbd>${esc(a.key)}</kbd>` : '<span></span>'}</li>`).join('');
+    palList.innerHTML = palItems.map((a, i) => `<li data-i="${i}" class="${i === palSel ? 'sel' : ''}"><span class="g">${esc(a.group)}</span><span class="l">${esc(a.label)}</span>${keyOf(a) ? `<kbd>${esc(comboLabel(keyOf(a)))}</kbd>` : '<span></span>'}</li>`).join('');
     const cur = palList.querySelector('.sel');
     if (cur) cur.scrollIntoView({ block: 'nearest' });
   }
@@ -1642,23 +1748,17 @@
 
   /* ---------- PERSONALIZADOS: botones propios que ejecutan acciones REALES del registro ACTIONS ---------- */
   const CB_KEY = 'lci-custom-buttons-v1';
-  const CB_RESERVED = new Set(['f5', 'f11', 'f12', 'escape', 'enter', 'tab', 'backspace', ' ', '?']);
   let cbList = (() => {
     const v = readJSON(CB_KEY);
     return Array.isArray(v) ? v.filter(x => isObj(x) && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.action === 'string')
-      .map(x => ({ id: x.id, name: x.name.slice(0, 28), action: x.action, key: typeof x.key === 'string' ? x.key : '' })) : [];
+      .map(x => ({ id: x.id, name: x.name.slice(0, 28), action: x.action, key: normCombo(typeof x.key === 'string' ? x.key : '') })) : [];
   })();
   const saveCb = () => { try { localStorage.setItem(CB_KEY, JSON.stringify(cbList)); } catch (e) { toast('✕ NO PUDE GUARDAR LOS BOTONES', 'err'); } };
-  const keyNorm = k => (k && k.length === 1 ? k.toLowerCase() : (k || '').toLowerCase());
-  const keyLabel = k => (k && k.length === 1 ? k.toUpperCase() : k || '');
-  const cbByKey = k => cbList.find(b => b.key && keyNorm(b.key) === keyNorm(k));
+  const keyLabel = comboLabel;
   function cbKeyConflict(key, exceptId) {
     if (!key) return '';
-    const n = keyNorm(key);
-    if (CB_RESERVED.has(n)) return 'Esa tecla está reservada.';
-    if (KEYMAP[n]) return `Esa tecla ya es de: ${ACT[KEYMAP[n]].label}.`;
-    const other = cbList.find(b => b.id !== exceptId && b.key && keyNorm(b.key) === n);
-    return other ? `Esa tecla ya es del botón "${other.name}".` : '';
+    const o = keyOwner(key, { kind: 'cb', id: exceptId });
+    return o ? (o.reserved ? 'Esa tecla está reservada.' : `Esa tecla ya es de: ${o.label}. (Se reasigna desde ⌨ ATAJOS.)`) : '';
   }
   function runCustom(b) {
     const a = ACT[b.action];
@@ -1673,7 +1773,6 @@
     box.innerHTML = '';
     box.classList.toggle('editing', cbEditMode);
     $('#cb-edit-toggle').classList.toggle('on', cbEditMode);
-    if (!cbList.length) { box.innerHTML = '<div class="sm-empty">Sin botones todavía. «+ NUEVO BOTÓN»: nombre, acción y atajo.</div>'; return; }
     cbList.forEach(b => {
       const a = ACT[b.action];
       const el = document.createElement('button');
@@ -1684,11 +1783,16 @@
       el.innerHTML = '<span class="cb-n"></span><kbd></kbd>';
       el.querySelector('.cb-n').textContent = b.name;
       const kbd = el.querySelector('kbd');
-      if (b.key) kbd.textContent = keyLabel(b.key); else kbd.remove();
+      if (b.key) kbd.textContent = comboLabel(b.key); else kbd.remove();
       if (cbEditMode) el.insertAdjacentHTML('beforeend', '<span class="cb-pen">✎</span>');
       el.addEventListener('click', () => (cbEditMode ? cbOpen(b.id) : runCustom(b)));
       box.appendChild(el);
     });
+    const add = document.createElement('button');
+    add.type = 'button'; add.className = 'cb cb--add'; add.title = 'Crear un botón personalizado';
+    add.innerHTML = '<span class="cb-plus">+</span><span class="cb-add-t">' + (cbList.length ? 'NUEVO' : 'NUEVO BOTÓN · nombre, acción y atajo') + '</span>';
+    add.addEventListener('click', () => cbOpen(null));
+    box.appendChild(add);
   }
   const cbGroup = $('#cb-group'), cbAction = $('#cb-action'), cbName = $('#cb-name'), cbKey = $('#cb-key'), cbErr = $('#cb-err');
   const cbGroups = [...new Set(ACTIONS.map(a => a.group))];
@@ -1717,9 +1821,10 @@
   cbKey.addEventListener('keydown', e => {
     if (e.key === 'Escape' || e.key === 'Tab') return;
     e.preventDefault(); e.stopPropagation();
-    if (/^(Shift|Control|Alt|Meta|AltGraph|CapsLock)$/.test(e.key) || e.ctrlKey || e.metaKey || e.altKey) return;
-    cbKey.dataset.raw = e.key; cbKey.value = keyLabel(e.key);
-    cbErr.textContent = cbKeyConflict(e.key, cbEditingId);
+    const combo = comboFromEvent(e);
+    if (!combo) return;
+    cbKey.dataset.raw = combo; cbKey.value = comboLabel(combo);
+    cbErr.textContent = cbKeyConflict(combo, cbEditingId);
   });
   $('#cb-key-clear').addEventListener('click', () => { cbKey.value = ''; cbKey.dataset.raw = ''; cbErr.textContent = ''; });
   $('#cb-new').addEventListener('click', () => cbOpen(null));
@@ -1789,7 +1894,7 @@
     else setNp('#np-lt-box', '#np-lt', lt.visible ? `ON<small>${esc(lt.name || lt.label || '')}</small>` : 'OFF', lt.visible ? 'ON' : null);
     // modo
     setNp('#np-mode-box', '#np-mode', live.mode ? esc(live.mode.toUpperCase()) : NODATA, live.mode === 'investigation' ? 'INV' : null);
-    $('#cdeck-sum').innerHTML = `ESCENA <b>${live.scene ? esc(sceneLabel(live.scene).toUpperCase()) : '—'}</b> · MODO <b>${live.mode ? esc(live.mode.toUpperCase()) : '—'}</b>`;
+    $('#cdeck-sum').innerHTML = `<span class="chip-s chip-s--air"><i></i>${live.scene ? esc(sceneLabel(live.scene).toUpperCase()) : 'SIN ESCENA'}</span><span class="chip-s${live.mode === 'investigation' ? ' chip-s--inv' : ''}"><i></i>${live.mode ? esc(live.mode.toUpperCase()) : 'SIN MODO'}</span>`;
     $('#top-mode').innerHTML = `MODE <b>${live.mode ? esc(live.mode.toUpperCase()) : 'SIN DATO'}</b>`;
     $('#top-mode').classList.toggle('chip--inv', live.mode === 'investigation');
   }
@@ -1890,7 +1995,8 @@
     $('#ev-uncue').hidden = !(item && cuedId === item.id);
     const can = !!(item || manual);
     $('#ev-next').classList.toggle('is-empty', !can);
-    $('#ev-next').innerHTML = can ? `MANDAR AL AIRE #${pad3(num)} <kbd>E</kbd>` : 'SIN EVIDENCIA <kbd>E</kbd>';
+    $('#ev-next').innerHTML = can ? `MANDAR AL AIRE #${pad3(num)} <kbd data-kbd="ev-next"></kbd>` : 'SIN EVIDENCIA <kbd data-kbd="ev-next"></kbd>';
+    syncKbd($('#ev-next'));
     renderEvQueue();
     renderCfRelated();
     $('#qa-ev-s').textContent = can ? `siguiente · #${pad3(num)}` : (bank.length ? 'no quedan disponibles' : 'banco vacío');
@@ -1935,8 +2041,6 @@
   function renderTr() {
     const t = trSel.value;
     $('#qa-tr-s').textContent = currentTr();
-    $('#tr-summary').innerHTML = `ESCENA → <b>${esc(t === 'none' ? 'CORTE' : t.toUpperCase())}</b> · ${allTr.length} DISPONIBLES`;
-    $$('#trs [data-tr]').forEach(b => b.classList.toggle('sel', b.dataset.tr === t));
     $$('#tr-tiles [data-trpick]').forEach(b => { const on = b.dataset.trpick === t; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
     $('#tr-sel-label').innerHTML = `AL CAMBIAR DE ESCENA: <b>${esc(t === 'none' ? 'CORTE' : t.toUpperCase())}</b>`;
   }
@@ -1960,5 +2064,6 @@
   if (window.ResizeObserver) new ResizeObserver(setTopbarH).observe(topbar); else window.addEventListener('resize', setTopbarH);
   renderBank();
   renderAll();
+  syncKbd();
   connect(true);
 })();
