@@ -51,7 +51,8 @@
       if (!col) return;
       cols[colClass].forEach(id => {
         const el = document.getElementById(id);
-        if (el) col.appendChild(el);
+        // Case Files, Control Deck y Emergency tienen lugar fijo (fuera de .col): un orden guardado viejo no los mueve
+        if (el && el.closest('.col')) col.appendChild(el);
       });
     });
   }

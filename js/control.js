@@ -1593,18 +1593,18 @@
   $('#open-palette').addEventListener('click', palShow);
 
   /* =====================================================================================
-     CONTROL STRIP: barra fija (no se arrastra ni se redimensiona); solo se contrae / expande.
+     CONTROL DECK: barra fija (no se arrastra ni se redimensiona); solo se contrae / expande.
      Reusa los mismos botones y ids de siempre (QA, alertas, modo, escenas), solo cambió dónde viven.
      ===================================================================================== */
-  const strip = $('#strip');
-  function setStripCollapsed(c) {
-    strip.classList.toggle('strip--collapsed', c);
-    $('#strip-toggle').textContent = c ? '▸ EXPANDIR' : '▾ CONTRAER';
-    $('#strip-toggle').setAttribute('aria-expanded', String(!c));
-    keep('strip-collapsed', c);
+  const cdeck = $('#cdeck');
+  function setDeckCollapsed(c) {
+    cdeck.classList.toggle('cdeck--collapsed', c);
+    $('#cdeck-toggle').textContent = c ? '▸ EXPANDIR' : '▾ CONTRAER';
+    $('#cdeck-toggle').setAttribute('aria-expanded', String(!c));
+    keep('cdeck-collapsed', c);
   }
-  setStripCollapsed(!!saved['strip-collapsed']);
-  $('#strip-toggle').addEventListener('click', () => setStripCollapsed(!strip.classList.contains('strip--collapsed')));
+  setDeckCollapsed(!!saved['cdeck-collapsed']);
+  $('#cdeck-toggle').addEventListener('click', () => setDeckCollapsed(!cdeck.classList.contains('cdeck--collapsed')));
 
   /* ---------- PERSONALIZADOS: botones propios que ejecutan acciones REALES del registro ACTIONS ---------- */
   const CB_KEY = 'lci-custom-buttons-v1';
@@ -1755,7 +1755,7 @@
     else setNp('#np-lt-box', '#np-lt', lt.visible ? `ON<small>${esc(lt.name || lt.label || '')}</small>` : 'OFF', lt.visible ? 'ON' : null);
     // modo
     setNp('#np-mode-box', '#np-mode', live.mode ? esc(live.mode.toUpperCase()) : NODATA, live.mode === 'investigation' ? 'INV' : null);
-    $('#strip-sum').innerHTML = `ESCENA <b>${live.scene ? esc(sceneLabel(live.scene).toUpperCase()) : '—'}</b> · MODO <b>${live.mode ? esc(live.mode.toUpperCase()) : '—'}</b>`;
+    $('#cdeck-sum').innerHTML = `ESCENA <b>${live.scene ? esc(sceneLabel(live.scene).toUpperCase()) : '—'}</b> · MODO <b>${live.mode ? esc(live.mode.toUpperCase()) : '—'}</b>`;
     $('#top-mode').innerHTML = `MODE <b>${live.mode ? esc(live.mode.toUpperCase()) : 'SIN DATO'}</b>`;
     $('#top-mode').classList.toggle('chip--inv', live.mode === 'investigation');
   }

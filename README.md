@@ -147,25 +147,31 @@ El panel entero se puede reordenar a gusto:
 
 Base única de **expedientes** (Historia · Evidencia · Pista · Testimonio). Las pestañas **TODOS · HISTORIAS · EVIDENCIAS · PISTAS · TESTIMONIOS** son filtros de esa misma lista, no bancos separados.
 
-- **Leer sin modal**: al hacer clic en un expediente, su contenido se muestra *dentro del propio módulo* (número, tipo, título, historia completa con scroll interno, evidencias relacionadas). Cámaras, Evidence Control, el banco y el Control Strip siguen visibles y operables.
+- **Leer sin modal**: al hacer clic en un expediente, su contenido se muestra *dentro del propio módulo* (número, tipo, título, historia completa con scroll interno, evidencias relacionadas). Cámaras, Evidence Control, el banco y el Control Deck siguen visibles y operables.
 - **▶ MOSTRAR**: vuelve a preparar las evidencias del expediente en §05 (útil tras haber mandado algunas). **✎ EDITAR** abre el editor (modal): título, tipo, texto, y relacionar / quitar / reordenar evidencias del banco. **🗄 ARCHIVAR**, **✕ BORRAR** y **← →** (navegar dentro de la pestaña actual) están en el lector.
 - **Relación con Evidence Control**: seleccionar un expediente **prepara, nunca emite**. La 1.ª evidencia relacionada pasa a **SIGUIENTE** y las demás a la **COLA** (visible en §05). Con **MANDAR AL AIRE** (`E` / `Enter`) la 1.ª pasa a AL AIRE, la 2.ª pasa sola a SIGUIENTE y la cola avanza. La cola solo guarda ids del banco maestro (no copia ni mueve nada); al cambiar de expediente se reconstruye. En la cola puedes subir (▲) o quitar (✕) una evidencia; `Esc` / `VACIAR COLA` la suelta.
 - Contadores en vivo y **🗄 VER ARCHIVADOS**. Se guarda en este navegador (`lci-casefiles-v1`); las notas del sistema viejo se migran solas. Código en `js/control.js` (`CF_KEY`, `cfPrepare`, `evQueue`).
 
-### CONTROL STRIP (barra horizontal fija)
+### Distribución: CASE FILES + CONTROL DECK (zona superior 50 % / 50 %)
 
-Barra fija bajo "Now playing" (no se arrastra ni se redimensiona; solo **▾ CONTRAER / ▸ EXPANDIR**, recordado en el navegador). Contraída queda una línea compacta que se queda a la vista bajo la barra superior. Orden: **1 Quick Actions · 2 Alertas (+ sellos) · 3 Transcripción · 4 Modo · 5 Scene Switcher (+ transición) · 6 Personalizados**. Son los mismos botones, ids y atajos de antes (solo cambiaron de lugar); ya no hay tarjetas duplicadas en el dashboard.
+Bajo "Now playing" hay dos áreas de igual peso, fijas (no se arrastran ni se redimensionan):
 
-- **Transcripción**: el proyecto no tiene ningún módulo de transcripción, así que el espacio muestra un aviso en lugar de botones sin acción. Cuando exista, se conecta ahí.
-- **Personalizados**: **+ NUEVO BOTÓN** → nombre, tipo de acción, acción y atajo (clic en el campo y pulsa la tecla, p. ej. `F8`). Solo ofrece acciones reales del registro del panel (las mismas de Ctrl+K: escenas, alertas, sellos, transiciones, cámaras, modo, evidencia…). **✎ EDITAR** permite renombrar, cambiar acción/atajo o borrar. Rechaza teclas reservadas o ya usadas. Se guardan en `lci-custom-buttons-v1` y vuelven al reabrir el panel.
+- **Izquierda · CASE FILES** — "¿qué estoy contando?": pestañas, lista única de expedientes (a la izquierda) y lector con scroll interno (a la derecha). Debajo del lector: evidencias relacionadas y los botones MOSTRAR / EDITAR / ARCHIVAR / BORRAR / ← →.
+- **Derecha · CONTROL DECK** — "¿qué necesito pulsar?": **1 Quick Actions · 2 Alertas (+ sellos) · 3 Transcripción · 4 Modo · 5 Scene Switcher (+ transición) · 6 Personalizados**. Se puede **▾ CONTRAER / ▸ EXPANDIR** (queda una línea con lo esencial; el estado se recuerda).
+- Debajo: **EMERGENCY (§10)** como barra secundaria siempre visible (OCULTAR TODO · OUTRO caso cerrado / continuará · QUITAR INTRO/OUTRO; el botón ■ OCULTAR TODO también está en la barra superior en pantallas angostas), y después Cámaras, Evidence Control, Archivo de Evidencias, Lower Third, Activity Log y Ajustes (estas columnas sí se pueden reordenar con ⠿ MOVER CAJAS).
+- En pantallas ≤ 1100 px (dock de OBS) Case Files y Control Deck se apilan.
+
+**Transcripción**: el proyecto no incluye ningún sistema de transcripción (no existe en el código ni en el historial de git), así que START / PAUSE / STOP aparecen deshabilitados con el estado "NO CONECTADO" en lugar de simular una función. Cuando exista, se conecta en `#sm-tx`.
+
+**Personalizados**: **+ NUEVO BOTÓN** → nombre, tipo de acción, acción y atajo (clic en el campo y pulsa la tecla, p. ej. `F8`). Solo ofrece acciones reales del registro del panel (las de Ctrl+K). **✎ EDITAR** permite renombrar, cambiar acción/atajo o borrar. Rechaza teclas reservadas o ya usadas. Se guardan en `lci-custom-buttons-v1`.
 
 ### Organización ("control room")
 
 - **Barra superior**: estado real de OBS (`OBS CONNECTED` / `CONNECTING` / `OBS OFFLINE` / `CONNECTION LOST` / `AUTH FAILED`), si alguna de las 4 fuentes del overlay (`LCI Broadcast V1`…`V4`) está en el programa (`OVERLAY`), modo, buscador (Ctrl+K) y `?` (atajos). Si se pierde OBS aparece una franja roja con **RECONNECT**; además reintenta solo (2 s, 4 s, 8 s… hasta 15 s) sin abrir conexiones duplicadas. Con contraseña incorrecta no reintenta.
 - **Now playing**: escena al aire (lo que dice OBS, en tiempo real), CAM 01, CAM 02, evidencia, lower third y modo. Todo salvo la escena es **lo último que el panel envió con éxito** (el overlay no responde estado); lo desconocido se muestra como "—".
-- **CONTROL STRIP** (ver sección propia): quick actions, alertas, modo y scene switcher (la escena al aire marcada ON AIR) · **§01 CASE FILES** · **§03 Cámaras**.
+- **CONTROL DECK** (ver sección propia): quick actions, alertas, modo y scene switcher (la escena al aire marcada ON AIR) · **§01 CASE FILES** · **§03 Cámaras**.
 - **§05 Evidence control** + **§06 Archivo de evidencias** (ver sección 4).
-- **§08 Lower third** (vista previa del texto en vivo). Modo (investigation = amarillo, clean = blanco) y alertas (▲ rojas = críticas) están en el Control Strip.
+- **§08 Lower third** (vista previa del texto en vivo). Modo (investigation = amarillo, clean = blanco) y alertas (▲ rojas = críticas) están en el Control Deck.
 - **§10 Emergency**: OCULTAR TODO (1 toque), outro caso cerrado / continuará (**2 toques en 3 s**, el botón parpadea en rojo al armarse), quitar intro/outro. En el dock (≤900 px) sube al 3.er lugar y además hay un botón **■ OCULTAR TODO** fijo en la barra superior.
 - Avisos (toasts): salen arriba, bajo la barra, sin tapar el pánico; en el dock se ven máximo 2.
 - NOW PLAYING: **SIN DATO** = ese estado aún no se envió desde este panel (no es lo mismo que OFFLINE).
