@@ -468,7 +468,7 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 .alerts button.crit { color: #ff5a6a; border-color: rgba(224, 0, 34, .5); background: #120205; }
 .alerts button.crit::before { content: '▲'; font-size: 10px; }
 .alerts button.crit:hover { border-color: var(--r2); background: #1d0307; }
-.alerts button.last { box-shadow: inset 2px 0 0 var(--y); }
+.alerts button.fired { border-color: var(--y); background: var(--y-dim); }
 .stamps { display: flex; flex-wrap: wrap; gap: 5px; }
 .stamps button { padding: 5px 8px; font-size: 10px; color: var(--cream); background: transparent; border-style: dashed; }
 .stamps button:hover { border-style: solid; border-color: var(--cream); }

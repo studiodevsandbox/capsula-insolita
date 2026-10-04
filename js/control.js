@@ -1431,7 +1431,12 @@
   const ALERTS = ['NUEVA EVIDENCIA', 'NUEVA PISTA', 'ATENCIÓN', 'CASO ABIERTO', 'ARCHIVO ENCONTRADO', 'TESTIMONIO', 'NUEVA INFORMACIÓN', 'ÚLTIMA HORA'];
   const CRITICAL = new Set(['ÚLTIMA HORA', 'CASO ABIERTO', 'ATENCIÓN']);
   const STAMPS = ['CASO ABIERTO', 'CONFIDENCIAL', 'EVIDENCIA', 'VERIFICADO', 'PENDIENTE', 'ARCHIVADO', 'EN INVESTIGACIÓN'];
-  const fireAlert = t => send({ cmd: 'alert', text: t }, { ok: `${CRITICAL.has(t) ? '▲' : '⚠'} ALERTA · ${t}`, apply: () => { live.lastAlert = t; } });
+  // destello breve en el botón que SÍ se envió (antes quedaba marcado para siempre, aun sin haber enviado nada)
+  const flashAlert = t => {
+    const b = document.querySelector(`#alerts [data-alert="${t}"]`);
+    if (b) { b.classList.add('fired'); setTimeout(() => b.classList.remove('fired'), 700); }
+  };
+  const fireAlert = t => send({ cmd: 'alert', text: t }, { ok: `${CRITICAL.has(t) ? '▲' : '⚠'} ALERTA · ${t}`, apply: () => { live.lastAlert = t; flashAlert(t); } });
   const fireStamp = t => send({ cmd: 'stamp', text: t }, { ok: `✓ SELLO · ${t}` });
   const fireTransition = n => send({ cmd: 'transition', name: n }, { ok: `✓ TRANSICIÓN → ${n.toUpperCase()}` });
   ALERTS.forEach(t => {
@@ -1896,7 +1901,6 @@
     renderLtPreview();
   }
   function renderAlerts() {
-    $$('#alerts [data-alert]').forEach(b => b.classList.toggle('last', b.dataset.alert === live.lastAlert));
     $('#qa-alert-s').textContent = live.lastAlert || 'NUEVA EVIDENCIA';
   }
   function renderTr() {
