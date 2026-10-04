@@ -189,9 +189,21 @@
 <div class="ev-row">
     <section class="card" id="card-ev">
       <header class="card-h"><span class="card-id">§04</span><h2>EVIDENCE CONTROL</h2><span class="card-meta" id="ev-meta">—</span></header>
-      <div class="ev-station">
-        <div class="slot slot--air" id="ev-air">
-          <span class="slot-k">AL AIRE</span>
+      <div class="ev-station ev-mon">
+        <div class="slot slot--next mon mon--preview" id="ev-next-slot">
+          <span class="slot-k">PREVIEW · SIGUIENTE · <b id="ev-next-src">BANCO</b></span>
+          <div class="ev-thumb" id="ev-next-thumb">BANCO VACÍO</div>
+          <div class="mon-ctl">
+            <button type="button" id="ev-prev-cand" title="Preparar la evidencia anterior del archivo" aria-label="Evidencia anterior">◂</button>
+            <button type="button" id="ev-next-cand" title="Preparar la evidencia siguiente del archivo" aria-label="Evidencia siguiente">▸</button>
+            <button type="button" id="ev-uncue" hidden title="Quitar la selección (Esc)">✕ QUITAR</button>
+          </div>
+        </div>
+        <div class="ev-take">
+          <button class="take-btn" id="ev-next" data-act="ev-next" title="Manda al aire la evidencia en PREVIEW; la siguiente de la cola pasa a PREVIEW">TAKE</button>
+        </div>
+        <div class="slot slot--air mon mon--program" id="ev-air">
+          <span class="slot-k">PROGRAMA · AL AIRE</span>
           <div class="ev-thumb" id="ev-air-thumb">SIN EVIDENCIA</div>
           <div class="ev-air-info">
             <span class="ev-air-num" id="ev-air-num">—</span>
@@ -203,23 +215,17 @@
             <button id="ev-focus" title="Enfoca la evidencia en pantalla durante 6 s">◎ ENFOCAR</button>
           </div>
         </div>
-        <div class="slot slot--next" id="ev-next-slot">
-          <span class="slot-k">SIGUIENTE · <b id="ev-next-src">BANCO</b></span>
-          <div class="ev-thumb" id="ev-next-thumb">BANCO VACÍO</div>
-          <div class="ev-fields">
-            <div class="ev-tn">
-              <label class="field"><span>TIPO</span><select id="ev-type" data-keep="ev-type"></select></label>
-              <label class="field"><span>Nº</span><input id="ev-num" type="number" min="1" value="4" data-keep="ev-num" title="Número de la próxima evidencia (sube solo)"></label>
-            </div>
-            <label class="field"><span>LEYENDA</span><input id="ev-caption" placeholder="ARCHIVO RECUPERADO" value="ARCHIVO RECUPERADO" data-keep="ev-caption"></label>
-            <label class="field"><span>DESCRIPCIÓN</span><input id="ev-desc" placeholder="opcional" data-keep="ev-desc"></label>
-          </div>
-          <div class="ev-go">
-            <button class="btn--primary" id="ev-next" data-act="ev-next">MANDAR AL AIRE <kbd data-kbd="ev-next"></kbd></button>
-            <button id="ev-uncue" hidden title="Quitar la selección (Esc)">✕</button>
-          </div>
-        </div>
       </div>
+      <details class="adv ev-data"><summary>DATOS DE LA EVIDENCIA · tipo, nº, leyenda, descripción</summary>
+        <div class="ev-fields">
+          <div class="ev-tn">
+            <label class="field"><span>TIPO</span><select id="ev-type" data-keep="ev-type"></select></label>
+            <label class="field"><span>Nº</span><input id="ev-num" type="number" min="1" value="4" data-keep="ev-num" title="Número de la próxima evidencia (sube solo)"></label>
+          </div>
+          <label class="field"><span>LEYENDA</span><input id="ev-caption" placeholder="ARCHIVO RECUPERADO" value="ARCHIVO RECUPERADO" data-keep="ev-caption"></label>
+          <label class="field"><span>DESCRIPCIÓN</span><input id="ev-desc" placeholder="opcional" data-keep="ev-desc"></label>
+        </div>
+      </details>
       <div class="ev-queue" id="ev-queue" hidden>
         <div class="ev-queue-h"><span class="slot-k">COLA · <b id="ev-queue-case">—</b></span><button class="btn--sm btn--ghost" id="ev-queue-clear" title="Vaciar la cola (no toca el banco)">VACIAR COLA</button></div>
         <ol class="ev-queue-list" id="ev-queue-list"></ol>
@@ -385,6 +391,23 @@
         </div>
       </details>
 
+      <details class="drawer" id="dr-backup">
+        <summary><span class="dr-t">RESPALDO</span><span class="dr-s" id="bk-summary">—</span></summary>
+        <div class="drawer-body">
+          <div class="hint">Expedientes, banco de evidencias, atajos, botones y ajustes viven <b>solo en este navegador</b>. Si borras los datos del navegador o cambias de PC, se pierden. Descarga un respaldo de vez en cuando.</div>
+          <div class="live-box">
+            <div><span class="mlabel">ÚLTIMO RESPALDO</span><b id="bk-last">nunca</b></div>
+            <div><span class="mlabel">EXPEDIENTES · IMÁGENES</span><b id="bk-counts">—</b></div>
+            <div><span class="mlabel">ESPACIO USADO</span><b id="bk-usage">—</b></div>
+          </div>
+          <div class="meter" aria-hidden="true"><i id="bk-bar"></i></div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn--primary" id="bk-export">⬇ DESCARGAR RESPALDO</button>
+            <label class="btn upload" title="Carga un archivo de respaldo (.json) y reemplaza los datos de este navegador">⬆ RESTAURAR…<input id="bk-import" type="file" accept=".json,application/json"></label>
+          </div>
+        </div>
+      </details>
+
       <details class="drawer" id="dr-fx">
         <summary><span class="dr-t">EFECTOS</span><span class="dr-s" id="fx-summary">—</span></summary>
         <div class="drawer-body"><div id="fx"></div></div>
@@ -498,9 +521,9 @@
     <div class="modal-h"><span class="card-id">BTN</span><span class="dr-t" id="cb-title">NUEVO BOTÓN</span></div>
     <div class="cb-form">
       <label class="field"><span>NOMBRE</span><input id="cb-name" maxlength="28" placeholder="PRESENTAR PISTA" autocomplete="off"></label>
-      <div class="grid2">
-        <label class="field"><span>TIPO DE ACCIÓN</span><select id="cb-group"></select></label>
-        <label class="field"><span>ACCIÓN</span><select id="cb-action"></select></label>
+      <div class="field"><span>PASOS · se ejecutan en orden (1 paso = botón simple, varios = macro)</span>
+        <div class="cb-steps" id="cb-steps"></div>
+        <div class="row"><button type="button" class="btn--sm btn--ghost" id="cb-add-step">+ AÑADIR PASO</button><span class="hint">Tras cambiar de escena conviene esperar ~700 ms antes del siguiente paso.</span></div>
       </div>
       <label class="field"><span>ATAJO (clic y pulsa una tecla · F1–F12, letras…)</span>
         <div class="row"><input id="cb-key" readonly placeholder="sin atajo" style="flex:1"><button class="btn--sm btn--ghost" id="cb-key-clear" type="button">QUITAR</button></div>

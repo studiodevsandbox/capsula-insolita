@@ -153,6 +153,12 @@ Base única de **expedientes** (Historia · Evidencia · Pista · Testimonio). L
 - **Contar la historia**: el lector parte el texto en párrafos; un clic (o ↑ ↓ con el lector enfocado) deja el **marcador de lectura** («voy por aquí») y atenúa el resto. **○ MARCAR CONTADO** deja una ✓ en la lista; filtros **SIN CONTAR** y **CON EVIDENCIA** y buscador (número, título, texto). **→ LOWER THIRD** prepara el lower third con el texto seleccionado (o el título) sin sacarlo al aire. **⇪ IMPORTAR** crea expedientes desde `.txt` / `.md` (cada archivo uno; si trae líneas `# Título`, cada una abre uno nuevo; ≤ 500 KB).
 - Contadores en vivo y **🗄 VER ARCHIVADOS**. Se guarda en este navegador (`lci-casefiles-v1`); las notas del sistema viejo se migran solas. Código en `js/control.js` (`CF_KEY`, `cfPrepare`, `evQueue`).
 
+### Respaldo, Preview/TAKE y macros
+
+- **Respaldo** (Ajustes → RESPALDO): **⬇ DESCARGAR RESPALDO** guarda en un `.json` expedientes, banco de evidencias, atajos, botones/macros y ajustes (todo lo `lci-*` de este navegador). **⬆ RESTAURAR…** lo devuelve (pide confirmación, valida el archivo y, si no cabe, deja todo como estaba). Muestra el último respaldo y cuánto espacio queda (~5 MB por navegador); avisa si llevas más de 14 días sin respaldar.
+- **Evidence Control = mezclador**: **PREVIEW** (SIGUIENTE, con ◂ ▸ para recorrer el archivo) · **TAKE** (rojo, `E`/`Enter`) · **PROGRAMA** (lo que está al aire). TAKE manda el PREVIEW al aire y la siguiente de la cola pasa a PREVIEW. Los datos (tipo, nº, leyenda) están en el desplegable «DATOS DE LA EVIDENCIA».
+- **Macros**: un botón personalizado puede tener **varios pasos** con espera entre ellos (p. ej. escena + 700 ms + alerta). `Esc` cancela una macro en curso; el candado la bloquea. Vienen 3 **presets de fábrica** editables o borrables: ENTREVISTA (escena 2 + clean), INVESTIGACIÓN (escena 3 + investigation) y ÚLTIMA HORA (escena 1 + alerta ÚLTIMA HORA).
+
 ### Hora, ubicación y tiempo al aire
 
 - **En el overlay (horizontal, arriba a la derecha)**: `● EN VIVO 01:23:45` (cronómetro), `DOM 04 OCT · 09:09 AM` y `📍 BUENOS AIRES · ARGENTINA`. En vertical no se muestra (no hay sitio sin tapar la cámara).
@@ -180,7 +186,7 @@ Bajo "Now playing" hay dos áreas de igual peso, fijas (no se arrastran ni se re
 
 **Transcripción**: el proyecto no incluye ningún sistema de transcripción, por eso no hay módulo en el Deck.
 
-**Personalizados**: **+ NUEVO BOTÓN** → nombre, tipo de acción, acción y atajo (clic en el campo y pulsa la tecla, p. ej. `F8`). Solo ofrece acciones reales del registro del panel (las de Ctrl+K). **✎ EDITAR** permite renombrar, cambiar acción/atajo o borrar. Rechaza teclas reservadas o ya usadas. Se guardan en `lci-custom-buttons-v1`.
+**Personalizados**: **+ NUEVO BOTÓN** → nombre, pasos (tipo de acción + acción + espera) y atajo (clic en el campo y pulsa la tecla, p. ej. `F8`). Solo ofrece acciones reales del registro del panel (las de Ctrl+K). **✎ EDITAR** permite renombrar, cambiar acción/atajo o borrar. Rechaza teclas reservadas o ya usadas. Se guardan en `lci-custom-buttons-v1`.
 
 ### Organización ("control room")
 

@@ -983,6 +983,11 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 .live-box > div { padding: 8px 10px; background: var(--bg2); border: 1px solid var(--line2); min-width: 0; }
 .live-box .mlabel { display: block; margin-bottom: 4px; }
 .live-box b { font: 400 18px/1 var(--mono); color: var(--white); }
+.meter { height: 6px; margin-top: 8px; background: #000; border: 1px solid var(--line2); }
+.meter i { display: block; height: 100%; width: 0; background: var(--y); transition: width .3s; }
+.meter i.warn { background: #ff9d00; } .meter i.bad { background: var(--r2); }
+.dr-s .bad, .bad { color: #ff6b7a; }
+#bk-import { }
 
 /* =====================================================================================
    SEMÁNTICA DE COLOR (una sola lectura en directo):
@@ -1004,9 +1009,9 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 .thumb.air { border-color: var(--r2); box-shadow: 0 0 0 1px var(--r2); }
 #lt-preview[data-st=ON] { border-color: var(--r2); }
 /* acciones que SACAN al aire = rojo sólido */
-#ev-next:not(.is-empty), #lt-show { background: linear-gradient(180deg, #e8112d, #b30018); border-color: #ff5a6a; color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 2px 0 #5a000c; }
-#ev-next:not(.is-empty):hover, #lt-show:hover { background: linear-gradient(180deg, #ff2640, #c8001c); }
-#ev-next kbd, #lt-show kbd { background: rgba(0, 0, 0, .3); color: #fff; border-color: rgba(0, 0, 0, .5); }
+#lt-show { background: linear-gradient(180deg, #e8112d, #b30018); border-color: #ff5a6a; color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .25), 0 2px 0 #5a000c; }
+#lt-show:hover { background: linear-gradient(180deg, #ff2640, #c8001c); }
+#lt-show kbd { background: rgba(0, 0, 0, .3); color: #fff; border-color: rgba(0, 0, 0, .5); }
 /* modo activo = blanco (ambos) */
 .cdeck .mode-btn.on[data-mode=investigation], .cdeck .mode-btn.on[data-mode=clean], .cdeck .qa.on { background: linear-gradient(180deg, #fff, #d8d8d8); border-color: #fff; box-shadow: inset 0 1px 0 #fff, 0 2px 0 #777, 0 0 16px rgba(255, 255, 255, .22); }
 .cdeck .qa.on .qa-t, .cdeck .qa.on .qa-s, .cdeck .qa.on .qi { color: #000; stroke: #000; }
@@ -1103,3 +1108,55 @@ body[data-view=compacto] .nowbar-note, body[data-view=compacto] .cdeck-stamps { 
 
 .tr-cur .tr-ms, .tr-cur .tr-n { white-space: nowrap; }
 .tr-cur { gap: 8px; padding-right: 8px; }
+
+/* =====================================================================================
+   MACROS (botones personalizados con varios pasos)
+   ===================================================================================== */
+.cb { align-items: stretch; }
+.cb-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; margin-top: 2px; min-height: 16px; }
+.cb-m { color: var(--y); font-size: 10.5px; letter-spacing: .1em; }
+.cb kbd { margin-left: auto; align-self: auto; margin-top: 0; }
+.cb--macro { border-top: 2px solid var(--y); }
+.cb.is-running { background: linear-gradient(180deg, #ffd91a, #e6bd00) !important; border-color: var(--y) !important; }
+.cb.is-running .cb-n, .cb.is-running .cb-m { color: #000; }
+.cb-steps { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 8px; }
+.cb-step { display: grid; grid-template-columns: 20px minmax(110px, .8fr) minmax(0, 1.4fr) auto auto auto; gap: 6px; align-items: center; }
+.cb-step-n { display: grid; place-items: center; height: 20px; background: #000; border: 1px solid var(--line3); font-size: 11px; color: var(--cream); }
+.cb-step select, .cb-step input { min-width: 0; padding: 6px 7px; font-size: 12px; }
+.cb-sd { display: inline-flex; align-items: center; gap: 4px; color: var(--grey); font-size: 11px; white-space: nowrap; }
+.cb-sd input { width: 68px; }
+#cb-modal .modal-box { max-width: 720px; }
+@media (max-width: 700px) { .cb-step { grid-template-columns: 20px minmax(0, 1fr) auto; } .cb-step .cb-sa { grid-column: 2 / -1; } }
+
+/* =====================================================================================
+   EVIDENCE CONTROL: PREVIEW | TAKE | PROGRAMA (como un mezclador de video)
+   ===================================================================================== */
+.ev-mon { display: grid; grid-template-columns: minmax(0, 1fr) 104px minmax(0, 1fr); gap: 10px; align-items: stretch; }
+.ev-mon .slot { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 10px; }
+.ev-mon .slot-k { margin: 0; }
+.ev-mon .ev-thumb { aspect-ratio: 16 / 10; background: #000; }
+.ev-mon .ev-thumb img { object-fit: contain; }
+.mon--preview { border-color: rgba(255, 212, 0, .4); }
+.mon--preview.cued { border-color: var(--y); box-shadow: 0 0 0 1px rgba(255, 212, 0, .35), 0 0 18px rgba(255, 212, 0, .08); }
+.mon--preview .slot-k b { color: var(--y); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.mon--program .slot-k::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #444; }
+.mon--program[data-st=ON] .slot-k::before { background: var(--r2); box-shadow: 0 0 8px var(--r2); }
+.mon--program[data-st=ON] .slot-k { color: #ff6b7a; }
+.mon-ctl { display: flex; gap: 6px; margin-top: auto; }
+.mon-ctl button { flex: 0 0 auto; padding: 8px 14px; font-size: 14px; }
+.mon-ctl #ev-uncue { margin-left: auto; font-size: 11px; }
+.ev-mon .ev-air-info { margin: 0; }
+.ev-mon .ev-air-btns { margin-top: auto; }
+.ev-take { display: flex; }
+.take-btn { flex: 1; flex-direction: column; gap: 6px; padding: 8px 4px; position: relative; border-radius: 3px; background: linear-gradient(180deg, #e8112d, #b30018); border: 1px solid #ff5a6a; color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 3px 0 #5a000c, 0 6px 16px rgba(179, 0, 24, .3); transition: transform 80ms, box-shadow 80ms; }
+.take-btn:hover { background: linear-gradient(180deg, #ff2640, #c8001c); }
+.take-btn:active { transform: translateY(3px); box-shadow: inset 0 3px 8px rgba(0, 0, 0, .5); }
+.take-k { font: 400 34px/1 var(--disp); letter-spacing: .12em; }
+.take-n { font: 600 14px var(--mono); letter-spacing: .08em; }
+.take-s { font-size: 11px; letter-spacing: .2em; opacity: .85; }
+.take-btn kbd { margin-top: 4px; background: rgba(0, 0, 0, .3); color: #fff; border-color: rgba(0, 0, 0, .5); }
+.take-btn.is-empty { background: var(--bg3); border-color: var(--line2); color: var(--grey); box-shadow: none; }
+.ev-data { margin-top: 10px; }
+.ev-data .ev-fields { margin-top: 8px; }
+@media (max-width: 700px) { .ev-mon { grid-template-columns: minmax(0, 1fr) 84px minmax(0, 1fr); gap: 6px; } .take-k { font-size: 26px; } }

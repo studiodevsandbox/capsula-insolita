@@ -1340,13 +1340,25 @@
     toast(bank.length ? '✕ NO QUEDAN EVIDENCIAS DISPONIBLES' : '✕ BANCO VACÍO · SUBE IMÁGENES', 'err');
     return Promise.resolve(false);
   }
-  function cue(item) {
+  function cue(item, quiet) {
     cuedId = item ? item.id : null;
     if (!item) { evQueue = []; evQueueCase = null; } // cancelar = soltar también la cola
     else if (evQueue.includes(item.id)) evQueue = [item.id].concat(evQueue.filter(x => x !== item.id)); // subir de la cola a SIGUIENTE
     renderBank();
-    if (item) toast(`◇ PREPARADA · ${item.name || 'imagen'}`, 'info');
+    if (item && !quiet) toast(`◇ PREPARADA · ${item.name || 'imagen'}`, 'info');
   }
+  // ◂ ▸ del PREVIEW: recorre el archivo sin tocar el banco (salta lo que está viajando a OBS)
+  function stepCandidate(d) {
+    const n = bank.length;
+    if (!n) { toast('✕ BANCO VACÍO · SUBE IMÁGENES', 'err'); return; }
+    const cur = nextBankItem(), i = cur ? bank.indexOf(cur) : (d > 0 ? -1 : n);
+    for (let k = 1; k <= n; k++) {
+      const it = bank[(((i + d * k) % n) + n) % n];
+      if (!inFlight.has(it.id)) { cue(it, true); return; }
+    }
+  }
+  $('#ev-prev-cand').addEventListener('click', () => stepCandidate(-1));
+  $('#ev-next-cand').addEventListener('click', () => stepCandidate(1));
   function cfDropQueue() {
     if (evQueue.includes(cuedId)) cuedId = null;
     evQueue = []; evQueueCase = null;
@@ -1747,6 +1759,7 @@
       if (!$('#cb-modal').hidden) { $('#cb-modal').hidden = true; return; }
       if (kmOpen()) { kmClose(); return; }
       if (!$('#cf-modal').hidden) { cfCloseEditor(); return; }
+      if (macroRun) { macroRun.cancelled = true; toast('MACRO CANCELADA', 'info'); return; }
       if (trPopOpen()) { trPopSet(false); return; }
       if (panelLocked) return;
       if (armed) { disarm(); toast('CANCELADO', 'info'); return; }
@@ -1918,25 +1931,66 @@
 
   /* ---------- PERSONALIZADOS: botones propios que ejecutan acciones REALES del registro ACTIONS ---------- */
   const CB_KEY = 'lci-custom-buttons-v1';
+  // un botón = lista de pasos [{ action, delay }]; con 1 paso es un botón simple, con varios es una MACRO
+  const normSteps = x => {
+    const raw = Array.isArray(x.steps) ? x.steps : (typeof x.action === 'string' ? [{ action: x.action, delay: 0 }] : []);
+    return raw.filter(st => isObj(st) && typeof st.action === 'string').slice(0, 12)
+      .map(st => ({ action: st.action, delay: Math.max(0, Math.min(10000, Number(st.delay) || 0)) }));
+  };
   let cbList = (() => {
     const v = readJSON(CB_KEY);
-    return Array.isArray(v) ? v.filter(x => isObj(x) && typeof x.id === 'string' && typeof x.name === 'string' && typeof x.action === 'string')
-      .map(x => ({ id: x.id, name: x.name.slice(0, 28), action: x.action, key: normCombo(typeof x.key === 'string' ? x.key : '') })) : [];
+    return Array.isArray(v) ? v.filter(x => isObj(x) && typeof x.id === 'string' && typeof x.name === 'string')
+      .map(x => ({ id: x.id, name: x.name.slice(0, 28), steps: normSteps(x), key: normCombo(typeof x.key === 'string' ? x.key : '') }))
+      .filter(x => x.steps.length) : [];
   })();
   const saveCb = () => { try { localStorage.setItem(CB_KEY, JSON.stringify(cbList)); } catch (e) { toast('✕ NO PUDE GUARDAR LOS BOTONES', 'err'); } };
+  // presets de show de fábrica (una sola vez): son macros normales, se editan o se borran como cualquier botón
+  if (!cbList.length && !saved['cb-seeded'] && localStorage.getItem(CB_KEY) === null) {
+    cbList = [
+      { id: 'cbp1', name: 'ENTREVISTA', key: '', steps: [{ action: 'scene-2', delay: 700 }, { action: 'mode-clean', delay: 0 }] },
+      { id: 'cbp2', name: 'INVESTIGACIÓN', key: '', steps: [{ action: 'scene-3', delay: 700 }, { action: 'mode-investigation', delay: 0 }] },
+      { id: 'cbp3', name: 'ÚLTIMA HORA', key: '', steps: [{ action: 'scene-1', delay: 700 }, { action: 'alert:ÚLTIMA HORA', delay: 0 }] }
+    ];
+    saveCb();
+  }
+  keep('cb-seeded', true);
   const keyLabel = comboLabel;
   function cbKeyConflict(key, exceptId) {
     if (!key) return '';
     const o = keyOwner(key, { kind: 'cb', id: exceptId });
     return o ? (o.reserved ? 'Esa tecla está reservada.' : `Esa tecla ya es de: ${o.label}. (Se reasigna desde ⌨ ATAJOS.)`) : '';
   }
-  function runCustom(b) {
+  const stepLabel = st => (ACT[st.action] ? `${ACT[st.action].group} · ${ACT[st.action].label}` : '⚠ acción inexistente');
+  // ejecución: pasos en orden con su espera; Esc cancela una macro en curso; no se solapan dos macros
+  let macroRun = null;
+  async function runCustom(b) {
     if (panelLocked) return;
-    const a = ACT[b.action];
-    if (!a) { toast(`✕ "${b.name}": LA ACCIÓN YA NO EXISTE`, 'err'); return; }
-    a.run();
+    if (macroRun) { toast('⏳ MACRO EN CURSO · ESC PARA CANCELAR', 'info'); return; }
     const el = document.querySelector(`[data-cb="${b.id}"]`);
     if (el) { el.classList.add('fired'); setTimeout(() => el.classList.remove('fired'), 220); }
+    if (b.steps.length === 1) {
+      const a = ACT[b.steps[0].action];
+      if (!a) { toast(`✕ "${b.name}": LA ACCIÓN YA NO EXISTE`, 'err'); return; }
+      a.run();
+      return;
+    }
+    const run = macroRun = { id: b.id, cancelled: false };
+    if (el) el.classList.add('is-running');
+    activity(`▶ MACRO ${b.name} (${b.steps.length} pasos)`, 'info');
+    try {
+      for (let i = 0; i < b.steps.length && !run.cancelled; i++) {
+        const st = b.steps[i], a = ACT[st.action];
+        if (a) { try { a.run(); } catch (e) { log('Macro: ' + e.message, true); } }
+        else toast(`✕ MACRO "${b.name}" · PASO ${i + 1}: LA ACCIÓN YA NO EXISTE`, 'err');
+        if (st.delay > 0 && i < b.steps.length - 1) {
+          const end = Date.now() + st.delay;
+          while (!run.cancelled && Date.now() < end) await new Promise(r => setTimeout(r, Math.min(80, end - Date.now())));
+        }
+      }
+    } finally {
+      macroRun = null;
+      document.querySelectorAll('.cb.is-running').forEach(n => n.classList.remove('is-running'));
+    }
   }
   let cbEditMode = false, cbEditingId = null;
   function renderCustom() {
@@ -1945,14 +1999,15 @@
     box.classList.toggle('editing', cbEditMode);
     $('#cb-edit-toggle').classList.toggle('on', cbEditMode);
     cbList.forEach(b => {
-      const a = ACT[b.action];
+      const bad = b.steps.some(st => !ACT[st.action]);
       const el = document.createElement('button');
       el.type = 'button';
-      el.className = 'cb' + (a ? '' : ' cb--bad');
+      el.className = 'cb' + (bad ? ' cb--bad' : '') + (b.steps.length > 1 ? ' cb--macro' : '');
       el.dataset.cb = b.id;
-      el.title = a ? `${a.group} · ${a.label}${cbEditMode ? ' — clic para editar' : ''}` : 'La acción ya no existe: edítalo y elige otra';
-      el.innerHTML = '<span class="cb-n"></span><kbd></kbd>';
+      el.title = (bad ? '⚠ Algún paso apunta a una acción que ya no existe: edítalo.\n' : '') + b.steps.map((st, i) => `${i + 1}. ${stepLabel(st)}${st.delay && i < b.steps.length - 1 ? ` (+${st.delay} ms)` : ''}`).join('\n') + (cbEditMode ? '\n— clic para editar' : '');
+      el.innerHTML = '<span class="cb-n"></span><span class="cb-foot"><span class="cb-m"></span><kbd></kbd></span>';
       el.querySelector('.cb-n').textContent = b.name;
+      el.querySelector('.cb-m').textContent = b.steps.length > 1 ? `▶ ${b.steps.length} PASOS` : '';
       const kbd = el.querySelector('kbd');
       if (b.key) kbd.textContent = comboLabel(b.key); else kbd.remove();
       if (cbEditMode) el.insertAdjacentHTML('beforeend', '<span class="cb-pen">✎</span>');
@@ -1960,27 +2015,47 @@
       box.appendChild(el);
     });
     const add = document.createElement('button');
-    add.type = 'button'; add.className = 'cb cb--add'; add.title = 'Crear un botón personalizado';
-    add.innerHTML = '<span class="cb-plus">+</span><span class="cb-add-t">' + (cbList.length ? 'NUEVO' : 'NUEVO BOTÓN · nombre, acción y atajo') + '</span>';
+    add.type = 'button'; add.className = 'cb cb--add'; add.title = 'Crear un botón o una macro';
+    add.innerHTML = '<span class="cb-plus">+</span><span class="cb-add-t">NUEVO</span>';
     add.addEventListener('click', () => cbOpen(null));
     box.appendChild(add);
   }
-  const cbGroup = $('#cb-group'), cbAction = $('#cb-action'), cbName = $('#cb-name'), cbKey = $('#cb-key'), cbErr = $('#cb-err');
+  const cbName = $('#cb-name'), cbKey = $('#cb-key'), cbErr = $('#cb-err'), cbStepsBox = $('#cb-steps');
   const cbGroups = [...new Set(ACTIONS.map(a => a.group))];
-  cbGroup.innerHTML = cbGroups.map(g => `<option>${esc(g)}</option>`).join('');
-  function cbFillActions(sel) {
-    cbAction.innerHTML = '';
-    ACTIONS.filter(a => a.group === cbGroup.value).forEach(a => cbAction.appendChild(new Option(a.label, a.id)));
-    if (sel && ACT[sel]) cbAction.value = sel;
+  let cbDraft = []; // pasos en edición
+  function cbRenderSteps() {
+    cbStepsBox.innerHTML = '';
+    cbDraft.forEach((st, i) => {
+      const row = document.createElement('div');
+      row.className = 'cb-step';
+      const group = (ACT[st.action] && ACT[st.action].group) || cbGroups[0];
+      row.innerHTML = `<span class="cb-step-n">${i + 1}</span><select class="cb-sg" aria-label="Tipo de acción">${cbGroups.map(g => `<option${g === group ? ' selected' : ''}>${esc(g)}</option>`).join('')}</select>` +
+        '<select class="cb-sa" aria-label="Acción"></select>' +
+        `<label class="cb-sd" title="Espera antes del siguiente paso (ms)">+<input type="number" min="0" max="10000" step="100" value="${st.delay}" aria-label="Espera en milisegundos"> ms</label>` +
+        `<button type="button" class="btn--sm btn--ghost cb-up" title="Subir" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" class="btn--sm btn--ghost cb-rm" title="Quitar paso" ${cbDraft.length === 1 ? 'disabled' : ''}>✕</button>`;
+      const sg = row.querySelector('.cb-sg'), sa = row.querySelector('.cb-sa');
+      const fill = () => { sa.innerHTML = ''; ACTIONS.filter(a => a.group === sg.value).forEach(a => sa.appendChild(new Option(a.label, a.id))); if (ACT[st.action] && ACT[st.action].group === sg.value) sa.value = st.action; else st.action = sa.value; };
+      fill();
+      sg.addEventListener('change', () => { fill(); });
+      sa.addEventListener('change', () => { st.action = sa.value; });
+      row.querySelector('input').addEventListener('input', e => { st.delay = Math.max(0, Math.min(10000, Number(e.target.value) || 0)); });
+      row.querySelector('.cb-up').addEventListener('click', () => { [cbDraft[i - 1], cbDraft[i]] = [cbDraft[i], cbDraft[i - 1]]; cbRenderSteps(); });
+      row.querySelector('.cb-rm').addEventListener('click', () => { cbDraft.splice(i, 1); cbRenderSteps(); });
+      cbStepsBox.appendChild(row);
+    });
+    $('#cb-add-step').disabled = cbDraft.length >= 12;
   }
-  cbGroup.addEventListener('change', () => cbFillActions());
+  $('#cb-add-step').addEventListener('click', () => {
+    if (cbDraft.length) cbDraft[cbDraft.length - 1].delay = cbDraft[cbDraft.length - 1].delay || 700; // el paso anterior ya no es el último: espera sugerida
+    cbDraft.push({ action: ACTIONS[0].id, delay: 0 }); cbRenderSteps();
+  });
   function cbOpen(id) {
     cbEditingId = id || null;
     const b = id && cbList.find(x => x.id === id);
-    $('#cb-title').textContent = b ? 'EDITAR BOTÓN' : 'NUEVO BOTÓN';
+    $('#cb-title').textContent = b ? 'EDITAR BOTÓN / MACRO' : 'NUEVO BOTÓN / MACRO';
     cbName.value = b ? b.name : '';
-    cbGroup.value = (b && ACT[b.action] && ACT[b.action].group) || cbGroups[0];
-    cbFillActions(b && b.action);
+    cbDraft = b ? b.steps.map(st => Object.assign({}, st)) : [{ action: ACTIONS[0].id, delay: 0 }];
+    cbRenderSteps();
     cbKey.value = b ? keyLabel(b.key) : '';
     cbKey.dataset.raw = b ? b.key : '';
     cbErr.textContent = '';
@@ -1988,7 +2063,7 @@
     $('#cb-modal').hidden = false;
     cbName.focus();
   }
-  // captura de atajo: clic en el campo y pulsa la tecla (sin modificadores); no dispara los atajos del panel
+  // captura de atajo: clic en el campo y pulsa la combinación; no dispara los atajos del panel
   cbKey.addEventListener('keydown', e => {
     if (e.key === 'Escape' || e.key === 'Tab') return;
     e.preventDefault(); e.stopPropagation();
@@ -2003,20 +2078,22 @@
   $('#cb-cancel').addEventListener('click', () => { $('#cb-modal').hidden = true; });
   $('#cb-modal').addEventListener('click', e => { if (e.target.id === 'cb-modal') $('#cb-modal').hidden = true; });
   $('#cb-save').addEventListener('click', () => {
-    const action = cbAction.value, key = cbKey.dataset.raw || '';
-    if (!action || !ACT[action]) { cbErr.textContent = 'Elige una acción.'; return; }
+    const key = cbKey.dataset.raw || '';
+    const steps = cbDraft.filter(st => ACT[st.action]).map(st => ({ action: st.action, delay: st.delay }));
+    if (!steps.length) { cbErr.textContent = 'Elige al menos una acción.'; return; }
     const conflict = cbKeyConflict(key, cbEditingId);
     if (conflict) { cbErr.textContent = conflict; return; }
-    const name = cbName.value.trim().slice(0, 28) || ACT[action].label.slice(0, 28);
-    if (cbEditingId) Object.assign(cbList.find(x => x.id === cbEditingId) || {}, { name, action, key });
-    else cbList.push({ id: 'cb' + Date.now() + Math.random().toString(36).slice(2, 6), name, action, key });
+    steps[steps.length - 1].delay = 0; // la espera del último paso no sirve de nada
+    const name = cbName.value.trim().slice(0, 28) || (steps.length === 1 ? ACT[steps[0].action].label.slice(0, 28) : 'MACRO');
+    if (cbEditingId) Object.assign(cbList.find(x => x.id === cbEditingId) || {}, { name, steps, key });
+    else cbList.push({ id: 'cb' + Date.now() + Math.random().toString(36).slice(2, 6), name, steps, key });
     saveCb(); renderCustom();
     $('#cb-modal').hidden = true;
-    toast(`✓ BOTÓN "${name}" GUARDADO`, 'ok');
+    toast(`✓ ${steps.length > 1 ? 'MACRO' : 'BOTÓN'} "${name}" GUARDADO`, 'ok');
   });
   $('#cb-delete').addEventListener('click', () => {
     const b = cbList.find(x => x.id === cbEditingId);
-    if (!b || !confirm(`¿Borrar el botón "${b.name}"?`)) return;
+    if (!b || !confirm(`¿Borrar "${b.name}"?`)) return;
     cbList = cbList.filter(x => x.id !== cbEditingId);
     saveCb(); renderCustom();
     $('#cb-modal').hidden = true;
@@ -2167,7 +2244,7 @@
     $('#ev-uncue').hidden = !(item && cuedId === item.id);
     const can = !!(item || manual);
     $('#ev-next').classList.toggle('is-empty', !can);
-    $('#ev-next').innerHTML = can ? `MANDAR AL AIRE #${pad3(num)} <kbd data-kbd="ev-next"></kbd>` : 'SIN EVIDENCIA <kbd data-kbd="ev-next"></kbd>';
+    $('#ev-next').innerHTML = can ? `<span class="take-k">TAKE</span><span class="take-n">#${pad3(num)}</span><span class="take-s">AL AIRE</span><kbd data-kbd="ev-next"></kbd>` : '<span class="take-k">TAKE</span><span class="take-s">SIN EVIDENCIA</span><kbd data-kbd="ev-next"></kbd>';
     syncKbd($('#ev-next'));
     renderEvQueue();
     renderCfRelated();
@@ -2283,6 +2360,68 @@
   ['#hud-location', '#hud-tz'].forEach(q => $(q).addEventListener('input', renderOnAir));
   $('#hud-follow').addEventListener('change', () => { if ($('#hud-follow').checked) { onair.syncedStart = null; pollOutputs(); } });
 
+
+  /* =====================================================================================
+     RESPALDO Y RESTAURACIÓN: todo lo del panel vive en localStorage; esto lo saca a un .json
+     ===================================================================================== */
+  const BK_META = 'lci-backup-meta-v1';
+  const BK_QUOTA = 5 * 1024 * 1024; // ~5 M de caracteres por origen en Chromium
+  const bkKeys = () => { const k = []; try { for (let i = 0; i < localStorage.length; i++) { const n = localStorage.key(i); if (/^lci[-.]/.test(n) && n !== BK_META) k.push(n); } } catch (e) { /* sin acceso */ } return k; };
+  const bkUsage = () => bkKeys().reduce((t, k) => { try { return t + k.length + (localStorage.getItem(k) || '').length; } catch (e) { return t; } }, 0);
+  const bkLastAt = () => { const m = readJSON(BK_META); return m && Number.isFinite(m.at) ? m.at : null; };
+  const bkAgo = at => { if (!at) return 'nunca'; const d = Math.floor((Date.now() - at) / 86400000); return d <= 0 ? 'hoy' : d === 1 ? 'ayer' : `hace ${d} días`; };
+  function renderBackup() {
+    const used = bkUsage(), pct = Math.min(100, Math.round(used / BK_QUOTA * 100)), last = bkLastAt();
+    $('#bk-last').textContent = bkAgo(last);
+    $('#bk-counts').textContent = `${cf.items.length} · ${bank.length}`;
+    $('#bk-usage').textContent = `${(used / 1048576).toFixed(1)} MB (${pct} %)`;
+    const bar = $('#bk-bar'); bar.style.width = pct + '%'; bar.className = pct >= 85 ? 'bad' : pct >= 60 ? 'warn' : '';
+    $('#bk-summary').innerHTML = `${last ? 'ÚLTIMO ' + bkAgo(last).toUpperCase() : '<span class="bad">SIN RESPALDO</span>'} · ${pct} % ESPACIO`;
+  }
+  function bkExport() {
+    const data = {};
+    bkKeys().forEach(k => { try { data[k] = localStorage.getItem(k); } catch (e) { /* se omite */ } });
+    const payload = JSON.stringify({ app: 'lci-panel', version: 1, exportedAt: new Date().toISOString(), data });
+    const d = new Date(), pad = n => String(n).padStart(2, '0');
+    const url = URL.createObjectURL(new Blob([payload], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = `lci-respaldo-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000); // se libera el objeto: nada de fugas
+    try { localStorage.setItem(BK_META, JSON.stringify({ at: Date.now() })); } catch (e) { /* sin almacenamiento */ }
+    toast(`✓ RESPALDO DESCARGADO · ${Object.keys(data).length} DATOS`, 'ok'); activity('Respaldo descargado', 'info');
+    renderBackup();
+  }
+  async function bkImport(file) {
+    if (!file) return;
+    if (file.size > 60 * 1024 * 1024) { toast('✕ ARCHIVO DEMASIADO GRANDE (MÁX. 60 MB)', 'err'); return; }
+    let obj;
+    try { obj = JSON.parse(await file.text()); } catch (e) { toast('✕ ARCHIVO NO COMPATIBLE · NO ES UN RESPALDO', 'err'); return; }
+    if (!isObj(obj) || obj.app !== 'lci-panel' || !isObj(obj.data)) { toast('✕ ARCHIVO NO COMPATIBLE · NO ES UN RESPALDO DEL PANEL', 'err'); return; }
+    const entries = Object.entries(obj.data).filter(([k, v]) => /^lci[-.]/.test(k) && k !== BK_META && typeof v === 'string');
+    if (!entries.length) { toast('✕ EL RESPALDO ESTÁ VACÍO', 'err'); return; }
+    if (!confirm(`Vas a RESTAURAR ${entries.length} datos del respaldo${obj.exportedAt ? ' del ' + new Date(obj.exportedAt).toLocaleString() : ''}.\n\nSe REEMPLAZAN los expedientes, el banco, los atajos y los ajustes de este navegador. ¿Continuar?`)) return;
+    const before = {}; bkKeys().forEach(k => { before[k] = localStorage.getItem(k); });
+    try {
+      bkKeys().forEach(k => localStorage.removeItem(k));
+      entries.forEach(([k, v]) => localStorage.setItem(k, v));
+    } catch (e) { // no cabe: se devuelve todo como estaba
+      try { bkKeys().forEach(k => localStorage.removeItem(k)); Object.entries(before).forEach(([k, v]) => localStorage.setItem(k, v)); } catch (e2) { /* nada más que hacer */ }
+      toast('✕ NO CABE EN ESTE NAVEGADOR · NO SE CAMBIÓ NADA', 'err');
+      return;
+    }
+    toast('✓ RESPALDO RESTAURADO · RECARGANDO…', 'ok');
+    setTimeout(() => location.reload(), 900);
+  }
+  $('#bk-export').addEventListener('click', bkExport);
+  $('#bk-import').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; bkImport(f); });
+  $('#dr-backup').addEventListener('toggle', renderBackup);
+  // aviso amable (una vez por sesión) si hay datos y hace mucho que no se respalda
+  setTimeout(() => {
+    const at = bkLastAt(), hasData = cf.items.length || bank.length;
+    if (hasData && (!at || Date.now() - at > 14 * 86400000)) toast(`💾 RESPALDO: ${at ? 'hace ' + Math.floor((Date.now() - at) / 86400000) + ' días' : 'nunca'} · Ajustes → RESPALDO`, 'info');
+  }, 5000);
+
   /* ---------- cabecera: marca y reloj ---------- */
   if (C.brand) { $('#brand-title').textContent = C.brand.title || 'LA CÁPSULA INSÓLITA'; $('#case-no').textContent = C.brand.caseNumber || '—'; }
   (function tick() { $('#clock').textContent = hhmmss(); renderOnAir(); setTimeout(tick, 1000 - (Date.now() % 1000)); })();
@@ -2311,5 +2450,6 @@
   renderBank();
   renderAll();
   syncKbd();
+  renderBackup();
   connect(true);
 })();
