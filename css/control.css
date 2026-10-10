@@ -124,12 +124,10 @@ kbd {
 .chip--bad { border-color: rgba(224, 0, 34, .55); }
 .chip .bad { color: #ff5a6a; }
 .seg--mode { border: 1px solid var(--line2); display: inline-flex; }
-.np--mode .seg--mode { margin-top: 4px; }
-.np--mode .seg--outro { margin-top: 6px; }
-.np--mode .seg { display: flex; }
+.np--mode { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .np--mode .np-k { margin-bottom: 0; }
 .seg--mode .mode-btn--mini {
-  flex-direction: row; align-items: center; gap: 5px; position: static;
+  flex: 0 0 auto; flex-direction: row; align-items: center; gap: 5px; position: static;
   padding: 5px 9px; font: 600 11px var(--mono); letter-spacing: .1em; color: var(--grey); background: transparent; border-color: transparent;
 }
 .seg--mode .mode-btn--mini kbd { position: static; }
@@ -138,6 +136,7 @@ kbd {
 .seg--mode .mode-btn--mini.on[data-mode=clean] { background: var(--white); }
 .seg--outro { border: 1px solid rgba(224, 0, 34, .4); display: inline-flex; }
 .seg--outro .outro-btn {
+  flex: 0 0 auto;
   padding: 5px 9px; font: 600 11px var(--mono); letter-spacing: .08em; color: #ff8a96;
   background: transparent; border: 0; border-left: 1px solid rgba(224, 0, 34, .25);
 }
