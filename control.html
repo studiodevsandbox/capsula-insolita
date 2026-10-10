@@ -30,6 +30,8 @@
     <button id="panel-lock" class="lock-btn" title="Bloquea los botones y atajos (OCULTAR TODO sigue activo). Vuelve a pulsar para desbloquear.">🔓 BLOQUEAR <kbd data-kbd="panel-lock"></kbd></button>
     <button id="open-palette" title="Buscar y ejecutar cualquier acción (Ctrl+K)"><span class="open-palette-label">BUSCAR</span> <kbd>CTRL K</kbd></button>
     <button id="open-keys" title="Editar atajos de teclado (?)">⌨ ATAJOS</button>
+    <button id="lci-organize-btn" title="Modo organizar: arrastra y redimensiona los bloques §02–§08 y AJUSTES. El diseño queda guardado en este navegador.">🔧 ORGANIZAR</button>
+    <button id="lci-layout-reset-btn" title="Borra el diseño guardado de los bloques y vuelve al orden original (recarga la página)">↺ RESTABLECER DISEÑO</button>
     <div class="view-wrap">
       <button id="open-view" aria-haspopup="true" aria-expanded="false" title="Vista, tamaño de texto y orden de las cajas">⚙ VISTA ▾</button>
       <div class="view-pop" id="view-pop" hidden>
@@ -56,7 +58,7 @@
   <div id="lost" class="lost" hidden>
     <b id="lost-title">CONNECTION LOST</b>
     <span class="lost-msg" id="lost-msg">reintentando…</span>
-    <button class="btn--danger btn--sm" id="reconnect">RECONNECT</button>
+    <button class="btn--danger btn--sm" id="reconnect">RECONNECT <kbd data-kbd="reconnect"></kbd></button>
   </div>
 </header>
 
@@ -81,6 +83,7 @@
 <div class="lock-banner" id="lock-banner" hidden>🔒 PANEL BLOQUEADO · botones y atajos desactivados (OCULTAR TODO sigue activo) · <kbd data-kbd="panel-lock"></kbd> o el candado para desbloquear</div>
 <button id="reset" hidden title="Quita intro/outro de la pantalla">QUITAR INTRO/OUTRO</button>
     <div class="zones" id="zones">
+<div class="lci-canvas" id="lci-canvas"></div>
 
 <div class="zone-h zh-top"><span>HISTORIA · CONTROL RÁPIDO</span></div>
 <div class="top-zone">
@@ -117,7 +120,7 @@
         </div>
         <div class="rd-bar" id="rd-bar" aria-hidden="true"></div>
         <div class="rd-ctl">
-          <button type="button" class="btn--sm" id="rd-prev" title="Volver al tema anterior">◂ ANT.</button>
+          <button type="button" class="btn--sm" id="rd-prev" title="Volver al tema anterior">◂ ANT. <kbd data-kbd="rd-prev"></kbd></button>
           <button type="button" class="rd-next" id="rd-next" title="Termina este tema, abre el siguiente (y deja sus evidencias preparadas; nada sale al aire)">SIGUIENTE TEMA ▸▸ <kbd data-kbd="rd-next"></kbd></button>
           <button type="button" class="btn--sm btn--ghost" id="rd-reset" title="Reiniciar el avance de la escaleta (no borra los temas)">↺</button>
         </div>
@@ -137,15 +140,15 @@
             <span class="card-id">PROMPTER</span><b class="tp-title" id="tp-title"></b>
             <span class="tp-time" id="tp-time" title="Tiempo que falta de lectura">--:--</span>
             <button type="button" class="btn--sm tp-topic" id="tp-topic" hidden title="Termina este tema y abre el siguiente de la escaleta">SIGUIENTE TEMA ▸▸</button>
-            <button type="button" class="btn--sm" id="tp-width" title="Ancho de Case Files: 50 % · 66 % · 100 % del ancho (el Control Deck se hace más estrecho)">⤢ 50%</button>
-            <button type="button" class="btn--sm" id="tp-full" title="Pantalla completa solo para el prompter (Esc vuelve)">⛶</button>
+            <button type="button" class="btn--sm" id="tp-width" title="Ancho de Case Files: 50 % · 66 % · 100 % del ancho (el Control Deck se hace más estrecho)">⤢ 50% <kbd data-kbd="tp-width"></kbd></button>
+            <button type="button" class="btn--sm" id="tp-full" title="Pantalla completa solo para el prompter (Esc vuelve)">⛶<kbd data-kbd="tp-full"></kbd></button>
             <button type="button" class="btn--sm" id="tp-exit" title="Salir del teleprompter (Esc)">✕ SALIR</button>
           </div>
           <div class="tp-view" id="tp-view"><div class="tp-marker" id="tp-marker"></div><div class="tp-text" id="tp-text"></div><div class="tp-count" id="tp-count" hidden></div></div>
           <div class="tp-bar">
             <div class="tp-prog"><i id="tp-prog"></i></div>
             <div class="tp-ctl">
-              <button type="button" class="btn--sm" id="tp-restart" title="Volver al principio">⏮</button>
+              <button type="button" class="btn--sm" id="tp-restart" title="Volver al principio">⏮<kbd data-kbd="tp-restart"></kbd></button>
               <button type="button" class="tp-play" id="tp-play" title="Leer / pausar"><span id="tp-play-t">▶ LEER</span> <kbd data-kbd="tp-play"></kbd></button>
               <label class="tp-speed" title="Velocidad de lectura en palabras por minuto"><span>VELOCIDAD</span><input type="range" id="tp-wpm" min="60" max="260" step="5"><b id="tp-wpm-v">140</b><i>ppm</i></label>
               <button type="button" class="btn--sm btn--ghost" id="tp-set-toggle" aria-expanded="false">⚙ AJUSTES</button>
@@ -179,7 +182,7 @@
             <div class="btn-grp btn-grp--main">
               <button class="btn--sm btn--primary" id="cf-r-show" title="Prepara las evidencias relacionadas en §04 (1.ª = SIGUIENTE, resto = COLA). No manda nada al aire.">▶ MOSTRAR</button>
               <button class="btn--sm" id="cf-r-tp" title="Leer este expediente como teleprompter, aquí mismo">📜 PROMPTER</button>
-              <button class="btn--sm" id="cf-r-stamp" title="Sella en pantalla el estado de verificación (VERIFICADO, DESMENTIDO…). Solo sale cuando lo pulsas.">▣ SELLO</button>
+              <button class="btn--sm" id="cf-r-stamp" title="Sella en pantalla el estado de verificación (VERIFICADO, DESMENTIDO…). Solo sale cuando lo pulsas.">▣ SELLO <kbd data-kbd="vf-stamp"></kbd></button>
             </div>
             <div class="btn-grp">
               <button class="btn--sm" id="cf-r-rd" title="Añadir este expediente a la escaleta del programa">＋ ESCALETA</button>
@@ -234,13 +237,45 @@
       <div class="sm-k">3 · ALERTAS <span class="sm-m">▲ = CRÍTICA</span></div>
       <div class="alerts" id="alerts"></div>
       <details class="cdeck-stamps"><summary>SELLOS · caen sobre la evidencia si está visible</summary><div class="stamps" id="stamps"></div></details>
+      <details class="cdeck-stamps" id="cdeck-sounds"><summary>AUDIO <span class="dr-s" id="audio-summary">—</span></summary>
+        <div class="drawer-body">
+          <label class="check"><input type="checkbox" id="snd-enabled" data-keep="snd-enabled"> Sonidos de la transmisión activados</label>
+          <div class="snd-off-note" id="snd-off-note" hidden>⚠ Los sonidos están APAGADOS: actívalos arriba para que suenen los efectos, las pruebas ▶ y tus teclas rápidas.</div>
+          <div class="vol" style="margin-top:10px">
+            <span class="mlabel">VOLUMEN</span>
+            <input type="range" id="snd-volume" min="0" max="1" step="0.05" value="0.6" data-keep="snd-volume">
+            <span id="snd-volume-val" class="mlabel tabnum">60%</span>
+          </div>
+          <div class="sub-k">EFECTOS DEL PROGRAMA · el sonido de cada cosa que pasa en pantalla</div>
+          <div class="hint">Cada efecto suena <b>sintetizado</b> por defecto (no necesitas archivos). Para cambiarlo, pega un link o una ruta (<code>https://…/sonido.mp3</code>, <code>assets/sounds/alerta.mp3</code>) o elige un archivo pequeño (≤ 500 KB). ▶ lo prueba al instante.</div>
+          <div class="sfx-list" id="sfx-list"></div>
+          <div class="sub-k">MIS SONIDOS · soundboard con tecla rápida
+            <span class="sm-tools"><button class="btn--sm btn--ghost" id="sn-edit-toggle" title="Mostrar editar en cada botón">✎ EDITAR</button><button class="btn--sm btn--primary" id="sn-new">+ NUEVO SONIDO</button></span></div>
+          <div class="sn-grid" id="sn-grid"></div>
+          <div class="sub-k">AMBIENTE · room tone de fondo</div>
+          <label class="check"><input type="checkbox" id="amb-enabled"> Ambiente activado</label>
+          <div class="vol" style="margin-top:8px">
+            <span class="mlabel">NIVEL</span>
+            <input type="range" id="amb-volume" min="0" max="1" step="0.02" value="0.18">
+            <span id="amb-volume-val" class="mlabel tabnum">18%</span>
+          </div>
+          <div class="sub-k">DUCKING · baja una fuente de OBS mientras suena un efecto y la sube sola</div>
+          <label class="check"><input type="checkbox" id="duck-enabled" data-keep="duck-enabled"> Ducking activado</label>
+          <div id="duck-inputs"><div class="bank-empty">Conectando a OBS para listar las fuentes de audio…</div></div>
+          <div class="grid2" style="margin-top:8px">
+            <label class="field"><span>BAJA (dB)</span><input id="duck-amount" type="number" value="-14" data-keep="duck-amount"></label>
+            <label class="field"><span>DURA (ms)</span><input id="duck-hold" type="number" value="700" data-keep="duck-hold"></label>
+          </div>
+          <div class="row" style="margin-top:8px"><button id="duck-test">PROBAR DUCKING AHORA <kbd data-kbd="duck-test"></kbd></button></div>
+        </div>
+      </details>
     </div>
     <div class="sm sm--trans" id="sm-trans">
       <div class="sm-k">4 · TRANSICIÓN <span class="sm-m" id="tr-sel-label">—</span></div>
       <div class="tr-bar">
-        <button type="button" class="tr-step" id="tr-prev" title="Transición anterior" aria-label="Transición anterior">◂</button>
+        <button type="button" class="tr-step" id="tr-prev" title="Transición anterior" aria-label="Transición anterior">◂<kbd data-kbd="tr-prev"></kbd></button>
         <button type="button" class="tr-cur" id="tr-cur" title="Elegir otra transición" aria-haspopup="true" aria-expanded="false"></button>
-        <button type="button" class="tr-step" id="tr-next" title="Transición siguiente" aria-label="Transición siguiente">▸</button>
+        <button type="button" class="tr-step" id="tr-next" title="Transición siguiente" aria-label="Transición siguiente">▸<kbd data-kbd="tr-next"></kbd></button>
         <button class="btn--sm btn--primary" id="tr-preview" data-act="tr-run" title="Lanza la transición elegida sin cambiar de escena">▶ <kbd data-kbd="tr-run"></kbd></button>
       </div>
       <div class="tr-pop" id="tr-pop" hidden>
@@ -258,6 +293,17 @@
 </section>
 </div>
 
+<div class="tiktok-row">
+    <section class="card" id="card-tiktok">
+      <header class="card-h"><span class="card-id">§08</span><h2>TIKTOK FX</h2><span class="card-meta">1 TOQUE = COMBO</span></header>
+      <div class="field-label" style="margin-bottom:6px">EMERGENCIA · ALERTAS</div>
+      <div class="alerts" id="tt-alerts"></div>
+      <div class="field-label" style="margin:10px 0 6px">MÚSICA · EFECTOS AL RITMO</div>
+      <div class="alerts" id="tt-music"></div>
+      <div class="field-label" style="margin:10px 0 6px">VIRAL · VERTICAL · BRUTALES</div>
+      <div class="alerts" id="tt-viral"></div>
+    </section>
+</div>
 
 <div class="zone-h zh-ev"><span>EVIDENCIAS</span></div>
 <div class="ev-row">
@@ -274,7 +320,7 @@
           </div>
         </div>
         <div class="ev-take">
-          <button class="take-btn" id="ev-next" data-act="ev-next" title="Manda al aire la evidencia en PREVIEW; la siguiente de la cola pasa a PREVIEW">TAKE</button>
+          <button class="take-btn" id="ev-next" data-act="ev-next" title="Manda al aire la evidencia en PREVIEW; la siguiente de la cola pasa a PREVIEW">TAKE <kbd data-kbd="ev-next"></kbd></button>
         </div>
         <div class="slot slot--air mon mon--program" id="ev-air">
           <span class="slot-k">PROGRAMA · AL AIRE</span>
@@ -285,8 +331,8 @@
             <span class="ev-state" id="ev-air-state">ESTADO DESCONOCIDO</span>
           </div>
           <div class="ev-air-btns">
-            <button id="ev-clear" title="Quita la evidencia del aire">OCULTAR</button>
-            <button id="ev-focus" title="Enfoca la evidencia en pantalla durante 6 s">◎ ENFOCAR</button>
+            <button id="ev-clear" title="Quita la evidencia del aire">OCULTAR <kbd data-kbd="ev-hide"></kbd></button>
+            <button id="ev-focus" title="Enfoca la evidencia en pantalla durante 6 s">◎ ENFOCAR <kbd data-kbd="focus:evidence"></kbd></button>
           </div>
         </div>
       </div>
@@ -352,7 +398,7 @@
     <section class="card" id="card-cams">
       <header class="card-h"><span class="card-id">§06</span><h2>CÁMARAS</h2><span class="card-meta">1 CLIC = CAMBIO CON INTERFERENCIA</span></header>
       <div class="cam" id="cam1-box">
-        <div class="cam-h"><span class="dot" id="cam1-dot"></span><span class="cam-id" id="cam1-id">CAM 01</span><span class="cam-now" id="cam1-now">—</span><button class="btn--sm btn--ghost cam-focus" id="cam1-focus" title="Enfoca esta cámara durante 6 s">◎ ENFOCAR</button></div>
+        <div class="cam-h"><span class="dot" id="cam1-dot"></span><span class="cam-id" id="cam1-id">CAM 01</span><span class="cam-now" id="cam1-now">—</span><button class="btn--sm btn--ghost cam-focus" id="cam1-focus" title="Enfoca esta cámara durante 6 s">◎ ENFOCAR <kbd data-kbd="focus:cam1"></kbd></button></div>
         <div class="seg camq">
           <button data-camq="1:REC" data-st="REC">REC</button><button data-camq="1:LIVE" data-st="LIVE">LIVE</button><button data-camq="1:WAITING" data-st="WAITING">WAITING</button><button data-camq="1:OFFLINE" data-st="OFFLINE">OFFLINE</button>
         </div>
@@ -380,7 +426,7 @@
         </details>
       </div>
       <div class="cam" id="cam2-box">
-        <div class="cam-h"><span class="dot" id="cam2-dot"></span><span class="cam-id" id="cam2-id">CAM 02</span><span class="cam-now" id="cam2-now">—</span><button class="btn--sm btn--ghost cam-focus" id="cam2-focus" title="Enfoca esta cámara durante 6 s">◎ ENFOCAR</button></div>
+        <div class="cam-h"><span class="dot" id="cam2-dot"></span><span class="cam-id" id="cam2-id">CAM 02</span><span class="cam-now" id="cam2-now">—</span><button class="btn--sm btn--ghost cam-focus" id="cam2-focus" title="Enfoca esta cámara durante 6 s">◎ ENFOCAR <kbd data-kbd="focus:cam2"></kbd></button></div>
         <div class="seg camq">
           <button data-camq="2:REC" data-st="REC">REC</button><button data-camq="2:LIVE" data-st="LIVE">LIVE</button><button data-camq="2:WAITING" data-st="WAITING">WAITING</button><button data-camq="2:OFFLINE" data-st="OFFLINE">OFFLINE</button>
         </div>
@@ -427,16 +473,6 @@
         <div class="ltp-role" id="ltp-role">Rol o descripción</div>
       </div>
       <div class="lt-btns"><button class="btn--primary" id="lt-show">MOSTRAR <kbd data-kbd="lt-toggle"></kbd></button><button id="lt-hide">OCULTAR</button></div>
-    </section>
-
-    <section class="card" id="card-tiktok">
-      <header class="card-h"><span class="card-id">§08</span><h2>TIKTOK FX</h2><span class="card-meta">1 TOQUE = COMBO</span></header>
-      <div class="field-label" style="margin-bottom:6px">EMERGENCIA · ALERTAS</div>
-      <div class="alerts" id="tt-alerts"></div>
-      <div class="field-label" style="margin:10px 0 6px">MÚSICA · EFECTOS AL RITMO</div>
-      <div class="alerts" id="tt-music"></div>
-      <div class="field-label" style="margin:10px 0 6px">VIRAL · VERTICAL · BRUTALES</div>
-      <div class="alerts" id="tt-viral"></div>
     </section>
 
   </div>
@@ -510,40 +546,6 @@
         <div class="drawer-body"><div id="fx"></div></div>
       </details>
 
-      <details class="drawer" id="dr-audio">
-        <summary><span class="dr-t">AUDIO</span><span class="dr-s" id="audio-summary">—</span></summary>
-        <div class="drawer-body">
-          <label class="check"><input type="checkbox" id="snd-enabled" data-keep="snd-enabled"> Sonidos de la transmisión activados</label>
-          <div class="snd-off-note" id="snd-off-note" hidden>⚠ Los sonidos están APAGADOS: actívalos arriba para que suenen los efectos, las pruebas ▶ y tus teclas rápidas.</div>
-          <div class="vol" style="margin-top:10px">
-            <span class="mlabel">VOLUMEN</span>
-            <input type="range" id="snd-volume" min="0" max="1" step="0.05" value="0.6" data-keep="snd-volume">
-            <span id="snd-volume-val" class="mlabel tabnum">60%</span>
-          </div>
-          <div class="sub-k">EFECTOS DEL PROGRAMA · el sonido de cada cosa que pasa en pantalla</div>
-          <div class="hint">Cada efecto suena <b>sintetizado</b> por defecto (no necesitas archivos). Para cambiarlo, pega un link o una ruta (<code>https://…/sonido.mp3</code>, <code>assets/sounds/alerta.mp3</code>) o elige un archivo pequeño (≤ 500 KB). ▶ lo prueba al instante.</div>
-          <div class="sfx-list" id="sfx-list"></div>
-          <div class="sub-k">MIS SONIDOS · soundboard con tecla rápida
-            <span class="sm-tools"><button class="btn--sm btn--ghost" id="sn-edit-toggle" title="Mostrar editar en cada botón">✎ EDITAR</button><button class="btn--sm btn--primary" id="sn-new">+ NUEVO SONIDO</button></span></div>
-          <div class="sn-grid" id="sn-grid"></div>
-          <div class="sub-k">AMBIENTE · room tone de fondo</div>
-          <label class="check"><input type="checkbox" id="amb-enabled"> Ambiente activado</label>
-          <div class="vol" style="margin-top:8px">
-            <span class="mlabel">NIVEL</span>
-            <input type="range" id="amb-volume" min="0" max="1" step="0.02" value="0.18">
-            <span id="amb-volume-val" class="mlabel tabnum">18%</span>
-          </div>
-          <div class="sub-k">DUCKING · baja una fuente de OBS mientras suena un efecto y la sube sola</div>
-          <label class="check"><input type="checkbox" id="duck-enabled" data-keep="duck-enabled"> Ducking activado</label>
-          <div id="duck-inputs"><div class="bank-empty">Conectando a OBS para listar las fuentes de audio…</div></div>
-          <div class="grid2" style="margin-top:8px">
-            <label class="field"><span>BAJA (dB)</span><input id="duck-amount" type="number" value="-14" data-keep="duck-amount"></label>
-            <label class="field"><span>DURA (ms)</span><input id="duck-hold" type="number" value="700" data-keep="duck-hold"></label>
-          </div>
-          <div class="row" style="margin-top:8px"><button id="duck-test">PROBAR DUCKING AHORA</button></div>
-        </div>
-      </details>
-
       <details class="drawer" id="dr-obs">
         <summary><span class="dr-t">OBS</span><span class="dr-s" id="obs-summary">—</span></summary>
         <div class="drawer-body">
@@ -562,7 +564,7 @@
         <summary><span class="dr-t">DEBUG</span><span class="dr-s">BITÁCORA TÉCNICA · OVERLAY</span></summary>
         <div class="drawer-body">
           <div id="log"></div>
-          <div class="row" style="margin-top:10px"><button class="btn--danger" id="reload">RECARGAR OVERLAY</button><span class="hint">tras editar config.js</span></div>
+          <div class="row" style="margin-top:10px"><button class="btn--danger" id="reload">RECARGAR OVERLAY <kbd data-kbd="reload"></kbd></button><span class="hint">tras editar config.js</span></div>
         </div>
       </details>
     </div>
@@ -700,5 +702,6 @@
 <script src="config.js"></script>
 <script src="js/control.js"></script>
 <script src="js/layout-drag.js"></script>
+<script src="js/layout-canvas.js"></script>
 </body>
 </html>

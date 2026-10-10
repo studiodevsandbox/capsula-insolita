@@ -1120,7 +1120,7 @@
   const fxBox = $('#fx');
   FX_KEYS.forEach(k => {
     const lab = document.createElement('label');
-    lab.innerHTML = `<input type="checkbox" data-fx="${k}"> ${k}`;
+    lab.innerHTML = `<input type="checkbox" data-fx="${k}"> <kbd data-kbd="fx:${k}"></kbd>${k}`;
     fxBox.appendChild(lab);
     const cb = lab.querySelector('input');
     cb.addEventListener('change', async () => {
@@ -1629,14 +1629,14 @@
   const fireTransition = n => send({ cmd: 'transition', name: n }, { ok: `✓ TRANSICIÓN → ${n.toUpperCase()}` });
   ALERTS.forEach(t => {
     const b = document.createElement('button');
-    b.textContent = t; b.dataset.alert = t;
+    b.innerHTML = `<kbd data-kbd="alert:${t}"></kbd>${t}`; b.dataset.alert = t;
     if (CRITICAL.has(t)) b.className = 'crit';
     b.addEventListener('click', () => fireAlert(t));
     $('#alerts').appendChild(b);
   });
   STAMPS.forEach(t => {
     const b = document.createElement('button');
-    b.textContent = t;
+    b.innerHTML = `<kbd data-kbd="stamp:${t}"></kbd>${t}`;
     b.addEventListener('click', () => fireStamp(t));
     $('#stamps').appendChild(b);
   });
@@ -1821,9 +1821,19 @@
     return cb ? { kind: 'cb', id: cb.id, label: `botón "${cb.name}"` } : null;
   }
   const kbdText = id => { const a = ACT[id]; return a ? comboLabel(keyOf(a)) : ''; };
-  // todos los <kbd data-kbd="idAcción"> de la interfaz muestran la tecla vigente
+  // todos los <kbd data-kbd="idAcción"> de la interfaz muestran la tecla vigente;
+  // si la acción existe pero no tiene tecla asignada, se muestra "?" en vez de esconderse,
+  // para que quede claro que ahí se puede poner un atajo (⌨ ATAJOS).
   function syncKbd(root) {
-    $$('kbd[data-kbd]', root).forEach(k => { const t = kbdText(k.dataset.kbd); k.textContent = t; k.hidden = !t; });
+    $$('kbd[data-kbd]', root).forEach(k => {
+      const id = k.dataset.kbd;
+      const known = !!ACT[id];
+      const t = known ? kbdText(id) : '';
+      k.hidden = !known;
+      k.textContent = known ? (t || '?') : '';
+      k.classList.toggle('kbd--empty', known && !t);
+      k.title = !known ? '' : (t ? `Atajo: ${t}` : 'Sin atajo asignado · click en ⌨ ATAJOS para asignarle uno');
+    });
   }
   const isTyping = el => !!el && (el.isContentEditable || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' ||
     (el.tagName === 'INPUT' && !/^(checkbox|radio|range|button|submit|file)$/i.test(el.type)));
@@ -2186,7 +2196,7 @@
     if (on === undefined) on = !r.classList.contains('tp-full');
     if (on && !tp.on) return;
     r.classList.toggle('tp-full', on); document.body.classList.toggle('tp-full-on', on);
-    $('#tp-full').textContent = on ? '⤡ REDUCIR' : '⛶'; $('#tp-full').title = on ? 'Volver a la ventana del panel (Esc)' : 'Pantalla completa solo para el prompter (Esc vuelve)';
+    $('#tp-full').innerHTML = (on ? '⤡ REDUCIR' : '⛶') + '<kbd data-kbd="tp-full"></kbd>'; syncKbd($('#tp-full')); $('#tp-full').title = on ? 'Volver a la ventana del panel (Esc)' : 'Pantalla completa solo para el prompter (Esc vuelve)';
     if (tp.on) { tpStyle(); tpSetPos(tp.pos); }
   }
   const tpIsFull = () => $('#cf-reader').classList.contains('tp-full');
@@ -2194,7 +2204,7 @@
   var cfw = 50;
   function setCfw(v, quiet) {
     v = [50, 66, 100].includes(Number(v)) ? Number(v) : 50; cfw = v; document.body.dataset.cfw = String(v);
-    $('#cfw-select').value = String(v); $('#tp-width').textContent = '⤢ ' + v + '%'; if (!quiet) keep('cfw', v);
+    $('#cfw-select').value = String(v); $('#tp-width').innerHTML = '⤢ ' + v + '% <kbd data-kbd="tp-width"></kbd>'; syncKbd($('#tp-width')); if (!quiet) keep('cfw', v);
     if (tp.on) requestAnimationFrame(() => { tpStyle(); tpSetPos(tp.pos); });
   }
   $('#cfw-select').addEventListener('change', e => { tpWidthBefore = null; setCfw(e.target.value); });
@@ -2614,8 +2624,8 @@
     snErr.textContent = o ? (o.reserved ? 'Esa tecla está reservada.' : `Ya es de: ${o.label} (al guardar te pregunto si se la quitas).`) : '';
   });
   $('#sn-key-clear').addEventListener('click', () => { snKey.dataset.raw = ''; snKey.value = ''; snErr.textContent = ''; });
-  $('#sn-new').addEventListener('click', () => snOpen(null));
-  $('#sn-edit-toggle').addEventListener('click', () => { snEditMode = !snEditMode; renderSnBoard(); });
+  $('#sn-new').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); snOpen(null); });
+  $('#sn-edit-toggle').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); snEditMode = !snEditMode; renderSnBoard(); });
   $('#sn-cancel').addEventListener('click', () => { $('#sn-modal').hidden = true; });
   $('#sn-modal').addEventListener('click', e => { if (e.target.id === 'sn-modal') $('#sn-modal').hidden = true; });
   $('#sn-save').addEventListener('click', () => {

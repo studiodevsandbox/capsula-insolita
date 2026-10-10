@@ -87,6 +87,7 @@ kbd {
   font: 600 11px var(--mono); text-align: center; letter-spacing: 0;
   line-height: 13px;
 }
+kbd.kbd--empty { opacity: .4; border-style: dashed; font-weight: 400; }
 .mlabel { color: var(--grey); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
 .dim { color: var(--grey); }
 .tabnum { font-variant-numeric: tabular-nums; }
@@ -748,6 +749,11 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 @media (max-width: 1100px) { .ev-row { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 700px) { .ev-row { padding: 0 12px; } }
 
+/* ---------------- §08 TIKTOK FX: fila propia, ancho completo, debajo del Control Deck ---------------- */
+.tiktok-row { max-width: 1760px; margin: 14px auto 0; padding: 0 18px; }
+.tiktok-row > .card { min-width: 0; width: 100%; }
+@media (max-width: 700px) { .tiktok-row { padding: 0 12px; } }
+
 /* ---------------- responsive ---------------- */
 @media (max-width: 1280px) {
   .deck { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
@@ -1253,7 +1259,7 @@ body::before { content: ''; position: fixed; inset: 0; z-index: 0; pointer-event
 .zone-h--solo { margin-top: 30px; }
 .zone-h--solo .drawers-toggle { flex: none; letter-spacing: .08em; font-size: 11px; text-transform: none; }
 .col-c.is-collapsed { display: none; }
-.zones > .zh-top { order: 20; } .zones > .top-zone { order: 21; } .zones > .zh-ev { order: 30; } .zones > .ev-row { order: 31; }
+.zones > .zh-top { order: 20; } .zones > .top-zone { order: 21; } .zones > .tiktok-row { order: 25; } .zones > .zh-ev { order: 30; } .zones > .ev-row { order: 31; }
 body[data-view=operacion] .zones > .zh-ev { order: 10; } body[data-view=operacion] .zones > .ev-row { order: 11; }
 body[data-view=operacion] .zones > .zh-top { order: 20; } body[data-view=operacion] .zones > .top-zone { order: 21; }
 
@@ -1262,6 +1268,18 @@ body[data-view=operacion] .zones > .zh-top { order: 20; } body[data-view=operaci
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035), 0 10px 28px rgba(0, 0, 0, .35); padding: 14px 16px 16px; }
 .card-h { align-items: center; margin-bottom: 14px; padding-bottom: 11px; border-bottom: 1px solid var(--hair); gap: 11px; }
 .card-h h2 { font-size: 21px; letter-spacing: .15em; }
+/* marcador + línea divisoria tipo .zone-h, replicado en cada encabezado de bloque (§02-§08 y Control Deck) */
+.card-h::before, .cdeck-h::before {
+  content: ''; order: -1; flex: none; width: 9px; height: 9px;
+  background: var(--y); box-shadow: 0 0 10px rgba(255, 212, 0, .5);
+}
+.card-h::after, .cdeck-h::after {
+  content: ''; order: 1; flex: 1 1 24px; height: 1px; align-self: center;
+  background: linear-gradient(90deg, var(--hair-2), transparent 85%);
+}
+.card-h .card-meta { order: 2; }
+.cdeck-h .cdeck-sum { order: 0; }
+.cdeck-h #cdeck-keys, .cdeck-h #cdeck-toggle { order: 2; }
 .card-id { padding: 2px 6px; border: 1px solid rgba(255, 212, 0, .35); background: rgba(255, 212, 0, .06); border-radius: 2px; line-height: 1.2; }
 .card--danger { background: linear-gradient(180deg, #14030a, #0b0407); border-color: rgba(224, 0, 34, .4); }
 .card--danger .card-id { border-color: rgba(224, 0, 34, .5); background: rgba(224, 0, 34, .08); }
@@ -1685,3 +1703,50 @@ body.tp-full-on .topbar { z-index: 20; }
 .cf-reader.tp-full #tp-width { display: none; }
 body[data-aspect=dossier] .cf-r-btns .btn--ghost { background: linear-gradient(180deg, #2a2a2a, #181818); color: #efe9da; border-color: #000; }
 body[data-aspect=dossier] .cf-r-btns .btn--ghost:hover { background: linear-gradient(180deg, #3a3a3a, #202020); }
+
+/* ---------------- grid-canvas organizable: §02–§08 + AJUSTES (arrastrar / redimensionar) ----------------
+   Inactivo por defecto (sin diseño guardado): el panel se ve y funciona exactamente como siempre.
+   Se activa solo cuando hay un diseño guardado en localStorage (lci-panel-layout-v1), ver js/layout-canvas.js. */
+.lci-canvas { display: none; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: 32px; gap: 14px; max-width: 1760px; margin: 14px auto 0; padding: 0 18px; }
+body.lci-canvas-on .lci-canvas { display: grid; }
+body.lci-canvas-on .top-zone, body.lci-canvas-on .ev-row, body.lci-canvas-on .deck,
+body.lci-canvas-on .tiktok-row,
+body.lci-canvas-on .zh-top, body.lci-canvas-on .zh-ev, body.lci-canvas-on .zone-h--solo { display: none !important; }
+
+.lci-block { position: relative; min-width: 0; overflow: auto; }
+.lci-block > #card-notes, .lci-block > #cdeck, .lci-block > #card-ev, .lci-block > #card-bank,
+.lci-block > #card-cams, .lci-block > #card-lt, .lci-block > #card-tiktok, .lci-block > .col-c { height: 100%; margin: 0; }
+.lci-block > .col-c.is-collapsed { display: none; }
+
+.lci-drag2-handle, .lci-resize2-handle { display: none; }
+body.lci-organize .lci-drag2-handle, body.lci-organize .lci-resize2-handle { display: flex; }
+body.lci-organize .lci-block { outline: 1px dashed rgba(255, 212, 0, .45); outline-offset: 2px; }
+.lci-drag2-handle {
+  position: absolute; top: 0; left: 0; z-index: 6;
+  align-items: center; justify-content: center;
+  width: 26px; height: 22px; cursor: grab;
+  background: var(--y); color: #000; font-size: 13px; line-height: 1;
+  border: 1px solid #000;
+}
+.lci-drag2-handle:active { cursor: grabbing; }
+.lci-resize2-handle {
+  position: absolute; bottom: 0; right: 0; z-index: 6;
+  align-items: center; justify-content: center;
+  width: 20px; height: 20px; cursor: nwse-resize;
+  background: var(--y); color: #000; font-size: 10px; line-height: 1;
+  border: 1px solid #000;
+}
+.lci-block--dragging, .lci-block--resizing { opacity: .45; }
+#lci-organize-btn.on { color: var(--y); border-color: rgba(255, 212, 0, .5); background: var(--y-dim); }
+#lci-layout-reset-btn { display: none; }
+body.lci-organize #lci-layout-reset-btn { display: inline-flex; }
+
+/* angosto: colapsa a 1 columna (apilado), ignora las posiciones custom, respeta solo el orden */
+@media (max-width: 900px) {
+  body.lci-canvas-on .lci-canvas { display: flex; flex-direction: column; }
+  body.lci-canvas-on .lci-block { grid-column: auto !important; grid-row: auto !important; height: auto !important; width: 100% !important; }
+  .lci-resize2-handle { display: none !important; }
+}
+body[data-eff=narrow].lci-canvas-on .lci-canvas { display: flex; flex-direction: column; }
+body[data-eff=narrow].lci-canvas-on .lci-block { grid-column: auto !important; grid-row: auto !important; height: auto !important; width: 100% !important; }
+body[data-eff=narrow] .lci-resize2-handle { display: none !important; }
