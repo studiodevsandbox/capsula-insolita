@@ -1182,11 +1182,17 @@
   const resetOutro = () => send({ cmd: 'reset' }, { ok: '✓ INTRO/OUTRO QUITADOS', apply: () => { live.outro = null; renderOutroToggle(); } });
   $('#reset').addEventListener('click', resetOutro);
   // switch en el header: clic para mostrar, clic de nuevo (sobre el que ya está activo) para quitarlo
-  const OUTRO_LABEL = { closed: 'CASO CERRADO', continues: 'CONTINUARÁ...' };
+  // textos personalizables desde el cajón CASO / MARCA (#outro-label-1 / #outro-label-2)
+  const outroLabelEl = { closed: $('#outro-label-1'), continues: $('#outro-label-2') };
+  const outroDefault = { closed: 'CASO CERRADO', continues: 'CONTINUARÁ...' };
+  const outroLabel = kind => outroLabelEl[kind].value.trim() || outroDefault[kind];
+  function renderOutroLabels() { $$('[data-outro]').forEach(b => { b.textContent = outroLabel(b.dataset.outro); }); }
+  Object.values(outroLabelEl).forEach(el => el.addEventListener('input', renderOutroLabels));
+  renderOutroLabels();
   $$('[data-outro]').forEach(b => b.addEventListener('click', () => {
-    const kind = b.dataset.outro;
+    const kind = b.dataset.outro, text = outroLabel(kind);
     if (live.outro === kind) { resetOutro(); return; }
-    send({ cmd: 'outro', text: OUTRO_LABEL[kind] }, { ok: `■ OUTRO · ${OUTRO_LABEL[kind]}`, apply: () => { live.outro = kind; renderOutroToggle(); } });
+    send({ cmd: 'outro', text }, { ok: `■ OUTRO · ${text}`, apply: () => { live.outro = kind; renderOutroToggle(); } });
   }));
   function renderOutroToggle() { $$('[data-outro]').forEach(b => b.classList.toggle('on', b.dataset.outro === live.outro)); }
   renderOutroToggle();
