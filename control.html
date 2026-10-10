@@ -23,7 +23,10 @@
     <span class="chip" id="top-live" title="Estado de la transmisión / grabación en OBS">AIRE <b>—</b></span>
     <span class="chip" id="top-scene">ESCENA <b>—</b></span>
     <span class="chip" id="top-rd" hidden title="Avance de la escaleta">ESCALETA <b>—</b></span>
-    <span class="chip" id="top-mode">MODE <b>—</b></span>
+    <span class="seg seg--mode" id="top-mode">
+      <button type="button" class="mode-btn mode-btn--mini" data-mode="clean" title="Clean · solo información"><kbd data-kbd="mode-clean"></kbd>CLEAN</button>
+      <button type="button" class="mode-btn mode-btn--mini" data-mode="investigation" title="Investigation · todos los efectos"><kbd data-kbd="mode-investigation"></kbd>INV</button>
+    </span>
     <span class="chip" id="top-overlay">OVERLAY <b>—</b></span>
   </div>
   <div class="top-tools">
@@ -237,15 +240,8 @@
       <div class="alerts" id="alerts"></div>
       <details class="cdeck-stamps"><summary>SELLOS · caen sobre la evidencia si está visible</summary><div class="stamps" id="stamps"></div></details>
     </div>
-    <div class="sm sm--mode" id="sm-mode">
-      <div class="sm-k">4 · MODO <span class="sm-m" id="mode-meta">—</span></div>
-      <div class="modes">
-        <button class="mode-btn" data-mode="clean"><kbd data-kbd="mode-clean"></kbd><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/></svg><span class="m-t">CLEAN</span><span class="m-s">SOLO INFORMACIÓN</span></button>
-        <button class="mode-btn" data-mode="investigation"><kbd data-kbd="mode-investigation"></kbd><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M15 15l6 6"/><path d="M7 10h6" class="f"/></svg><span class="m-t">INVESTIGATION</span><span class="m-s">TODOS LOS EFECTOS</span></button>
-      </div>
-    </div>
     <div class="sm sm--trans" id="sm-trans">
-      <div class="sm-k">5 · TRANSICIÓN <span class="sm-m" id="tr-sel-label">—</span></div>
+      <div class="sm-k">4 · TRANSICIÓN <span class="sm-m" id="tr-sel-label">—</span></div>
       <div class="tr-bar">
         <button type="button" class="tr-step" id="tr-prev" title="Transición anterior" aria-label="Transición anterior">◂</button>
         <button type="button" class="tr-cur" id="tr-cur" title="Elegir otra transición" aria-haspopup="true" aria-expanded="false"></button>
@@ -258,13 +254,13 @@
       </div>
     </div>
     <div class="sm sm--custom" id="sm-custom">
-      <div class="sm-k">6 · PERSONALIZADOS
+      <div class="sm-k">5 · PERSONALIZADOS
         <span class="sm-tools"><button class="btn--sm btn--ghost" id="cb-edit-toggle" title="Mostrar editar / borrar en cada botón">✎ EDITAR</button><button class="btn--sm btn--primary" id="cb-new">+ NUEVO BOTÓN</button></span>
       </div>
       <div class="cb-grid" id="cb-grid"></div>
     </div>
     <div class="sm sm--tiktok" id="sm-tiktok">
-      <div class="sm-k">7 · TIKTOK FX <span class="sm-m">1 TOQUE = COMBO</span></div>
+      <div class="sm-k">6 · TIKTOK FX <span class="sm-m">1 TOQUE = COMBO</span></div>
       <div class="field-label" style="margin-bottom:6px">EMERGENCIA · ALERTAS</div>
       <div class="alerts" id="tt-alerts"></div>
       <div class="field-label" style="margin:10px 0 6px">MÚSICA · EFECTOS AL RITMO</div>

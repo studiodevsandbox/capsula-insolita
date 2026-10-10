@@ -2873,8 +2873,6 @@
     setNp('#np-mode-box', '#np-mode', live.mode ? esc(live.mode.toUpperCase()) : NODATA, live.mode === 'investigation' ? 'INV' : null);
     $('#cdeck-sum').innerHTML = `<span class="chip-s chip-s--air"><i></i>${live.scene ? esc(sceneLabel(live.scene).toUpperCase()) : 'SIN ESCENA'}</span><span class="chip-s${live.mode === 'investigation' ? ' chip-s--inv' : ''}"><i></i>${live.mode ? esc(live.mode.toUpperCase()) : 'SIN MODO'}</span>`;
     $('#top-scene').innerHTML = `ESCENA <b>${live.scene ? esc(sceneLabel(live.scene).toUpperCase()) : (live.obsScene ? esc(live.obsScene) : 'SIN DATO')}</b>`;
-    $('#top-mode').innerHTML = `MODE <b>${live.mode ? esc(live.mode.toUpperCase()) : 'SIN DATO'}</b>`;
-    $('#top-mode').classList.toggle('chip--inv', live.mode === 'investigation');
   }
   function renderCams() {
     [1, 2].forEach(id => {
@@ -2891,7 +2889,6 @@
     $$('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === live.mode));
     $('#qa-inv').classList.toggle('on', live.mode === 'investigation');
     $('#qa-clean').classList.toggle('on', live.mode === 'clean');
-    $('#mode-meta').innerHTML = live.mode ? `ACTIVO: <b>${esc(live.mode.toUpperCase())}</b>` : 'DESCONOCIDO';
   }
   function renderFx() {
     const known = !!live.fx;
