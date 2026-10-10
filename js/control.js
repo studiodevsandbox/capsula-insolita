@@ -138,18 +138,8 @@
     while (logBox.children.length > 40) logBox.lastChild.remove();
   };
 
-  /* ---------- activity log (lo que el operador hizo) + toasts ---------- */
-  const actBox = $('#activity');
-  function activity(text, kind) {
-    const empty = actBox.querySelector('.empty');
-    if (empty) empty.remove();
-    const li = document.createElement('li');
-    if (kind) li.className = kind;
-    li.innerHTML = `<time>${hhmmss()}</time><span></span>`;
-    li.lastChild.textContent = text;
-    actBox.prepend(li);
-    while (actBox.children.length > 20) actBox.lastChild.remove();
-  }
+  // el panel ACTIVITY LOG se quitó; se conserva la función como no-op por sus llamadores
+  function activity() {}
   const toastBox = $('#toasts');
   function toast(text, kind) {
     const t = document.createElement('div');
@@ -1156,21 +1146,18 @@
     });
     $(`#cam${id}-label`).addEventListener('input', renderCams);
   });
-  // botones rápidos de estado: un clic cambia a ese estado; un clic sobre el estado YA activo oculta la cámara (toggle, sin botón aparte)
+  // botones rápidos de estado: un clic cambia a ese estado; un clic sobre el estado YA activo lo quita
+  // (vuelve a un estado neutro, la cámara se sigue viendo, solo se saca la etiqueta/efecto de ese estado)
   function camQuick(id, status) {
     const c = live.cams[id] || {};
     const alreadyOn = c.enabled !== false && c.status === status;
-    if (alreadyOn) {
-      const p = camPayload(id);
-      return send({ cmd: 'camera', id, enabled: false }, {
-        ok: `● ${p.label} → OCULTA`,
-        apply: () => { live.cams[id] = Object.assign({}, c, { label: p.label, status, subject: p.subject, enabled: false }); }
-      }).then(() => renderCams());
-    }
-    const sel = $(`#cam${id}-status`);
-    setKept(sel, status);
-    const p = camPayload(id, status);
-    return send(Object.assign({ cmd: 'cameraSwitch', frame: Number(id), enabled: true }, p), { ok: `● ${p.label} → ${status}`, apply: camApplied(id, p) });
+    const useStatus = alreadyOn ? '' : status; // repetir el mismo estado lo quita
+    if (!alreadyOn) { const sel = $(`#cam${id}-status`); setKept(sel, status); }
+    const p = { label: $(`#cam${id}-label`).value, status: useStatus, subject: $(`#cam${id}-subject`).value };
+    return send(Object.assign({ cmd: 'cameraSwitch', frame: Number(id), enabled: true }, p), {
+      ok: `● ${p.label} → ${useStatus || 'SIN ESTADO'}`,
+      apply: () => { live.cams[id] = { label: p.label, status: p.status, subject: p.subject, enabled: true }; }
+    });
   }
   $$('[data-camq]').forEach(b => b.addEventListener('click', () => {
     const [id, status] = b.dataset.camq.split(':');
@@ -2894,12 +2881,10 @@
       const c = live.cams[id];
       const st = c && c.status;
       $(`#cam${id}-id`).textContent = $(`#cam${id}-label`).value || `CAM 0${id}`;
-      const hid = !!c && c.enabled === false;
-      $(`#cam${id}-now`).innerHTML = c ? `<b>${esc(st)}${hid ? ' · OCULTA' : ''}</b> · ${esc(c.subject || '')}` : 'ESTADO DESCONOCIDO · elige uno';
-      if (st && !hid) { $(`#cam${id}-box`).dataset.st = st; $(`#cam${id}-dot`).dataset.st = st; }
+      $(`#cam${id}-now`).innerHTML = c ? `<b>${st ? esc(st) : 'SIN ESTADO'}</b> · ${esc(c.subject || '')}` : 'ESTADO DESCONOCIDO · elige uno';
+      if (st) { $(`#cam${id}-box`).dataset.st = st; $(`#cam${id}-dot`).dataset.st = st; }
       else { delete $(`#cam${id}-box`).dataset.st; delete $(`#cam${id}-dot`).dataset.st; }
-      $(`#cam${id}-box`).classList.toggle('is-hidden', hid);
-      $$(`[data-camq^="${id}:"]`).forEach(b => b.classList.toggle('on', !hid && !!st && b.dataset.camq === `${id}:${st}`));
+      $$(`[data-camq^="${id}:"]`).forEach(b => b.classList.toggle('on', !!st && b.dataset.camq === `${id}:${st}`));
     });
   }
   function renderModes() {

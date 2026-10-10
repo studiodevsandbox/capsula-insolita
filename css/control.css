@@ -376,7 +376,6 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 .ev-state[data-st=WARN] { color: var(--cream); }
 .ev-air-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .ev-air-btns button { padding: 8px 4px; }
-.cam.is-hidden { opacity: .55; }
 .cam-focus { margin-left: auto; flex: none; color: var(--grey); }
 .slot--next { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 10px; align-content: start; }
 .slot--next .slot-k { grid-column: 1 / -1; margin-bottom: 0; }
@@ -747,7 +746,7 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
   .deck { display: flex; flex-direction: column; }
   .col, .col-c { display: contents; }
   #card-ev { order: 1; } #card-cams { order: 2; } #card-bank { order: 3; } #card-lt { order: 4; }
-  #card-activity { order: 5; } .drawers { order: 6; }
+  .drawers { order: 6; }
   .top-panic { display: inline-flex; } /* panico siempre a mano en la barra */
 }
 @media (max-width: 620px) {

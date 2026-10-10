@@ -173,7 +173,7 @@
       const cfg = C[key];
       const e = this.els[id];
       if (!e) return;
-      const st = STATUS[String(cfg.status || 'LIVE').toUpperCase()] || STATUS.LIVE;
+      const st = cfg.status === '' ? { led: 'led', text: '', title: '', sub: '' } : (STATUS[String(cfg.status || 'LIVE').toUpperCase()] || STATUS.LIVE);
       e.dataset.status = st.text;
       e.querySelector('.cam__tag .led').className = st.led;
       e.querySelector('.cam__label').textContent = cfg.label || 'CAM ' + u.pad(id, 2);
