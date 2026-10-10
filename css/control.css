@@ -196,6 +196,7 @@ kbd {
   .nowbar, .nowbar-note { width: calc(1760px - 36px); margin-left: auto; margin-right: auto; }
 }
 .col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.deck.cols-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
 
 /* ---------------- modo "mover cajas" (reordenar, arrastrar y soltar) ---------------- */
 .lci-drag-handle { cursor: grab; user-select: none; }

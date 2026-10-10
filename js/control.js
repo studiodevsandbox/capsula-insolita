@@ -1713,8 +1713,12 @@
   $('#panel-lock').addEventListener('click', () => setLocked(!panelLocked));
   // ---------- ocultar / mostrar AJUSTES (columna C entera) ----------
   (function () {
-    const box = $('.col-c'), btn = $('#drawers-toggle');
-    const apply = hide => { box.classList.toggle('is-collapsed', hide); btn.textContent = hide ? '◉ MOSTRAR AJUSTES' : '⊘ OCULTAR AJUSTES'; };
+    const box = $('.col-c'), deck = $('.deck'), btn = $('#drawers-toggle');
+    const apply = hide => {
+      box.classList.toggle('is-collapsed', hide);
+      deck.classList.toggle('cols-2', hide);
+      btn.textContent = hide ? '◉ MOSTRAR AJUSTES' : '⊘ OCULTAR AJUSTES';
+    };
     apply(!!saved['drawers-hidden']);
     btn.addEventListener('click', () => { const hide = !box.classList.contains('is-collapsed'); apply(hide); keep('drawers-hidden', hide); });
   })();
