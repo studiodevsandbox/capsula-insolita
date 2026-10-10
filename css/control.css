@@ -124,8 +124,8 @@ kbd {
 .chip--bad { border-color: rgba(224, 0, 34, .55); }
 .chip .bad { color: #ff5a6a; }
 .seg--mode { border: 1px solid var(--line2); display: inline-flex; }
-.np--mode { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.np--mode .np-k { margin-bottom: 0; }
+.np--mode, .np--outro { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; justify-content: center; }
+.np--mode .np-k, .np--outro .np-k { margin-bottom: 0; }
 .seg--mode .mode-btn--mini {
   flex: 0 0 auto; flex-direction: row; align-items: center; gap: 5px; position: static;
   padding: 5px 9px; font: 600 11px var(--mono); letter-spacing: .1em; color: var(--grey); background: transparent; border-color: transparent;
@@ -163,7 +163,7 @@ kbd {
 
 /* ---------------- NOW PLAYING ---------------- */
 .nowbar {
-  display: grid; grid-template-columns: 1.6fr minmax(0, 1fr);
+  display: grid; grid-template-columns: 1.6fr minmax(0, 1fr) minmax(0, 1fr);
   gap: 1px; margin: 14px 18px 0;
   background: var(--line); border: 1px solid var(--line);
 }
