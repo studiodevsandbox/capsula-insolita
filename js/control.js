@@ -1637,6 +1637,58 @@
     b.addEventListener('click', () => fireStamp(t));
     $('#stamps').appendChild(b);
   });
+
+  /* ---------- TIKTOK FX: combos de efectos ya existentes (alerta + transición + sello + sonido) ---------- */
+  const TT_ALERT = [
+    ['🚨 EMERGENCIA', true, [[0, { cmd: 'transition', name: 'redflash' }], [120, { cmd: 'alert', text: 'ÚLTIMA HORA' }], [900, { cmd: 'transition', name: 'redflash' }], [1700, { cmd: 'transition', name: 'redflash' }]]],
+    ['▲ ALERTA ROJA', true, [[0, { cmd: 'transition', name: 'redflash' }], [100, { cmd: 'alert', text: 'ATENCIÓN' }]]],
+    ['📰 ÚLTIMA HORA', false, [[0, { cmd: 'transition', name: 'flash' }], [150, { cmd: 'alert', text: 'ÚLTIMA HORA' }]]],
+    ['📡 SEÑAL PERDIDA', false, [[0, { cmd: 'transition', name: 'cctv' }], [500, { cmd: 'transition', name: 'glitch' }], [1000, { cmd: 'transition', name: 'cctv' }]]],
+    ['⚡ INTERFERENCIA', false, [[0, { cmd: 'transition', name: 'glitch' }], [450, { cmd: 'transition', name: 'cctv' }]]],
+    ['🔒 CONFIDENCIAL', false, [[0, { cmd: 'transition', name: 'stamp' }], [200, { cmd: 'stamp', text: 'CONFIDENCIAL' }]]]
+  ];
+  const TT_MUSIC = [
+    ['💥 DROP', true, [[0, { cmd: 'transition', name: 'flash' }], [140, { cmd: 'transition', name: 'glitch' }], [600, { cmd: 'transition', name: 'flash' }]]],
+    ['🥁 LATIDO', false, [0, 500, 1000, 1500].map(t => [t, { cmd: 'transition', name: 'flash' }])],
+    ['😶 SUSPENSO', false, [[0, { cmd: 'transition', name: 'cctv' }], [800, { cmd: 'transition', name: 'redflash' }], [1700, { cmd: 'transition', name: 'cctv' }]]],
+    ['🔎 REVELACIÓN', false, [[0, { cmd: 'transition', name: 'evidence' }], [250, { cmd: 'alert', text: 'NUEVA EVIDENCIA' }]]],
+    ['🔨 IMPACTO', false, [[0, { cmd: 'transition', name: 'stamp' }], [180, { cmd: 'stamp', text: 'VERIFICADO' }]]],
+    ['📄 CORTE', false, [[0, { cmd: 'transition', name: 'paper' }]]],
+    ['📼 GLITCH x3', false, [0, 350, 700].map(t => [t, { cmd: 'transition', name: 'glitch' }])],
+    ['🎞 CINTA', false, [[0, { cmd: 'transition', name: 'tape' }]]]
+  ];
+  // ráfaga de efectos: enciende los FX un rato y los devuelve a como estaban (se evalúa al hacer clic)
+  const fxBurst = (keys, ms, at = 0) => () => {
+    const prev = k => !!(live.fx && live.fx[k]);
+    const was = {}; keys.forEach(k => { was[k] = prev(k); });
+    return [].concat(
+      keys.map(k => [at, { cmd: 'effect', key: k, value: true }]),
+      keys.map(k => [at + ms, { cmd: 'effect', key: k, value: was[k] }])
+    );
+  };
+  const ttTr = (name, ...ats) => ats.map(t => [t, { cmd: 'transition', name }]);
+  const TT_VIRAL = [
+    ['☠ CAOS TOTAL', true, () => [].concat(ttTr('redflash', 0, 300, 600), ttTr('glitch', 100, 400, 700), [[150, { cmd: 'alert', text: 'ÚLTIMA HORA' }]], fxBurst(['chromaticAberration', 'vhs', 'scanlines', 'cameraNoise'], 2200)())],
+    ['📺 TV ROTA', false, () => [].concat(ttTr('cctv', 0, 400, 800), ttTr('glitch', 200, 600), fxBurst(['vhs', 'cameraNoise', 'scanlines'], 1800)())],
+    ['🔴 PÁNICO', true, () => [].concat(ttTr('redflash', 0, 250, 500, 750, 1000), [[100, { cmd: 'alert', text: 'ATENCIÓN' }]], fxBurst(['redGlow', 'chromaticAberration'], 1800)())],
+    ['🌀 DISTORSIÓN', false, () => [].concat(ttTr('glitch', 0, 200, 400, 600, 800), fxBurst(['chromaticAberration', 'glitch'], 1500)())],
+    ['📸 PAPARAZZI', false, () => ttTr('flash', 0, 120, 260, 380, 560, 700, 900)],
+    ['🎬 SLAM', false, () => [].concat(ttTr('stamp', 0), ttTr('flash', 160), [[200, { cmd: 'stamp', text: 'CASO ABIERTO' }]], fxBurst(['chromaticAberration'], 700, 160)())],
+    ['🕵 INFILTRACIÓN', false, () => [].concat(ttTr('cctv', 0, 900), fxBurst(['scanlines', 'cameraNoise', 'vhs'], 3000)())],
+    ['🚫 CENSURADO', false, () => [].concat(ttTr('tape', 0), [[250, { cmd: 'stamp', text: 'CONFIDENCIAL' }]], ttTr('glitch', 700))],
+    ['🔥 CLÍMAX', true, () => [].concat(ttTr('flash', 0, 500, 900, 1200, 1400, 1550, 1650), ttTr('redflash', 1700), ttTr('glitch', 1750), [[1800, { cmd: 'alert', text: 'ÚLTIMA HORA' }]], fxBurst(['chromaticAberration', 'vhs', 'redGlow'], 2600, 1500)())]
+  ];
+  function runTtCombo(name, steps) {
+    if (typeof steps === 'function') steps = steps();
+    steps.forEach(([at, cmd], i) => setTimeout(() => send(cmd, { ok: i === 0 ? `✓ ${name}` : false }), at));
+  }
+  [['#tt-alerts', TT_ALERT], ['#tt-music', TT_MUSIC], ['#tt-viral', TT_VIRAL]].forEach(([sel, list]) => list.forEach(([name, crit, steps]) => {
+    const b = document.createElement('button');
+    b.textContent = name;
+    if (crit) b.className = 'crit';
+    b.addEventListener('click', () => runTtCombo(name, steps));
+    $(sel).appendChild(b);
+  }));
   const allTr = Object.keys(C.transitionTimings);
   const currentTr = () => (trSel.value && trSel.value !== 'none' ? trSel.value : 'tape');
 
@@ -1682,6 +1734,8 @@
   allTr.forEach(n => act('tr:' + n, 'TRANSICIÓN', n, () => fireTransition(n)));
   [1, 2].forEach(id => ['REC', 'LIVE', 'WAITING', 'OFFLINE'].forEach(st => act(`cam${id}:${st}`, 'CÁMARA', `CAM 0${id} → ${st}`, () => camQuick(id, st))));
   [1, 2].forEach(id => act(`cam${id}:switch`, 'CÁMARA', `CAM 0${id} · aplicar con interferencia`, () => $(`#cam${id}-switch`).click()));
+  ['REC', 'LIVE', 'WAITING', 'OFFLINE'].forEach(st => act(`camAll:${st}`, 'CÁMARA', `CAM 01+02 → ${st}`, () => { camQuick(1, st); camQuick(2, st); }));
+  act('camAll:switch', 'CÁMARA', 'CAM 01+02 · aplicar con interferencia', () => { $('#cam1-switch').click(); $('#cam2-switch').click(); });
   act('focus:evidence', 'ENFOQUE', 'Enfocar evidencia (6 s)', () => focus('evidence'));
   act('focus:cam1', 'ENFOQUE', 'Enfocar CAM 01 (6 s)', () => focus('cam1'));
   act('focus:cam2', 'ENFOQUE', 'Enfocar CAM 02 (6 s)', () => focus('cam2'));
