@@ -1755,6 +1755,7 @@
   act('focus:cam2', 'ENFOQUE', 'Enfocar CAM 02 (6 s)', () => focus('cam2'));
   act('focus:none', 'ENFOQUE', 'Quitar enfoque', () => focus('none', 0));
   act('ambient-toggle', 'AUDIO', 'Ambiente on / off', () => { ambEnabled.checked = !ambEnabled.checked; ambEnabled.dispatchEvent(new Event('change')); });
+  FX_KEYS.forEach(k => act(`fx:${k}`, 'EFECTOS', `Efecto · ${k} on/off`, () => { const cb = $(`[data-fx="${k}"]`); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }));
   act('intro', 'SHOW', 'Intro', () => send({ cmd: 'intro' }, { ok: '▶ INTRO' }));
   act('outro-arm', 'SHOW', 'Outro · caso cerrado (2 toques)', () => arm('outro', '¿CERRAR EL CASO? PULSA OTRA VEZ', () => outro('CASO CERRADO')), 'O');
   act('outro-cont', 'SHOW', 'Outro · continuará (2 toques)', () => arm('outro2', '¿OUTRO · CONTINUARÁ? PULSA OTRA VEZ', () => outro('CONTINUARÁ...')));
@@ -3068,6 +3069,7 @@
     $('#live-rec').textContent = obs.connected ? (r ? r + (onair.paused ? ' (pausa)' : '') : 'no graba') : '—';
     $('#live-overlay').textContent = onair.syncedStart ? fmtHMS(Date.now() - onair.syncedStart) : 'sin sincronizar';
     $('#hud-summary').textContent = ($('#hud-location').value || 'SIN UBICACIÓN') + ' · ' + ($('#hud-tz').value === 'auto' ? 'hora del PC' : $('#hud-tz').value.split('/').pop().replace(/_/g, ' '));
+    $('#brand-summary').textContent = 'CASE #' + ($('#brand-case-number').value || '—') + ' · ' + ($('#brand-case-id').value || 'sin id');
   }
   const hudPayload = () => ({ cmd: 'hud', location: $('#hud-location').value.trim(), timezone: $('#hud-tz').value, timeFormat: $('#hud-fmt').value,
     showSeconds: $('#hud-seconds').checked, showDate: $('#hud-date').checked, showLocation: $('#hud-showloc').checked, showElapsed: $('#hud-showel').checked });
@@ -3081,6 +3083,22 @@
     if ($('#hud-tz').value !== (saved['hud-tz'] === undefined ? (h.timezone || 'auto') : saved['hud-tz'])) $('#hud-tz').value = 'auto';
   })();
   $('#hud-apply').addEventListener('click', () => send(hudPayload(), { ok: '✓ HORA Y UBICACIÓN ACTUALIZADAS' }).then(() => renderOnAir()));
+  const brandPayload = () => ({ cmd: 'brand', title: $('#brand-title-input').value.trim(), caseNumber: $('#brand-case-number').value.trim(), caseId: $('#brand-case-id').value.trim() });
+  (function initBrandFields() {
+    const b = C.brand || {};
+    if (saved['brand-title-input'] === undefined) $('#brand-title-input').value = b.title || '';
+    if (saved['brand-case-number'] === undefined) $('#brand-case-number').value = b.caseNumber || '';
+    if (saved['brand-case-id'] === undefined) $('#brand-case-id').value = b.caseId || '';
+  })();
+  $('#brand-apply').addEventListener('click', () => send(brandPayload(), {
+    ok: '✓ CASO / MARCA ACTUALIZADOS',
+    apply: () => {
+      const p = brandPayload();
+      C.brand = Object.assign({}, C.brand, { title: p.title || C.brand.title, caseNumber: p.caseNumber || C.brand.caseNumber, caseId: p.caseId || C.brand.caseId });
+      $('#brand-title').textContent = C.brand.title;
+      $('#case-no').textContent = C.brand.caseNumber;
+    }
+  }).then(() => renderOnAir()));
   $('#clock-sync').addEventListener('click', () => syncOverlayClock(true));
   $('#clock-reset').addEventListener('click', () => send({ cmd: 'clockStart', start: Date.now() }, { ok: '✓ CRONÓMETRO EN 00:00:00' }).then(() => { onair.syncedStart = null; renderOnAir(); }));
   ['#hud-location', '#hud-tz'].forEach(q => $(q).addEventListener('input', renderOnAir));

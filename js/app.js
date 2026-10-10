@@ -163,6 +163,16 @@
       case 'stamp':
         LCI.Stamps.show(cmd.text, cmd.color);
         break;
+      case 'brand': { // título y número de expediente (panel §AJUSTES · CASO/MARCA)
+        const b = pickFields(data, ['title', 'caseNumber', 'caseId']);
+        if (b.title !== undefined) b.title = String(b.title).slice(0, 60) || C.brand.title;
+        if (b.caseNumber !== undefined) b.caseNumber = String(b.caseNumber).slice(0, 12) || C.brand.caseNumber;
+        if (b.caseId !== undefined) b.caseId = String(b.caseId).slice(0, 30) || C.brand.caseId;
+        Object.assign(C.brand, b);
+        LCI.state.save({ brand: C.brand });
+        LCI.Hud.render();
+        break;
+      }
       case 'hud': { // cartela de hora / lugar / cronómetro
         const h = pickFields(data, ['location', 'timezone', 'timeFormat', 'showSeconds', 'showDate', 'showElapsed', 'showLocation']);
         if (h.timeFormat !== undefined) h.timeFormat = h.timeFormat === '24h' ? '24h' : '12h';
@@ -317,7 +327,7 @@
     applyStageSize();
     if (P.get('reset') === '1') LCI.state.clear();
     const saved = P.get('demo') === '1' ? {} : LCI.state.load();
-    ['camera1', 'camera2', 'evidence', 'lowerThird', 'sound'].forEach(k => { if (saved[k]) Object.assign(C[k], saved[k]); });
+    ['camera1', 'camera2', 'evidence', 'lowerThird', 'sound', 'brand'].forEach(k => { if (saved[k]) Object.assign(C[k], saved[k]); });
     C.hud = Object.assign({}, C.hud, saved.hud || {});
     if (saved.soundFiles && typeof saved.soundFiles === 'object') Object.keys(saved.soundFiles).forEach(k => LCI.sound.setFile(k, saved.soundFiles[k]));
     if (Number.isFinite(saved.clockStart) && saved.clockStart <= Date.now()) LCI.clock.start = saved.clockStart;

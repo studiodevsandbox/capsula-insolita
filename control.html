@@ -446,6 +446,18 @@
   <!-- ============ COLUMNA C: ajustes ============ -->
   <div class="col col-c">
     <div class="drawers">
+      <details class="drawer" id="dr-brand">
+        <summary><span class="dr-t">CASO / MARCA</span><span class="dr-s" id="brand-summary">—</span></summary>
+        <div class="drawer-body">
+          <div class="hint">Título y número de expediente que se ven en el panel y en el overlay (cámaras, HUD, transiciones, intro). Se aplica con el botón y queda guardado.</div>
+          <label class="field" style="margin-top:8px"><span>TÍTULO</span><input id="brand-title-input" data-keep="brand-title-input" maxlength="60" placeholder="LA CÁPSULA INSÓLITA" autocomplete="off"></label>
+          <div class="grid2" style="margin-top:8px">
+            <label class="field"><span>NÚMERO DE CASO</span><input id="brand-case-number" data-keep="brand-case-number" maxlength="12" placeholder="0017" autocomplete="off"></label>
+            <label class="field"><span>ID DE EXPEDIENTE</span><input id="brand-case-id" data-keep="brand-case-id" maxlength="30" placeholder="CAPSULA-017" autocomplete="off"></label>
+          </div>
+          <div class="row" style="margin-top:10px"><button class="btn--primary" id="brand-apply">APLICAR AL OVERLAY</button></div>
+        </div>
+      </details>
       <details class="drawer" id="dr-hud">
         <summary><span class="dr-t">HORA Y LUGAR</span><span class="dr-s" id="hud-summary">—</span></summary>
         <div class="drawer-body">
