@@ -1144,7 +1144,7 @@
 
   /* ---------- cámaras ---------- */
   const camPayload = (id, status) => ({ label: $(`#cam${id}-label`).value, status: status || $(`#cam${id}-status`).value, subject: $(`#cam${id}-subject`).value });
-  const camApplied = (id, p) => () => { live.cams[id] = { label: p.label, status: p.status, subject: p.subject }; };
+  const camApplied = (id, p) => () => { live.cams[id] = { label: p.label, status: p.status, subject: p.subject, enabled: !(live.cams[id] && live.cams[id].enabled === false) }; };
   [1, 2].forEach(id => {
     $(`#cam${id}-apply`).addEventListener('click', () => {
       const p = camPayload(id);
@@ -1155,6 +1155,15 @@
       send(Object.assign({ cmd: 'cameraSwitch', frame: id }, p), { ok: `● ${p.label} → ${p.status} · INTERFERENCIA`, apply: camApplied(id, p) });
     });
     $(`#cam${id}-label`).addEventListener('input', renderCams);
+    $(`#cam${id}-hide`).addEventListener('click', () => {
+      const c = live.cams[id] || {};
+      const show = c.enabled === false;
+      const p = camPayload(id);
+      send({ cmd: 'camera', id, enabled: show }, {
+        ok: `● ${p.label} → ${show ? 'VISIBLE' : 'OCULTA'}`,
+        apply: () => { live.cams[id] = Object.assign({}, c, { label: p.label, status: p.status, subject: p.subject, enabled: show }); }
+      }).then(() => renderCams());
+    });
   });
   // botones rápidos de estado (un clic: cambia el select, guarda y aplica con interferencia)
   function camQuick(id, status) {
@@ -2637,7 +2646,10 @@
   let cbList = (() => {
     const v = readJSON(CB_KEY);
     return Array.isArray(v) ? v.filter(x => isObj(x) && typeof x.id === 'string' && typeof x.name === 'string')
-      .map(x => ({ id: x.id, name: x.name.slice(0, 28), steps: normSteps(x), key: normCombo(typeof x.key === 'string' ? x.key : '') }))
+      .map(x => ({
+        id: x.id, name: x.name.slice(0, 28), steps: normSteps(x), key: normCombo(typeof x.key === 'string' ? x.key : ''),
+        toggle: !!x.toggle, stepsOff: normSteps({ steps: x.stepsOff }), on: !!x.on
+      }))
       .filter(x => x.steps.length) : [];
   })();
   const saveCb = () => { try { localStorage.setItem(CB_KEY, JSON.stringify(cbList)); } catch (e) { toast('✕ NO PUDE GUARDAR LOS BOTONES', 'err'); } };
@@ -2660,26 +2672,27 @@
   const stepLabel = st => (ACT[st.action] ? `${ACT[st.action].group} · ${ACT[st.action].label}` : '⚠ acción inexistente');
   // ejecución: pasos en orden con su espera; Esc cancela una macro en curso; no se solapan dos macros
   let macroRun = null;
-  async function runCustom(b) {
+  async function runSteps(b, steps, label) {
     if (panelLocked) return;
     if (macroRun) { toast('⏳ MACRO EN CURSO · ESC PARA CANCELAR', 'info'); return; }
     const el = document.querySelector(`[data-cb="${b.id}"]`);
     if (el) { el.classList.add('fired'); setTimeout(() => el.classList.remove('fired'), 220); }
-    if (b.steps.length === 1) {
-      const a = ACT[b.steps[0].action];
-      if (!a) { toast(`✕ "${b.name}": LA ACCIÓN YA NO EXISTE`, 'err'); return; }
+    if (!steps.length) return;
+    if (steps.length === 1) {
+      const a = ACT[steps[0].action];
+      if (!a) { toast(`✕ "${label}": LA ACCIÓN YA NO EXISTE`, 'err'); return; }
       a.run();
       return;
     }
     const run = macroRun = { id: b.id, cancelled: false };
     if (el) el.classList.add('is-running');
-    activity(`▶ MACRO ${b.name} (${b.steps.length} pasos)`, 'info');
+    activity(`▶ MACRO ${label} (${steps.length} pasos)`, 'info');
     try {
-      for (let i = 0; i < b.steps.length && !run.cancelled; i++) {
-        const st = b.steps[i], a = ACT[st.action];
+      for (let i = 0; i < steps.length && !run.cancelled; i++) {
+        const st = steps[i], a = ACT[st.action];
         if (a) { try { a.run(); } catch (e) { log('Macro: ' + e.message, true); } }
-        else toast(`✕ MACRO "${b.name}" · PASO ${i + 1}: LA ACCIÓN YA NO EXISTE`, 'err');
-        if (st.delay > 0 && i < b.steps.length - 1) {
+        else toast(`✕ MACRO "${label}" · PASO ${i + 1}: LA ACCIÓN YA NO EXISTE`, 'err');
+        if (st.delay > 0 && i < steps.length - 1) {
           const end = Date.now() + st.delay;
           while (!run.cancelled && Date.now() < end) await new Promise(r => setTimeout(r, Math.min(80, end - Date.now())));
         }
@@ -2688,6 +2701,17 @@
       macroRun = null;
       document.querySelectorAll('.cb.is-running').forEach(n => n.classList.remove('is-running'));
     }
+  }
+  async function runCustom(b) {
+    if (b.toggle) {
+      const goingOn = !b.on;
+      await runSteps(b, goingOn ? b.steps : b.stepsOff, `${b.name} · ${goingOn ? 'ON' : 'OFF'}`);
+      b.on = goingOn;
+      saveCb();
+      renderCustom();
+      return;
+    }
+    await runSteps(b, b.steps, b.name);
   }
   let cbEditMode = false, cbEditingId = null;
   function renderCustom() {
@@ -2699,12 +2723,12 @@
       const bad = b.steps.some(st => !ACT[st.action]);
       const el = document.createElement('button');
       el.type = 'button';
-      el.className = 'cb' + (bad ? ' cb--bad' : '') + (b.steps.length > 1 ? ' cb--macro' : '');
+      el.className = 'cb' + (bad ? ' cb--bad' : '') + (b.steps.length > 1 ? ' cb--macro' : '') + (b.toggle ? ' cb--toggle' : '') + (b.toggle && b.on ? ' on' : '');
       el.dataset.cb = b.id;
-      el.title = (bad ? '⚠ Algún paso apunta a una acción que ya no existe: edítalo.\n' : '') + b.steps.map((st, i) => `${i + 1}. ${stepLabel(st)}${st.delay && i < b.steps.length - 1 ? ` (+${st.delay} ms)` : ''}`).join('\n') + (cbEditMode ? '\n— clic para editar' : '');
+      el.title = (bad ? '⚠ Algún paso apunta a una acción que ya no existe: edítalo.\n' : '') + b.steps.map((st, i) => `${i + 1}. ${stepLabel(st)}${st.delay && i < b.steps.length - 1 ? ` (+${st.delay} ms)` : ''}`).join('\n') + (b.toggle ? `\n(botón ON/OFF — ahora está ${b.on ? 'ON' : 'OFF'})` : '') + (cbEditMode ? '\n— clic para editar' : '');
       el.innerHTML = '<span class="cb-n"></span><span class="cb-foot"><span class="cb-m"></span><kbd></kbd></span>';
       el.querySelector('.cb-n').textContent = b.name;
-      el.querySelector('.cb-m').textContent = b.steps.length > 1 ? `▶ ${b.steps.length} PASOS` : '';
+      el.querySelector('.cb-m').textContent = b.toggle ? (b.on ? '● ON' : '○ OFF') : (b.steps.length > 1 ? `▶ ${b.steps.length} PASOS` : '');
       const kbd = el.querySelector('kbd');
       if (b.key) kbd.textContent = comboLabel(b.key); else kbd.remove();
       if (cbEditMode) el.insertAdjacentHTML('beforeend', '<span class="cb-pen">✎</span>');
@@ -2719,40 +2743,57 @@
   }
   const cbName = $('#cb-name'), cbKey = $('#cb-key'), cbErr = $('#cb-err'), cbStepsBox = $('#cb-steps');
   const cbGroups = () => [...new Set(ACTIONS.map(a => a.group))]; // dinámico: los sonidos nuevos crean su grupo
-  let cbDraft = []; // pasos en edición
-  function cbRenderSteps() {
-    cbStepsBox.innerHTML = '';
-    cbDraft.forEach((st, i) => {
+  let cbDraft = []; // pasos en edición (ON, o únicos si no es toggle)
+  let cbDraftOff = []; // pasos al desactivar (solo si es botón ON/OFF)
+  const cbStepsOffBox = $('#cb-steps-off');
+  function cbRenderStepsGeneric(draft, box, addBtnId, onChange) {
+    box.innerHTML = '';
+    draft.forEach((st, i) => {
       const row = document.createElement('div');
       row.className = 'cb-step';
       const group = (ACT[st.action] && ACT[st.action].group) || cbGroups()[0];
       row.innerHTML = `<span class="cb-step-n">${i + 1}</span><select class="cb-sg" aria-label="Tipo de acción">${cbGroups().map(g => `<option${g === group ? ' selected' : ''}>${esc(g)}</option>`).join('')}</select>` +
         '<select class="cb-sa" aria-label="Acción"></select>' +
         `<label class="cb-sd" title="Espera antes del siguiente paso (ms)">+<input type="number" min="0" max="10000" step="100" value="${st.delay}" aria-label="Espera en milisegundos"> ms</label>` +
-        `<button type="button" class="btn--sm btn--ghost cb-up" title="Subir" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" class="btn--sm btn--ghost cb-rm" title="Quitar paso" ${cbDraft.length === 1 ? 'disabled' : ''}>✕</button>`;
+        `<button type="button" class="btn--sm btn--ghost cb-up" title="Subir" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" class="btn--sm btn--ghost cb-rm" title="Quitar paso" ${draft.length === 1 ? 'disabled' : ''}>✕</button>`;
       const sg = row.querySelector('.cb-sg'), sa = row.querySelector('.cb-sa');
       const fill = () => { sa.innerHTML = ''; ACTIONS.filter(a => a.group === sg.value).forEach(a => sa.appendChild(new Option(a.label, a.id))); if (ACT[st.action] && ACT[st.action].group === sg.value) sa.value = st.action; else st.action = sa.value; };
       fill();
       sg.addEventListener('change', () => { fill(); });
       sa.addEventListener('change', () => { st.action = sa.value; });
       row.querySelector('input').addEventListener('input', e => { st.delay = Math.max(0, Math.min(10000, Number(e.target.value) || 0)); });
-      row.querySelector('.cb-up').addEventListener('click', () => { [cbDraft[i - 1], cbDraft[i]] = [cbDraft[i], cbDraft[i - 1]]; cbRenderSteps(); });
-      row.querySelector('.cb-rm').addEventListener('click', () => { cbDraft.splice(i, 1); cbRenderSteps(); });
-      cbStepsBox.appendChild(row);
+      row.querySelector('.cb-up').addEventListener('click', () => { [draft[i - 1], draft[i]] = [draft[i], draft[i - 1]]; onChange(); });
+      row.querySelector('.cb-rm').addEventListener('click', () => { draft.splice(i, 1); onChange(); });
+      box.appendChild(row);
     });
-    $('#cb-add-step').disabled = cbDraft.length >= 12;
+    $(addBtnId).disabled = draft.length >= 12;
   }
+  function cbRenderSteps() { cbRenderStepsGeneric(cbDraft, cbStepsBox, '#cb-add-step', cbRenderSteps); }
+  function cbRenderStepsOff() { cbRenderStepsGeneric(cbDraftOff, cbStepsOffBox, '#cb-add-step-off', cbRenderStepsOff); }
   $('#cb-add-step').addEventListener('click', () => {
     if (cbDraft.length) cbDraft[cbDraft.length - 1].delay = cbDraft[cbDraft.length - 1].delay || 700; // el paso anterior ya no es el último: espera sugerida
     cbDraft.push({ action: ACTIONS[0].id, delay: 0 }); cbRenderSteps();
   });
+  $('#cb-add-step-off').addEventListener('click', () => {
+    if (cbDraftOff.length) cbDraftOff[cbDraftOff.length - 1].delay = cbDraftOff[cbDraftOff.length - 1].delay || 700;
+    cbDraftOff.push({ action: ACTIONS[0].id, delay: 0 }); cbRenderStepsOff();
+  });
+  function cbApplyToggleUI(on) {
+    $('#cb-steps-off-wrap').hidden = !on;
+    $('#cb-steps-label').textContent = on ? 'PASOS AL ACTIVAR (ON) · se ejecutan en orden' : 'PASOS · se ejecutan en orden (1 paso = botón simple, varios = macro)';
+  }
+  $('#cb-toggle').addEventListener('change', e => cbApplyToggleUI(e.target.checked));
   function cbOpen(id) {
     cbEditingId = id || null;
     const b = id && cbList.find(x => x.id === id);
     $('#cb-title').textContent = b ? 'EDITAR BOTÓN / MACRO' : 'NUEVO BOTÓN / MACRO';
     cbName.value = b ? b.name : '';
     cbDraft = b ? b.steps.map(st => Object.assign({}, st)) : [{ action: ACTIONS[0].id, delay: 0 }];
+    cbDraftOff = (b && b.stepsOff && b.stepsOff.length) ? b.stepsOff.map(st => Object.assign({}, st)) : [{ action: ACTIONS[0].id, delay: 0 }];
     cbRenderSteps();
+    cbRenderStepsOff();
+    $('#cb-toggle').checked = !!(b && b.toggle);
+    cbApplyToggleUI(!!(b && b.toggle));
     cbKey.value = b ? keyLabel(b.key) : '';
     cbKey.dataset.raw = b ? b.key : '';
     cbErr.textContent = '';
@@ -2781,9 +2822,13 @@
     const conflict = cbKeyConflict(key, cbEditingId);
     if (conflict) { cbErr.textContent = conflict; return; }
     steps[steps.length - 1].delay = 0; // la espera del último paso no sirve de nada
+    const toggle = $('#cb-toggle').checked;
+    const stepsOff = toggle ? cbDraftOff.filter(st => ACT[st.action]).map(st => ({ action: st.action, delay: st.delay })) : [];
+    if (stepsOff.length) stepsOff[stepsOff.length - 1].delay = 0;
     const name = cbName.value.trim().slice(0, 28) || (steps.length === 1 ? ACT[steps[0].action].label.slice(0, 28) : 'MACRO');
-    if (cbEditingId) Object.assign(cbList.find(x => x.id === cbEditingId) || {}, { name, steps, key });
-    else cbList.push({ id: 'cb' + Date.now() + Math.random().toString(36).slice(2, 6), name, steps, key });
+    const existing = cbEditingId && cbList.find(x => x.id === cbEditingId);
+    if (existing) Object.assign(existing, { name, steps, key, toggle, stepsOff });
+    else cbList.push({ id: 'cb' + Date.now() + Math.random().toString(36).slice(2, 6), name, steps, key, toggle, stepsOff, on: false });
     saveCb(); renderCustom();
     $('#cb-modal').hidden = true;
     toast(`✓ ${steps.length > 1 ? 'MACRO' : 'BOTÓN'} "${name}" GUARDADO`, 'ok');
@@ -2852,6 +2897,9 @@
       $(`#cam${id}-now`).innerHTML = c ? `<b>${esc(st)}</b> · ${esc(c.subject || '')}` : 'ESTADO DESCONOCIDO · elige uno';
       if (st) { $(`#cam${id}-box`).dataset.st = st; $(`#cam${id}-dot`).dataset.st = st; }
       else { delete $(`#cam${id}-box`).dataset.st; delete $(`#cam${id}-dot`).dataset.st; }
+      const hid = !!c && c.enabled === false;
+      $(`#cam${id}-box`).classList.toggle('is-hidden', hid);
+      $(`#cam${id}-hide`).textContent = hid ? '◉ MOSTRAR' : '⊘ OCULTAR';
       $$(`[data-camq^="${id}:"]`).forEach(b => b.classList.toggle('on', !!st && b.dataset.camq === `${id}:${st}`));
     });
   }

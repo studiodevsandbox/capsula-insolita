@@ -71,8 +71,6 @@
   <div class="np" id="np-mode-box"><span class="np-k">MODO</span><span class="np-v" id="np-mode">—</span></div>
 </section>
 <div class="lock-banner" id="lock-banner" hidden>🔒 PANEL BLOQUEADO · botones y atajos desactivados (OCULTAR TODO sigue activo) · <kbd data-kbd="panel-lock"></kbd> o el candado para desbloquear</div>
-<div class="nowbar-note"><b>—</b> = aún no enviado desde este panel · la ESCENA la informa OBS</div>
-
     <div class="zones" id="zones">
 <section class="card card--danger emerg-bar" id="card-emergency">
       <header class="card-h"><span class="card-id">§01</span><h2>EMERGENCY</h2><span class="card-meta">PÁNICO 1 TOQUE · OUTRO 2 TOQUES</span></header>
@@ -372,7 +370,7 @@
     <section class="card" id="card-cams">
       <header class="card-h"><span class="card-id">§06</span><h2>CÁMARAS</h2><span class="card-meta">1 CLIC = CAMBIO CON INTERFERENCIA</span></header>
       <div class="cam" id="cam1-box">
-        <div class="cam-h"><span class="dot" id="cam1-dot"></span><span class="cam-id" id="cam1-id">CAM 01</span><span class="cam-now" id="cam1-now">—</span><button class="btn--sm btn--ghost cam-focus" id="cam1-focus" title="Enfoca esta cámara durante 6 s">◎ ENFOCAR</button></div>
+        <div class="cam-h"><span class="dot" id="cam1-dot"></span><span class="cam-id" id="cam1-id">CAM 01</span><span class="cam-now" id="cam1-now">—</span><button class="btn--sm btn--ghost cam-hide" id="cam1-hide" title="Oculta / muestra esta cámara en el overlay">⊘ OCULTAR</button><button class="btn--sm btn--ghost cam-focus" id="cam1-focus" title="Enfoca esta cámara durante 6 s">◎ ENFOCAR</button></div>
         <div class="seg camq">
           <button data-camq="1:REC" data-st="REC">REC</button><button data-camq="1:LIVE" data-st="LIVE">LIVE</button><button data-camq="1:WAITING" data-st="WAITING">WAITING</button><button data-camq="1:OFFLINE" data-st="OFFLINE">OFFLINE</button>
         </div>
@@ -400,7 +398,7 @@
         </details>
       </div>
       <div class="cam" id="cam2-box">
-        <div class="cam-h"><span class="dot" id="cam2-dot"></span><span class="cam-id" id="cam2-id">CAM 02</span><span class="cam-now" id="cam2-now">—</span><button class="btn--sm btn--ghost cam-focus" id="cam2-focus" title="Enfoca esta cámara durante 6 s">◎ ENFOCAR</button></div>
+        <div class="cam-h"><span class="dot" id="cam2-dot"></span><span class="cam-id" id="cam2-id">CAM 02</span><span class="cam-now" id="cam2-now">—</span><button class="btn--sm btn--ghost cam-hide" id="cam2-hide" title="Oculta / muestra esta cámara en el overlay">⊘ OCULTAR</button><button class="btn--sm btn--ghost cam-focus" id="cam2-focus" title="Enfoca esta cámara durante 6 s">◎ ENFOCAR</button></div>
         <div class="seg camq">
           <button data-camq="2:REC" data-st="REC">REC</button><button data-camq="2:LIVE" data-st="LIVE">LIVE</button><button data-camq="2:WAITING" data-st="WAITING">WAITING</button><button data-camq="2:OFFLINE" data-st="OFFLINE">OFFLINE</button>
         </div>
@@ -655,9 +653,14 @@
     <div class="modal-h"><span class="card-id">BTN</span><span class="dr-t" id="cb-title">NUEVO BOTÓN</span></div>
     <div class="cb-form">
       <label class="field"><span>NOMBRE</span><input id="cb-name" maxlength="28" placeholder="PRESENTAR PISTA" autocomplete="off"></label>
-      <div class="field"><span>PASOS · se ejecutan en orden (1 paso = botón simple, varios = macro)</span>
+      <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="cb-toggle" style="width:auto"><span>🔁 BOTÓN ON/OFF · un clic activa, el siguiente clic desactiva (sin tener que crear dos botones)</span></label>
+      <div class="field"><span id="cb-steps-label">PASOS · se ejecutan en orden (1 paso = botón simple, varios = macro)</span>
         <div class="cb-steps" id="cb-steps"></div>
         <div class="row"><button type="button" class="btn--sm btn--ghost" id="cb-add-step">+ AÑADIR PASO</button><span class="hint">Tras cambiar de escena conviene esperar ~700 ms antes del siguiente paso.</span></div>
+      </div>
+      <div class="field" id="cb-steps-off-wrap" hidden><span>PASOS AL DESACTIVAR (OFF)</span>
+        <div class="cb-steps" id="cb-steps-off"></div>
+        <div class="row"><button type="button" class="btn--sm btn--ghost" id="cb-add-step-off">+ AÑADIR PASO</button></div>
       </div>
       <label class="field"><span>ATAJO (clic y pulsa una tecla · F1–F12, letras…)</span>
         <div class="row"><input id="cb-key" readonly placeholder="sin atajo" style="flex:1"><button class="btn--sm btn--ghost" id="cb-key-clear" type="button">QUITAR</button></div>
