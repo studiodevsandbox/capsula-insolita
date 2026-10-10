@@ -1186,14 +1186,15 @@
   const outroLabelEl = { closed: $('#outro-label-1'), continues: $('#outro-label-2') };
   const outroDefault = { closed: 'CASO CERRADO', continues: 'CONTINUARÁ...' };
   const outroLabel = kind => outroLabelEl[kind].value.trim() || outroDefault[kind];
-  function renderOutroLabels() { $$('[data-outro]').forEach(b => { b.textContent = outroLabel(b.dataset.outro); }); }
+  function renderOutroLabels() { $$('[data-outro]').forEach(b => { b.querySelector('.outro-label-text').textContent = outroLabel(b.dataset.outro); }); }
   Object.values(outroLabelEl).forEach(el => el.addEventListener('input', renderOutroLabels));
   renderOutroLabels();
-  $$('[data-outro]').forEach(b => b.addEventListener('click', () => {
-    const kind = b.dataset.outro, text = outroLabel(kind);
+  function toggleOutro(kind) {
+    const text = outroLabel(kind);
     if (live.outro === kind) { resetOutro(); return; }
     send({ cmd: 'outro', text }, { ok: `■ OUTRO · ${text}`, apply: () => { live.outro = kind; renderOutroToggle(); } });
-  }));
+  }
+  $$('[data-outro]').forEach(b => b.addEventListener('click', () => toggleOutro(b.dataset.outro)));
   function renderOutroToggle() { $$('[data-outro]').forEach(b => b.classList.toggle('on', b.dataset.outro === live.outro)); }
   renderOutroToggle();
   $('#reload').addEventListener('click', () => send({ cmd: 'reload' }, { ok: '↻ OVERLAY RECARGADO' }));
@@ -1745,6 +1746,8 @@
   act('mode-investigation', 'MODO', 'Investigation mode', () => setMode('investigation'), 'I');
   act('mode-clean', 'MODO', 'Clean mode', () => setMode('clean'), 'C');
   act('lt-toggle', 'LOWER THIRD', 'Mostrar / ocultar lower third', () => (live.lt && live.lt.visible ? ltHide() : ltShow()), 'L');
+  act('outro-closed', 'SHOW', 'Outro 1 · ' + outroLabel('closed') + ' (switch)', () => toggleOutro('closed'), 'Z');
+  act('outro-continues', 'SHOW', 'Outro 2 · ' + outroLabel('continues') + ' (switch)', () => toggleOutro('continues'), 'X');
   act('lt-show', 'LOWER THIRD', 'Mostrar lower third', ltShow);
   act('lt-hide', 'LOWER THIRD', 'Ocultar lower third', ltHide);
   act('alert-last', 'ALERTA', 'Repetir última alerta', () => fireAlert(live.lastAlert || 'NUEVA EVIDENCIA'), 'A');
