@@ -1711,6 +1711,13 @@
     toast(on ? '🔒 PANEL BLOQUEADO' : '🔓 PANEL DESBLOQUEADO', on ? 'info' : 'ok');
   }
   $('#panel-lock').addEventListener('click', () => setLocked(!panelLocked));
+  // ---------- ocultar / mostrar AJUSTES (columna C entera) ----------
+  (function () {
+    const box = $('.col-c'), btn = $('#drawers-toggle');
+    const apply = hide => { box.classList.toggle('is-collapsed', hide); btn.textContent = hide ? '◉ MOSTRAR AJUSTES' : '⊘ OCULTAR AJUSTES'; };
+    apply(!!saved['drawers-hidden']);
+    btn.addEventListener('click', () => { const hide = !box.classList.contains('is-collapsed'); apply(hide); keep('drawers-hidden', hide); });
+  })();
   const runAction = id => { const a = ACT[id]; if (!a) return; if (panelLocked && id !== 'hideall' && id !== 'panel-lock') return; a.run(); };
   // solo las escenas con botón en el panel (las verticales V01-V04 las maneja Aitum Vertical)
   Object.keys(C.scenes).filter(k => document.querySelector(`[data-scene="${k}"]`)).forEach((k, i) => act('scene-' + (i + 1), 'ESCENA', sceneLabel(k), () => goScene(k), i < 9 ? String(i + 1) : null));
