@@ -1727,7 +1727,8 @@
     const card = btn.closest('.card');
     if (!card || !card.id) return;
     const key = 'card-collapsed-' + card.id;
-    const apply = hide => { card.classList.toggle('is-collapsed', hide); btn.textContent = hide ? '◉' : '⊘'; btn.title = hide ? 'Mostrar esta tarjeta en el panel' : 'Oculta / muestra esta tarjeta en el panel'; };
+    const label = (card.querySelector('.card-h h2') || {}).textContent || '';
+    const apply = hide => { card.classList.toggle('is-collapsed', hide); btn.textContent = hide ? `◉ MOSTRAR ${label}` : `⊘ OCULTAR ${label}`; btn.title = hide ? 'Mostrar esta tarjeta en el panel' : 'Oculta / muestra esta tarjeta en el panel'; };
     apply(!!saved[key]);
     btn.addEventListener('click', () => { const hide = !card.classList.contains('is-collapsed'); apply(hide); keep(key, hide); });
   });
