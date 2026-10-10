@@ -647,10 +647,10 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 .cdeck-h #cdeck-toggle { margin-left: auto; flex: none; }
 .cdeck-body {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1px; background: var(--line);
-  grid-template-areas: "qa qa" "alerts alerts" "scenes scenes" "trans trans" "custom custom" "tiktok tiktok";
+  grid-template-areas: "qa qa" "alerts alerts" "scenes scenes" "trans trans" "custom custom";
 }
 .sm--qa { grid-area: qa; } .sm--alerts { grid-area: alerts; } .sm--trans { grid-area: trans; }
-.sm--scenes { grid-area: scenes; } .sm--custom { grid-area: custom; } .sm--tiktok { grid-area: tiktok; }
+.sm--scenes { grid-area: scenes; } .sm--custom { grid-area: custom; }
 .sm { min-width: 0; padding: 7px 12px 9px; background: var(--bg1); }
 .sm-k { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; min-width: 0; margin-bottom: 6px; color: var(--grey); font-size: 11px; letter-spacing: .18em; white-space: nowrap; }
 .sm-m { color: #a9a9a9; letter-spacing: .12em; font-size: 11px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -710,7 +710,7 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 .cdeck--collapsed .cdeck-h { border-bottom: 0; }
 .cdeck--collapsed .cdeck-body { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 4px 12px 8px; background: var(--bg1); }
 .cdeck--collapsed .sm { padding: 0; }
-.cdeck--collapsed .sm-k, .cdeck--collapsed .sm--alerts, .cdeck--collapsed .sm--trans, .cdeck--collapsed .sm--custom, .cdeck--collapsed .sm--tiktok, .cdeck--collapsed .scene-tr { display: none; }
+.cdeck--collapsed .sm-k, .cdeck--collapsed .sm--alerts, .cdeck--collapsed .sm--trans, .cdeck--collapsed .sm--custom, .cdeck--collapsed .scene-tr { display: none; }
 .cdeck--collapsed .qa-grid { display: flex; flex-wrap: wrap; gap: 4px; }
 .cdeck--collapsed .qa { min-height: 0; padding: 4px 8px; }
 .cdeck--collapsed .qa-s, .cdeck--collapsed .qa kbd, .cdeck--collapsed .m-s, .cdeck--collapsed .mode-btn kbd, .cdeck--collapsed .sc-t, .cdeck--collapsed .scene-btn .sc-n kbd { display: none; }
@@ -736,7 +736,7 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
   .tr-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .cf-split { grid-template-columns: minmax(0, 1fr); grid-template-rows: 140px minmax(0, 1fr); }
   .cdeck .qa-grid, .cdeck .alerts, .cdeck .scenes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cdeck-body { grid-template-areas: "qa qa" "alerts alerts" "scenes scenes" "trans trans" "custom custom" "tiktok tiktok"; }
+  .cdeck-body { grid-template-areas: "qa qa" "alerts alerts" "scenes scenes" "trans trans" "custom custom"; }
   .top-zone { padding: 0 12px; }
   .emerg-bar { margin: 10px 12px 0; }
 }
@@ -1049,7 +1049,7 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 /* =====================================================================================
    TRANSICIÓN COMPACTA (barra + popover) · AJUSTES DEL DECK
    ===================================================================================== */
-.cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "trans trans" "custom custom" "tiktok tiktok"; }
+.cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "trans trans" "custom custom"; }
 .sm--trans { position: relative; }
 .tr-bar { display: flex; gap: 6px; align-items: stretch; }
 .tr-step { flex: none; width: 34px; padding: 0; font-size: 16px; }
@@ -1382,7 +1382,7 @@ body[data-eff=narrow] .ev-row { grid-template-columns: minmax(0, 1fr); }
 body[data-eff=narrow] .deck { display: flex; flex-direction: column; }
 body[data-eff=narrow] .col { display: contents; }
 body[data-eff=narrow] .cdeck .qa-grid, body[data-eff=narrow] .cdeck .scenes, body[data-eff=narrow] .cdeck .alerts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-body[data-eff=narrow] .cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "trans trans" "custom custom" "tiktok tiktok"; }
+body[data-eff=narrow] .cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "trans trans" "custom custom"; }
 body[data-eff=narrow] .tr-pop .tr-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 /* cabecera del Deck: los chips ceden espacio antes de pisar los botones */
 .cdeck-sum { flex: 1 1 0; min-width: 0; overflow: hidden; flex-wrap: nowrap; }
@@ -1622,7 +1622,7 @@ body[data-eff=wide][data-cfw="100"] .top-zone > #card-notes { contain: none; min
 body[data-eff=wide][data-cfw="100"].tp-open .top-zone > #card-notes { height: 820px; }
 /* con Case Files al 66 %, el Control Deck pasa a 2 columnas y se compacta */
 body[data-eff=wide][data-cfw="66"] .cdeck .qa-grid, body[data-eff=wide][data-cfw="66"] .cdeck .scenes, body[data-eff=wide][data-cfw="66"] .cdeck .alerts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-body[data-eff=wide][data-cfw="66"] .cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "trans trans" "custom custom" "tiktok tiktok"; }
+body[data-eff=wide][data-cfw="66"] .cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "trans trans" "custom custom"; }
 body[data-eff=wide][data-cfw="66"] .cdeck .qa { min-height: 62px; }
 body[data-eff=wide][data-cfw="66"] .tr-pop { width: min(440px, 92vw); } body[data-eff=wide][data-cfw="66"] .tr-pop .tr-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 body[data-eff=wide][data-cfw="66"] .cdeck-h .cdeck-sum { display: none; }
