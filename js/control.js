@@ -1144,7 +1144,7 @@
 
   /* ---------- cámaras ---------- */
   const camPayload = (id, status) => ({ label: $(`#cam${id}-label`).value, status: status || $(`#cam${id}-status`).value, subject: $(`#cam${id}-subject`).value });
-  const camApplied = (id, p) => () => { live.cams[id] = { label: p.label, status: p.status, subject: p.subject, enabled: !(live.cams[id] && live.cams[id].enabled === false) }; };
+  const camApplied = (id, p) => () => { live.cams[id] = { label: p.label, status: p.status, subject: p.subject, enabled: true }; };
   [1, 2].forEach(id => {
     $(`#cam${id}-apply`).addEventListener('click', () => {
       const p = camPayload(id);
@@ -1155,22 +1155,22 @@
       send(Object.assign({ cmd: 'cameraSwitch', frame: id }, p), { ok: `● ${p.label} → ${p.status} · INTERFERENCIA`, apply: camApplied(id, p) });
     });
     $(`#cam${id}-label`).addEventListener('input', renderCams);
-    $(`#cam${id}-hide`).addEventListener('click', () => {
-      const c = live.cams[id] || {};
-      const show = c.enabled === false;
-      const p = camPayload(id);
-      send({ cmd: 'camera', id, enabled: show }, {
-        ok: `● ${p.label} → ${show ? 'VISIBLE' : 'OCULTA'}`,
-        apply: () => { live.cams[id] = Object.assign({}, c, { label: p.label, status: p.status, subject: p.subject, enabled: show }); }
-      }).then(() => renderCams());
-    });
   });
-  // botones rápidos de estado (un clic: cambia el select, guarda y aplica con interferencia)
+  // botones rápidos de estado: un clic cambia a ese estado; un clic sobre el estado YA activo oculta la cámara (toggle, sin botón aparte)
   function camQuick(id, status) {
+    const c = live.cams[id] || {};
+    const alreadyOn = c.enabled !== false && c.status === status;
+    if (alreadyOn) {
+      const p = camPayload(id);
+      return send({ cmd: 'camera', id, enabled: false }, {
+        ok: `● ${p.label} → OCULTA`,
+        apply: () => { live.cams[id] = Object.assign({}, c, { label: p.label, status, subject: p.subject, enabled: false }); }
+      }).then(() => renderCams());
+    }
     const sel = $(`#cam${id}-status`);
     setKept(sel, status);
     const p = camPayload(id, status);
-    return send(Object.assign({ cmd: 'cameraSwitch', frame: Number(id) }, p), { ok: `● ${p.label} → ${status}`, apply: camApplied(id, p) });
+    return send(Object.assign({ cmd: 'cameraSwitch', frame: Number(id), enabled: true }, p), { ok: `● ${p.label} → ${status}`, apply: camApplied(id, p) });
   }
   $$('[data-camq]').forEach(b => b.addEventListener('click', () => {
     const [id, status] = b.dataset.camq.split(':');
@@ -2894,13 +2894,12 @@
       const c = live.cams[id];
       const st = c && c.status;
       $(`#cam${id}-id`).textContent = $(`#cam${id}-label`).value || `CAM 0${id}`;
-      $(`#cam${id}-now`).innerHTML = c ? `<b>${esc(st)}</b> · ${esc(c.subject || '')}` : 'ESTADO DESCONOCIDO · elige uno';
-      if (st) { $(`#cam${id}-box`).dataset.st = st; $(`#cam${id}-dot`).dataset.st = st; }
-      else { delete $(`#cam${id}-box`).dataset.st; delete $(`#cam${id}-dot`).dataset.st; }
       const hid = !!c && c.enabled === false;
+      $(`#cam${id}-now`).innerHTML = c ? `<b>${esc(st)}${hid ? ' · OCULTA' : ''}</b> · ${esc(c.subject || '')}` : 'ESTADO DESCONOCIDO · elige uno';
+      if (st && !hid) { $(`#cam${id}-box`).dataset.st = st; $(`#cam${id}-dot`).dataset.st = st; }
+      else { delete $(`#cam${id}-box`).dataset.st; delete $(`#cam${id}-dot`).dataset.st; }
       $(`#cam${id}-box`).classList.toggle('is-hidden', hid);
-      $(`#cam${id}-hide`).textContent = hid ? '◉ MOSTRAR' : '⊘ OCULTAR';
-      $$(`[data-camq^="${id}:"]`).forEach(b => b.classList.toggle('on', !!st && b.dataset.camq === `${id}:${st}`));
+      $$(`[data-camq^="${id}:"]`).forEach(b => b.classList.toggle('on', !hid && !!st && b.dataset.camq === `${id}:${st}`));
     });
   }
   function renderModes() {

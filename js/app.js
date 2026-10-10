@@ -134,8 +134,10 @@
       }
       case 'cameraSwitch': {
         const id = Number(cmd.frame || cmd.id) || 1;
-        LCI.Cameras.switchFx(id, pickFields(data, ['label', 'status', 'subject']));
+        const patch = pickFields(data, ['label', 'status', 'subject', 'enabled']);
+        LCI.Cameras.switchFx(id, patch);
         LCI.state.save({ ['camera' + id]: C['camera' + id] });
+        if (patch.enabled !== undefined && SC.current) SC.apply(SC.current);
         break;
       }
       case 'evidence':

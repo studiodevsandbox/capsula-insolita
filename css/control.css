@@ -376,11 +376,8 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 .ev-state[data-st=WARN] { color: var(--cream); }
 .ev-air-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .ev-air-btns button { padding: 8px 4px; }
-.cam-hide { margin-left: auto; flex: none; color: var(--grey); }
-.cam-hide + .cam-focus { margin-left: 6px; }
 .cam.is-hidden { opacity: .55; }
-.cam.is-hidden .cam-hide { color: var(--y); border-color: var(--y); }
-.cam-focus { flex: none; color: var(--grey); }
+.cam-focus { margin-left: auto; flex: none; color: var(--grey); }
 .slot--next { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 10px; align-content: start; }
 .slot--next .slot-k { grid-column: 1 / -1; margin-bottom: 0; }
 .slot--next .slot-k b { color: var(--y); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
