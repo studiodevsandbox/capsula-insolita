@@ -23,10 +23,7 @@
     <span class="chip" id="top-live" title="Estado de la transmisión / grabación en OBS">AIRE <b>—</b></span>
     <span class="chip" id="top-scene">ESCENA <b>—</b></span>
     <span class="chip" id="top-rd" hidden title="Avance de la escaleta">ESCALETA <b>—</b></span>
-    <span class="seg seg--mode" id="top-mode">
-      <button type="button" class="mode-btn mode-btn--mini" data-mode="clean" title="Clean · solo información"><kbd data-kbd="mode-clean"></kbd>CLEAN</button>
-      <button type="button" class="mode-btn mode-btn--mini" data-mode="investigation" title="Investigation · todos los efectos"><kbd data-kbd="mode-investigation"></kbd>INV</button>
-    </span>
+    <span class="chip" id="top-mode">MODE <b>—</b></span>
     <span class="chip" id="top-overlay">OVERLAY <b>—</b></span>
   </div>
   <div class="top-tools">
@@ -71,7 +68,13 @@
   <div class="np" id="np-cam2-box"><span class="np-k" id="np-cam2-k">CAM 02</span><span class="np-v" id="np-cam2">—</span></div>
   <div class="np" id="np-ev-box"><span class="np-k">EVIDENCIA</span><span class="np-v" id="np-ev">—</span></div>
   <div class="np" id="np-lt-box"><span class="np-k">LOWER THIRD</span><span class="np-v" id="np-lt">—</span></div>
-  <div class="np" id="np-mode-box"><span class="np-k">MODO</span><span class="np-v" id="np-mode">—</span></div>
+  <div class="np np--mode" id="np-mode-box">
+    <span class="np-k">MODO</span>
+    <span class="seg seg--mode">
+      <button type="button" class="mode-btn mode-btn--mini" data-mode="clean" title="Clean · solo información"><kbd data-kbd="mode-clean"></kbd>CLEAN</button>
+      <button type="button" class="mode-btn mode-btn--mini" data-mode="investigation" title="Investigation · todos los efectos"><kbd data-kbd="mode-investigation"></kbd>INV</button>
+    </span>
+  </div>
 </section>
 <div class="lock-banner" id="lock-banner" hidden>🔒 PANEL BLOQUEADO · botones y atajos desactivados (OCULTAR TODO sigue activo) · <kbd data-kbd="panel-lock"></kbd> o el candado para desbloquear</div>
     <div class="zones" id="zones">

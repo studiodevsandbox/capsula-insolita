@@ -123,7 +123,9 @@ kbd {
 .chip--inv b { color: var(--y); }
 .chip--bad { border-color: rgba(224, 0, 34, .55); }
 .chip .bad { color: #ff5a6a; }
-.seg--mode { border: 1px solid var(--line2); }
+.seg--mode { border: 1px solid var(--line2); display: inline-flex; }
+.np--mode .seg--mode { margin-top: 4px; }
+.np--mode .np-k { margin-bottom: 0; }
 .seg--mode .mode-btn--mini {
   flex-direction: row; align-items: center; gap: 5px; position: static;
   padding: 5px 9px; font: 600 11px var(--mono); letter-spacing: .1em; color: var(--grey); background: transparent; border-color: transparent;

@@ -2869,10 +2869,12 @@
     const lt = live.lt;
     if (!lt) setNp('#np-lt-box', '#np-lt', NODATA);
     else setNp('#np-lt-box', '#np-lt', lt.visible ? `ON<small>${esc(lt.name || lt.label || '')}</small>` : 'OFF', lt.visible ? 'ON' : null);
-    // modo
-    setNp('#np-mode-box', '#np-mode', live.mode ? esc(live.mode.toUpperCase()) : NODATA, live.mode === 'investigation' ? 'INV' : null);
+    // modo (switch clickable, no texto para pisar; solo el color del borde)
+    if (live.mode === 'investigation') $('#np-mode-box').dataset.st = 'INV'; else delete $('#np-mode-box').dataset.st;
     $('#cdeck-sum').innerHTML = `<span class="chip-s chip-s--air"><i></i>${live.scene ? esc(sceneLabel(live.scene).toUpperCase()) : 'SIN ESCENA'}</span><span class="chip-s${live.mode === 'investigation' ? ' chip-s--inv' : ''}"><i></i>${live.mode ? esc(live.mode.toUpperCase()) : 'SIN MODO'}</span>`;
     $('#top-scene').innerHTML = `ESCENA <b>${live.scene ? esc(sceneLabel(live.scene).toUpperCase()) : (live.obsScene ? esc(live.obsScene) : 'SIN DATO')}</b>`;
+    $('#top-mode').innerHTML = `MODE <b>${live.mode ? esc(live.mode.toUpperCase()) : 'SIN DATO'}</b>`;
+    $('#top-mode').classList.toggle('chip--inv', live.mode === 'investigation');
   }
   function renderCams() {
     [1, 2].forEach(id => {
