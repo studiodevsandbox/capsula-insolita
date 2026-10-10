@@ -226,9 +226,6 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 .card::before { top: -1px; left: -1px; border-top: 1px solid var(--line3); border-left: 1px solid var(--line3); }
 .card::after { bottom: -1px; right: -1px; border-bottom: 1px solid var(--line3); border-right: 1px solid var(--line3); }
 .card-h { display: flex; align-items: baseline; gap: 9px; margin: 0 0 12px; min-width: 0; }
-.card-h .card-collapse { margin-left: auto; flex: none; align-self: center; }
-.card.is-collapsed > :not(.card-h) { display: none !important; }
-.card.is-collapsed .card-h { margin-bottom: 0; }
 .card-id { color: var(--y); font: 600 11px var(--mono); letter-spacing: .12em; }
 .card-h h2 { margin: 0; font: 400 18px/1 var(--disp); letter-spacing: .13em; color: var(--white); white-space: nowrap; }
 .card-meta { margin-left: auto; color: var(--grey); font-size: 11px; letter-spacing: .14em; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

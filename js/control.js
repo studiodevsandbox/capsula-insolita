@@ -1722,16 +1722,13 @@
     apply(!!saved['drawers-hidden']);
     btn.addEventListener('click', () => { const hide = !box.classList.contains('is-collapsed'); apply(hide); keep('drawers-hidden', hide); });
   })();
-  // ---------- ocultar / mostrar tarjetas individuales del panel (botón ⊘ en el header de cada una) ----------
-  $$('.card-collapse').forEach(btn => {
-    const card = btn.closest('.card');
-    if (!card || !card.id) return;
-    const key = 'card-collapsed-' + card.id;
-    const label = (card.querySelector('.card-h h2') || {}).textContent || '';
-    const apply = hide => { card.classList.toggle('is-collapsed', hide); btn.textContent = hide ? `◉ MOSTRAR ${label}` : `⊘ OCULTAR ${label}`; btn.title = hide ? 'Mostrar esta tarjeta en el panel' : 'Oculta / muestra esta tarjeta en el panel'; };
-    apply(!!saved[key]);
-    btn.addEventListener('click', () => { const hide = !card.classList.contains('is-collapsed'); apply(hide); keep(key, hide); });
-  });
+  // ---------- ocultar / mostrar la tarjeta LOWER THIRD entera (desaparece del todo, igual que AJUSTES) ----------
+  (function () {
+    const card = $('#card-lt'), btn = $('#lt-card-toggle');
+    const apply = hide => { card.hidden = hide; btn.textContent = hide ? '◉ MOSTRAR LOWER THIRD' : '⊘ OCULTAR LOWER THIRD'; };
+    apply(!!saved['card-lt-hidden']);
+    btn.addEventListener('click', () => { const hide = !card.hidden; apply(hide); keep('card-lt-hidden', hide); });
+  })();
   const runAction = id => { const a = ACT[id]; if (!a) return; if (panelLocked && id !== 'hideall' && id !== 'panel-lock') return; a.run(); };
   // solo las escenas con botón en el panel (las verticales V01-V04 las maneja Aitum Vertical)
   Object.keys(C.scenes).filter(k => document.querySelector(`[data-scene="${k}"]`)).forEach((k, i) => act('scene-' + (i + 1), 'ESCENA', sceneLabel(k), () => goScene(k), i < 9 ? String(i + 1) : null));
