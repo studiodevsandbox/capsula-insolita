@@ -184,7 +184,7 @@
      (el panel no recibe estado de vuelta del overlay). Lo desconocido queda en null → "—".
      Se guarda en localStorage porque el overlay también persiste cámaras/modo/evidencia/LT. */
   const LIVE_KEY = 'lci-control-live-v1';
-  const live = Object.assign({ cams: {}, mode: null, fx: null, ev: null, lt: null, lastAlert: 'NUEVA EVIDENCIA', sound: null },
+  const live = Object.assign({ cams: {}, mode: null, fx: null, ev: null, lt: null, lastAlert: 'NUEVA EVIDENCIA', sound: null, outro: null },
     (() => { const v = readJSON(LIVE_KEY); return isObj(v) ? v : {}; })());
   // forma mínima: si algo vino corrupto, se descarta solo esa parte (no rompe el arranque)
   if (!isObj(live.cams)) live.cams = {};
@@ -192,6 +192,7 @@
   ['fx', 'ev', 'lt', 'sound'].forEach(k => { if (!isObj(live[k])) live[k] = null; });
   if (live.sound && live.sound.amb != null && !isObj(live.sound.amb)) delete live.sound.amb;
   if (typeof live.mode !== 'string') live.mode = null;
+  if (live.outro !== 'closed' && live.outro !== 'continues') live.outro = null;
   if (typeof live.lastAlert !== 'string') live.lastAlert = 'NUEVA EVIDENCIA';
   if (live.ev && !Number.isFinite(Number(live.ev.num))) live.ev = null;
   live.scene = null; live.obsScene = null; live.obsSceneUuid = null; // la escena SIEMPRE se pregunta a OBS
@@ -1179,10 +1180,17 @@
   });
   $('#hideall').addEventListener('click', hideAll);
   const outro = text => send({ cmd: 'outro', text }, { ok: `■ OUTRO · ${text}` });
-  // los outros de EMERGENCY también piden 2 toques (están junto al botón de pánico)
-  $('#outro1').addEventListener('click', () => arm('outro1', '¿OUTRO · CASO CERRADO? PULSA OTRA VEZ', () => outro('CASO CERRADO')));
-  $('#outro2').addEventListener('click', () => arm('outro2', '¿OUTRO · CONTINUARÁ? PULSA OTRA VEZ', () => outro('CONTINUARÁ...')));
-  $('#reset').addEventListener('click', () => send({ cmd: 'reset' }, { ok: '✓ INTRO/OUTRO QUITADOS' }));
+  const resetOutro = () => send({ cmd: 'reset' }, { ok: '✓ INTRO/OUTRO QUITADOS', apply: () => { live.outro = null; renderOutroToggle(); } });
+  $('#reset').addEventListener('click', resetOutro);
+  // switch en el header: clic para mostrar, clic de nuevo (sobre el que ya está activo) para quitarlo
+  const OUTRO_LABEL = { closed: 'CASO CERRADO', continues: 'CONTINUARÁ...' };
+  $$('[data-outro]').forEach(b => b.addEventListener('click', () => {
+    const kind = b.dataset.outro;
+    if (live.outro === kind) { resetOutro(); return; }
+    send({ cmd: 'outro', text: OUTRO_LABEL[kind] }, { ok: `■ OUTRO · ${OUTRO_LABEL[kind]}`, apply: () => { live.outro = kind; renderOutroToggle(); } });
+  }));
+  function renderOutroToggle() { $$('[data-outro]').forEach(b => b.classList.toggle('on', b.dataset.outro === live.outro)); }
+  renderOutroToggle();
   $('#reload').addEventListener('click', () => send({ cmd: 'reload' }, { ok: '↻ OVERLAY RECARGADO' }));
 
   // acciones de cierre: necesitan 2 toques en 3 s (sin diálogos nativos)
@@ -1196,17 +1204,10 @@
     armTimer = setTimeout(disarm, 3000);
   }
   function disarm() { clearTimeout(armTimer); armed = null; renderArm(); }
-  const ARM_BTN = { outro1: '#outro1', outro2: '#outro2' };
   function renderArm() {
     const b = $('#qa-outro');
     b.classList.toggle('armed', armed === 'outro');
     $('#qa-outro-s').textContent = armed === 'outro' ? '¡otra vez para cerrar!' : '2 toques · caso cerrado';
-    Object.entries(ARM_BTN).forEach(([id, sel]) => {
-      const el = $(sel);
-      if (!el.dataset.label) el.dataset.label = el.textContent;
-      el.classList.toggle('armed', armed === id);
-      el.textContent = armed === id ? '¡OTRA VEZ PARA CONFIRMAR!' : el.dataset.label;
-    });
   }
 
   /* ---------- evidencia ---------- */

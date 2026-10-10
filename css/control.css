@@ -134,6 +134,14 @@ kbd {
 .seg--mode .mode-btn--mini.on { color: #000; }
 .seg--mode .mode-btn--mini.on[data-mode=investigation] { background: var(--y); }
 .seg--mode .mode-btn--mini.on[data-mode=clean] { background: var(--white); }
+.seg--outro { border: 1px solid rgba(224, 0, 34, .4); display: inline-flex; }
+.seg--outro .outro-btn {
+  padding: 5px 9px; font: 600 11px var(--mono); letter-spacing: .08em; color: #ff8a96;
+  background: transparent; border: 0; border-left: 1px solid rgba(224, 0, 34, .25);
+}
+.seg--outro .outro-btn:first-child { border-left: 0; }
+.seg--outro .outro-btn:hover { background: #1d0307; }
+.seg--outro .outro-btn.on { background: var(--r2); color: #fff; }
 .top-tools { display: flex; gap: 6px; }
 .top-tools button { padding: 5px 9px; font-size: 11px; }
 .top-panic { display: none; color: #ff5a6a; border-color: rgba(224, 0, 34, .6); background: #1a0206; font-weight: 600; }
@@ -726,7 +734,7 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
   .tr-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .cf-split { grid-template-columns: minmax(0, 1fr); grid-template-rows: 140px minmax(0, 1fr); }
   .cdeck .qa-grid, .cdeck .alerts, .cdeck .scenes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cdeck-body { grid-template-areas: "qa qa" "alerts alerts" "scenes scenes" "trans trans" "mode mode" "custom custom"; }
+  .cdeck-body { grid-template-areas: "qa qa" "alerts alerts" "scenes scenes" "trans trans" "custom custom" "tiktok tiktok"; }
   .top-zone { padding: 0 12px; }
   .emerg-bar { margin: 10px 12px 0; }
 }
@@ -1039,7 +1047,7 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
 /* =====================================================================================
    TRANSICIÓN COMPACTA (barra + popover) · AJUSTES DEL DECK
    ===================================================================================== */
-.cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "mode trans" "custom custom"; }
+.cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "trans trans" "custom custom" "tiktok tiktok"; }
 .sm--trans { position: relative; }
 .tr-bar { display: flex; gap: 6px; align-items: stretch; }
 .tr-step { flex: none; width: 34px; padding: 0; font-size: 16px; }
@@ -1370,7 +1378,7 @@ body[data-eff=narrow] .ev-row { grid-template-columns: minmax(0, 1fr); }
 body[data-eff=narrow] .deck { display: flex; flex-direction: column; }
 body[data-eff=narrow] .col { display: contents; }
 body[data-eff=narrow] .cdeck .qa-grid, body[data-eff=narrow] .cdeck .scenes, body[data-eff=narrow] .cdeck .alerts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-body[data-eff=narrow] .cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "mode mode" "trans trans" "custom custom"; }
+body[data-eff=narrow] .cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "trans trans" "custom custom" "tiktok tiktok"; }
 body[data-eff=narrow] .tr-pop .tr-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 /* cabecera del Deck: los chips ceden espacio antes de pisar los botones */
 .cdeck-sum { flex: 1 1 0; min-width: 0; overflow: hidden; flex-wrap: nowrap; }
@@ -1610,7 +1618,7 @@ body[data-eff=wide][data-cfw="100"] .top-zone > #card-notes { contain: none; min
 body[data-eff=wide][data-cfw="100"].tp-open .top-zone > #card-notes { height: 820px; }
 /* con Case Files al 66 %, el Control Deck pasa a 2 columnas y se compacta */
 body[data-eff=wide][data-cfw="66"] .cdeck .qa-grid, body[data-eff=wide][data-cfw="66"] .cdeck .scenes, body[data-eff=wide][data-cfw="66"] .cdeck .alerts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-body[data-eff=wide][data-cfw="66"] .cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "mode mode" "trans trans" "custom custom"; }
+body[data-eff=wide][data-cfw="66"] .cdeck-body { grid-template-areas: "qa qa" "scenes scenes" "alerts alerts" "trans trans" "custom custom" "tiktok tiktok"; }
 body[data-eff=wide][data-cfw="66"] .cdeck .qa { min-height: 62px; }
 body[data-eff=wide][data-cfw="66"] .tr-pop { width: min(440px, 92vw); } body[data-eff=wide][data-cfw="66"] .tr-pop .tr-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 body[data-eff=wide][data-cfw="66"] .cdeck-h .cdeck-sum { display: none; }
