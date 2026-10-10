@@ -2894,7 +2894,6 @@
   function renderModes() {
     $$('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === live.mode));
     $('#qa-inv').classList.toggle('on', live.mode === 'investigation');
-    $('#qa-clean').classList.toggle('on', live.mode === 'clean');
   }
   function renderFx() {
     const known = !!live.fx;
@@ -3013,8 +3012,6 @@
     const lt = live.lt;
     $('#lt-meta').innerHTML = !lt ? 'ESTADO DESCONOCIDO' : lt.visible ? `<b>● AL AIRE</b> · ${esc(lt.name || '')}` : '○ OCULTO';
     if (lt && lt.visible) $('#lt-preview').dataset.st = 'ON'; else delete $('#lt-preview').dataset.st;
-    $('#qa-lt').classList.toggle('on', !!(lt && lt.visible));
-    $('#qa-lt-s').textContent = lt && lt.visible ? 'al aire · L oculta' : 'mostrar';
     renderLtPreview();
   }
   function renderAlerts() {
