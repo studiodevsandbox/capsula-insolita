@@ -154,7 +154,7 @@ kbd {
 
 /* ---------------- NOW PLAYING ---------------- */
 .nowbar {
-  display: grid; grid-template-columns: 1.6fr repeat(5, minmax(0, 1fr));
+  display: grid; grid-template-columns: 1.6fr minmax(0, 1fr);
   gap: 1px; margin: 14px 18px 0;
   background: var(--line); border: 1px solid var(--line);
 }
@@ -750,7 +750,7 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
   .qa-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 1100px) {
-  .nowbar { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .nowbar { grid-template-columns: 1fr; }
 }
 @media (max-width: 900px) {
   /* una sola columna: se ordena por prioridad de operación en vivo */
@@ -780,12 +780,9 @@ body.lci-edit .col { min-height: 60px; } /* espacio mínimo para poder soltar au
   #top-mode, .nowbar-note, .open-palette-label { display: none; }
   .chip, .conn { padding: 4px 7px; font-size: 11px; letter-spacing: .06em; }
   .conn { min-height: 36px; gap: 5px; }
-  .nowbar { margin: 10px 12px 0; grid-template-columns: repeat(6, minmax(0, 1fr)); }
-  .nowbar > .np { grid-column: span 2; }
-  .nowbar > #np-cam1-box, .nowbar > #np-cam2-box { grid-column: span 3; }
+  .nowbar { margin: 10px 12px 0; grid-template-columns: 1fr; }
   .np { padding: 7px 8px 8px; }
   .np-v { font-size: 16px; }
-  .nowbar > .np--scene { grid-column: 1 / -1; }
   .nowbar-note { margin: 4px 12px 0; }
   .deck { padding: 10px 12px 80px; gap: 10px; }
   .card { padding: 11px; }

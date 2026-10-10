@@ -2832,11 +2832,6 @@
   /* =====================================================================================
      RENDER: pinta el estado conocido en todos los módulos
      ===================================================================================== */
-  const ST_LABEL = { REC: 'REC', LIVE: 'LIVE', WAITING: 'WAITING', OFFLINE: 'OFFLINE' };
-  function setNp(boxSel, valSel, html, st) {
-    $(valSel).innerHTML = html;
-    if (st) $(boxSel).dataset.st = st; else delete $(boxSel).dataset.st;
-  }
   function renderScenes() {
     $$('[data-scene]').forEach(b => {
       b.classList.toggle('is-air', !!live.scene && b.dataset.scene === live.scene);
@@ -2853,22 +2848,6 @@
     else if (!obs.connected) sc = '—<small>OBS OFFLINE</small>';
     else sc = '<span class="nodata" title="esperando respuesta de OBS">SIN DATO</span>';
     $('#np-scene').innerHTML = sc;
-    // cámaras
-    [1, 2].forEach(id => {
-      const c = live.cams[id];
-      $(`#np-cam${id}-k`).textContent = (c && c.label) || $(`#cam${id}-label`).value || `CAM 0${id}`;
-      setNp(`#np-cam${id}-box`, `#np-cam${id}`, c ? `${esc(ST_LABEL[c.status] || c.status)}<small>${esc(c.subject || '')}</small>` : NODATA, c && c.status);
-    });
-    // evidencia
-    const ev = live.ev;
-    if (!ev) setNp('#np-ev-box', '#np-ev', NODATA);
-    else if (!ev.visible) setNp('#np-ev-box', '#np-ev', `OCULTA<small>#${pad3(ev.num)}</small>`);
-    else if (live.scene && C.scenes[live.scene] && !C.scenes[live.scene].evidence) setNp('#np-ev-box', '#np-ev', `#${pad3(ev.num)}<small>sin marco aquí</small>`, 'WARN');
-    else setNp('#np-ev-box', '#np-ev', `#${pad3(ev.num)}<small>${esc(ev.type || '')}</small>`, 'ON');
-    // lower third
-    const lt = live.lt;
-    if (!lt) setNp('#np-lt-box', '#np-lt', NODATA);
-    else setNp('#np-lt-box', '#np-lt', lt.visible ? `ON<small>${esc(lt.name || lt.label || '')}</small>` : 'OFF', lt.visible ? 'ON' : null);
     // modo (switch clickable, no texto para pisar; solo el color del borde)
     if (live.mode === 'investigation') $('#np-mode-box').dataset.st = 'INV'; else delete $('#np-mode-box').dataset.st;
     $('#cdeck-sum').innerHTML = `<span class="chip-s chip-s--air"><i></i>${live.scene ? esc(sceneLabel(live.scene).toUpperCase()) : 'SIN ESCENA'}</span><span class="chip-s${live.mode === 'investigation' ? ' chip-s--inv' : ''}"><i></i>${live.mode ? esc(live.mode.toUpperCase()) : 'SIN MODO'}</span>`;
