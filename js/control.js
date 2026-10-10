@@ -1178,7 +1178,6 @@
     ok: '■ TODO OCULTO',
     apply: () => { if (live.ev) live.ev.visible = false; if (live.lt) live.lt.visible = false; }
   });
-  $('#hideall').addEventListener('click', hideAll);
   const outro = text => send({ cmd: 'outro', text }, { ok: `■ OUTRO · ${text}` });
   const resetOutro = () => send({ cmd: 'reset' }, { ok: '✓ INTRO/OUTRO QUITADOS', apply: () => { live.outro = null; renderOutroToggle(); } });
   $('#reset').addEventListener('click', resetOutro);
@@ -1698,7 +1697,7 @@
   const act = (id, group, label, run, key) => { const a = { id, group, label, run, key }; ACTIONS.push(a); ACT[id] = a; };
   // CANDADO: bloquea botones y atajos (excepto OCULTAR TODO y el propio candado) para no tocar nada sin querer
   let panelLocked = false;
-  const LOCKABLE = '.cdeck-body, .ev-row, #card-lt, #card-cams, #card-emergency .emerg-row, .nowbar';
+  const LOCKABLE = '.cdeck-body, .ev-row, #card-lt, #card-cams, .nowbar';
   function setLocked(on) {
     panelLocked = on;
     document.body.classList.toggle('is-locked', on);

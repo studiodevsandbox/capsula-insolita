@@ -125,6 +125,8 @@ kbd {
 .chip .bad { color: #ff5a6a; }
 .seg--mode { border: 1px solid var(--line2); display: inline-flex; }
 .np--mode .seg--mode { margin-top: 4px; }
+.np--mode .seg--outro { margin-top: 6px; }
+.np--mode .seg { display: flex; }
 .np--mode .np-k { margin-bottom: 0; }
 .seg--mode .mode-btn--mini {
   flex-direction: row; align-items: center; gap: 5px; position: static;
@@ -144,7 +146,7 @@ kbd {
 .seg--outro .outro-btn.on { background: var(--r2); color: #fff; }
 .top-tools { display: flex; gap: 6px; }
 .top-tools button { padding: 5px 9px; font-size: 11px; }
-.top-panic { display: none; color: #ff5a6a; border-color: rgba(224, 0, 34, .6); background: #1a0206; font-weight: 600; }
+.top-panic { display: inline-flex; color: #ff5a6a; border-color: rgba(224, 0, 34, .6); background: #1a0206; font-weight: 600; }
 .top-panic:hover { background: var(--r); border-color: var(--r2); color: #fff; }
 @keyframes blink { 50% { opacity: .2; } }
 
