@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prueba Enlace LCI</title>
+  <style>
+    /* Fondo transparente a propósito: si LIVE Studio respeta el alfa, se ve el video de abajo */
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      overflow: hidden;
+      font-family: system-ui, sans-serif;
+    }
+    .caja {
+      position: absolute;
+      left: 5%;
+      top: 5%;
+      width: 90%;
+      padding: 40px 30px;
+      border: 6px solid #e0262b;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      text-align: center;
+    }
+    .titulo {
+      font-size: 64px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin: 0 0 16px;
+    }
+    .reloj {
+      font-size: 96px;
+      font-variant-numeric: tabular-nums;
+      color: #ffd34d;
+    }
+    .nota {
+      font-size: 28px;
+      margin-top: 16px;
+      opacity: 0.85;
+    }
+  </style>
+</head>
+<body>
+  <div class="caja">
+    <p class="titulo">PRUEBA ENLACE · LCI</p>
+    <div class="reloj" id="reloj">--:--:--</div>
+    <p class="nota" id="nota">Si ves esta caja sobre el video, el enlace funciona.</p>
+  </div>
+
+  <script>
+    // Reloj simple para comprobar que la página se actualiza en vivo dentro de LIVE Studio
+    const reloj = document.getElementById('reloj');
+    function actualizar() {
+      reloj.textContent = new Date().toLocaleTimeString('es-ES', { hour12: false });
+    }
+    actualizar();
+    setInterval(actualizar, 1000);
+
+    // Muestra el parámetro ?scene= si viene en la dirección, para probar que llega bien
+    const escena = new URLSearchParams(location.search).get('scene');
+    if (escena) {
+      document.getElementById('nota').textContent = 'Escena: ' + escena;
+    }
+  </script>
+</body>
+</html>
