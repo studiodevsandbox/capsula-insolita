@@ -1,0 +1,4 @@
+Copia aquí tus imágenes o videos de evidencia (jpg, png, webp, svg, mp4, webm).
+En el panel, escribe la ruta así:  assets/evidence/nombre-del-archivo.jpg
+
+demo-01.svg y demo-02.svg son ejemplos (fotografía de cámara y documento).
